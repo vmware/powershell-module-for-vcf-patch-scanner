@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "updatedAt": "2026-06-17T21:52:14Z",
+  "updatedAt": "2026-06-22T01:13:46Z",
   "advisories": [
     {
       "vmsaId": "VMSA-2026-0004",
@@ -88,44 +88,6 @@
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2026-41722",
-            "CVE-2026-41723",
-            "CVE-2026-41724"
-          ],
-          "cvssRange": "8.0",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.18.7"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8187-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2026-41722",
-            "CVE-2026-41723",
-            "CVE-2026-41724"
-          ],
-          "cvssRange": "8.0",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB443138",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -175,65 +137,6 @@
           ],
           "kbArticles": null,
           "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8186-release-notes.html",
-          "severity": "High",
-          "workaround": "KB430349 (CVE-2026-22719)",
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2026-22719",
-            "CVE-2026-22720",
-            "CVE-2026-22721"
-          ],
-          "cvssRange": "6.2 - 8.1",
-          "minimumVersions": [
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.18.6"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8186-release-notes.html",
-          "severity": "High",
-          "workaround": "KB430349 (CVE-2026-22719)",
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2026-22719",
-            "CVE-2026-22720",
-            "CVE-2026-22721"
-          ],
-          "cvssRange": "6.2 - 8.1",
-          "minimumVersions": [
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB428241",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": "KB430349 (CVE-2026-22719)",
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2026-22719",
-            "CVE-2026-22720",
-            "CVE-2026-22721"
-          ],
-          "cvssRange": "6.2 - 8.1",
-          "minimumVersions": [
-            "2.0",
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB428241",
-          "fixedVersionUrl": null,
           "severity": "High",
           "workaround": "KB430349 (CVE-2026-22719)",
           "additionalDocs": null
@@ -452,78 +355,6 @@
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41250"
-          ],
-          "cvssRange": "8.5",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "5.2.2"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-5-2-and-earlier/5-2/vcf-release-notes/vmware-cloud-foundation-522-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41250"
-          ],
-          "cvssRange": "8.5",
-          "minimumVersions": [
-            "4.5.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.24927011"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/vcenter-server-update-and-patch-releases/vsphere-vcenter-server-70u3w-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41250"
-          ],
-          "cvssRange": "8.5",
-          "minimumVersions": [
-            "2.0",
-            "3.0",
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB411508",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41250"
-          ],
-          "cvssRange": "8.5",
-          "minimumVersions": [
-            "2.0",
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB411508",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -535,7 +366,7 @@
       "severity": "High",
       "cvssRange": "4.9 - 7.8",
       "title": "VMSA-2025-0015: VMware Aria Operations and VMware Tools updates address multiple vulnerabilities (CVE-2025-41244,CVE-2025-41245, CVE-2025-41246)",
-      "description": "To remediate CVE-2025-41244 apply the patches listed in the 'Fixed Version' column of the 'Response Matrix' found below.",
+      "description": "A malicious actor with non-administrative privileges in Aria Operations may exploit this vulnerability to disclose credentials of other users of Aria Operations.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -564,64 +395,6 @@
           "cvssRange": "4.9 - 7.8",
           "minimumVersions": [
             "8.0"
-          ],
-          "fixedVersions": [
-            "8.18.5"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8185-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2025-41244",
-            "CVE-2025-41245"
-          ],
-          "cvssRange": "4.9 - 7.8",
-          "minimumVersions": [
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92148",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2025-41244",
-            "CVE-2025-41245"
-          ],
-          "cvssRange": "4.9 - 7.8",
-          "minimumVersions": [
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.18.5"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8185-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2025-41244",
-            "CVE-2025-41245"
-          ],
-          "cvssRange": "4.9 - 7.8",
-          "minimumVersions": [
-            "2.0",
-            "3.0"
           ],
           "fixedVersions": [
             "8.18.5"
@@ -679,39 +452,6 @@
           "severity": "Medium",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41241"
-          ],
-          "cvssRange": "4.4",
-          "minimumVersions": [
-            "2.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB405542",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41241"
-          ],
-          "cvssRange": "4.4",
-          "minimumVersions": [
-            "2.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB405542",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -723,7 +463,7 @@
       "severity": "Critical",
       "cvssRange": "7.1 - 9.3",
       "title": "VMSA-2025-0013: VMware ESXi, Workstation, Fusion, and Tools updates address multiple vulnerabilities (CVE-2025-41236, CVE-2025-41237, CVE-2025-41238, CVE-2025-41239)",
-      "description": "CVE-2025-41236, CVE-2025-41237, CVE-2025-41238, CVE-2025-41239",
+      "description": "Multiple vulnerabilities in VMware ESXi, Workstation, Fusion, and Tools were privately reported to Broadcom. Updates are available to remediate these vulnerabilities in affected Broadcom products.",
       "impactedComponents": [
         {
           "component": "ESXi",
@@ -909,7 +649,7 @@
       "severity": "High",
       "cvssRange": "4.3 - 8.8",
       "title": "VMSA-2025-0010 : VMware ESXi, vCenter Server, Workstation, and Fusion updates address multiple vulnerabilities (CVE-2025-41225, CVE-2025-41226, CVE-2025-41227, CVE-2025-41228)",
-      "description": "CVE-2025-41225, CVE-2025-41226, CVE-2025-41227, CVE-2025-41228",
+      "description": "Multiple vulnerabilities in ESXi, vCenter Server, and Workstation were privately reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "ESXi",
@@ -952,109 +692,6 @@
           "additionalDocs": null
         },
         {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2025-41226",
-            "CVE-2025-41227",
-            "CVE-2025-41228"
-          ],
-          "cvssRange": "4.3 - 6.8",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.0.3.24659227"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u3e-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2025-41226",
-            "CVE-2025-41227",
-            "CVE-2025-41228"
-          ],
-          "cvssRange": "4.3 - 6.8",
-          "minimumVersions": [
-            "4.5.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.24723868"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-70u3v-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2025-41226",
-            "CVE-2025-41227",
-            "CVE-2025-41228"
-          ],
-          "cvssRange": "4.3 - 6.8",
-          "minimumVersions": [
-            "2.0",
-            "3.0",
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.0.3.24659227"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u3e-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2025-41226",
-            "CVE-2025-41227",
-            "CVE-2025-41228"
-          ],
-          "cvssRange": "4.3 - 6.8",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [
-            "8.0.3.24659227"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u3e-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2025-41226",
-            "CVE-2025-41227",
-            "CVE-2025-41228"
-          ],
-          "cvssRange": "4.3 - 6.8",
-          "minimumVersions": [
-            "2.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.24723868"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-70u3v-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
           "component": "vCenter",
           "cves": [
             "CVE-2025-41225",
@@ -1090,101 +727,6 @@
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41225",
-            "CVE-2025-41228"
-          ],
-          "cvssRange": "4.3 - 8.8",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.0.3.24674346"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/vcenter-server-update-and-patch-release-notes/vsphere-vcenter-server-80u3e-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41225"
-          ],
-          "cvssRange": "8.8",
-          "minimumVersions": [
-            "4.5.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.24730281"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/vcenter-server-update-and-patch-releases/vsphere-vcenter-server-70u3v-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41225",
-            "CVE-2025-41228"
-          ],
-          "cvssRange": "4.3 - 8.8",
-          "minimumVersions": [
-            "2.0",
-            "3.0",
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.0.3.24674346"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/vcenter-server-update-and-patch-release-notes/vsphere-vcenter-server-80u3e-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41225"
-          ],
-          "cvssRange": "8.8",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [
-            "8.0.3.24674346"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/vcenter-server-update-and-patch-release-notes/vsphere-vcenter-server-80u3e-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2025-41225"
-          ],
-          "cvssRange": "8.8",
-          "minimumVersions": [
-            "2.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.24730281"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/vcenter-server-update-and-patch-releases/vsphere-vcenter-server-70u3v-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -1196,7 +738,7 @@
       "severity": "High",
       "cvssRange": "8.2",
       "title": "VMSA-2025-0008: VMware Aria automation updates address a DOM based Cross-site scripting vulnerability (CVE-2025-22249)",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "A DOM based Cross-Site Scripting (XSS) vulnerability in VMware Aria Automation was privately reported to VMware. Patches are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Automation",
@@ -1225,8 +767,8 @@
       "updatedDate": "2025-04-04T06:31:35Z",
       "severity": "High",
       "cvssRange": "7.8",
-      "title": "VMSA-2025-0006: VMware Aria Operations updates address a local privilege escalation vulnerability (CVE-2025-22231)",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "title": "VMSA-2025-0006: VMware Aria Operations updates address a local privilege escalation vulnerability (CVE-2025-22231)",
+      "description": "A local privilege escalation vulnerability in VMware Aria Operations was responsibly reported to VMware. Patches are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -1328,7 +870,7 @@
       "severity": "High",
       "cvssRange": "4.3 - 8.5",
       "title": "VMSA-2025-0003: VMware Aria Operations for Logs and VMware Aria Operations updates address multiple vulnerabilities (CVE-2025-22218, CVE-2025-22219, CVE-2025-22220, CVE-2025-22221 and CVE-2025-22222)",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities in VMware Aria Operations for logs and VMware Aria Operations were privately reported to VMware. Patches are available to remediate these vulnerabilities in the affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -1414,50 +956,6 @@
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2024-38830",
-            "CVE-2024-38831",
-            "CVE-2024-38832",
-            "CVE-2024-38833",
-            "CVE-2024-38834"
-          ],
-          "cvssRange": "6.5 - 7.8",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.18.2"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/Chunk2029420434.html#Chunk2029420434",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2024-38830",
-            "CVE-2024-38831",
-            "CVE-2024-38832",
-            "CVE-2024-38833",
-            "CVE-2024-38834"
-          ],
-          "cvssRange": "6.5 - 7.8",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [
-            "8.18.2"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/Chunk2029420434.html#Chunk2029420434",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -1520,7 +1018,7 @@
             "4.2.1"
           ],
           "kbArticles": null,
-          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?displayGroup=VMware%20NSX%20-%20VMware%20NSX%20Standard&amp;release=4.x&amp;os=&amp;servicePk=202438&amp;language=EN&amp;groupId=204034",
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-NSX/4.2.1/rn/vmware-nsx-421-release-notes/index.html",
           "severity": "Medium",
           "workaround": null,
           "additionalDocs": "Async Patching Guide: KB88287"
@@ -1592,25 +1090,6 @@
           "severity": "Critical",
           "workaround": null,
           "additionalDocs": "FAQ"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2024-38812",
-            "CVE-2024-38813"
-          ],
-          "cvssRange": "7.5 - 9.8",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.24322018"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3t-release-notes/index.html",
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": "FAQ"
         }
       ]
     },
@@ -1622,7 +1101,7 @@
       "severity": "High",
       "cvssRange": "8.5",
       "title": "VMSA-2024-0017: VMware Aria Automation updates address SQL-injection vulnerability (CVE-2024-22280)",
-      "description": "An SQL-injection vulnerability in VMware Aria Automation was privately reported to VMware. Patches and workarounds are available to remediate or workaround this vulnerability in the affected VMware product.",
+      "description": "An SQL-injection vulnerability in VMware Aria Automation was privately reported to VMware. Patches and workarounds are available to remediate or workaround this vulnerability in the affected VMware product.",
       "impactedComponents": [
         {
           "component": "VCF Automation",
@@ -1669,22 +1148,6 @@
           "additionalDocs": null
         },
         {
-          "component": "ESXi",
-          "cves": [],
-          "cvssRange": "6.8",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.23794019"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u3q-release-notes/index.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
           "component": "vCenter",
           "cves": [],
           "cvssRange": "5.3",
@@ -1696,22 +1159,6 @@
           ],
           "kbArticles": null,
           "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-803-release-notes/index.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [],
-          "cvssRange": "5.3",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.23788036"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3q-release-notes/index.html",
           "severity": "Medium",
           "workaround": null,
           "additionalDocs": null
@@ -1766,62 +1213,6 @@
           "severity": "Critical",
           "workaround": null,
           "additionalDocs": "FAQ"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2024-37079",
-            "CVE-2024-37080",
-            "CVE-2024-37081"
-          ],
-          "cvssRange": "7.8 - 9.8",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.24026615"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3r-release-notes/index.html",
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2024-37079",
-            "CVE-2024-37080",
-            "CVE-2024-37081"
-          ],
-          "cvssRange": "7.8 - 9.8",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2024-37079",
-            "CVE-2024-37080",
-            "CVE-2024-37081"
-          ],
-          "cvssRange": "7.8 - 9.8",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": "FAQ"
         }
       ]
     },
@@ -1854,58 +1245,6 @@
           "additionalDocs": null
         },
         {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2024-22273"
-          ],
-          "cvssRange": "7.4",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.23794019"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u3q-release-notes/index.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2024-22273"
-          ],
-          "cvssRange": "7.4",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "5.1.1"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Cloud-Foundation/5.1.1/rn/vmware-cloud-foundation-511-release-notes/index.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "KB88287"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2024-22273"
-          ],
-          "cvssRange": "7.4",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
           "component": "vCenter",
           "cves": [
             "CVE-2024-22274",
@@ -1923,93 +1262,6 @@
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2024-22274",
-            "CVE-2024-22275"
-          ],
-          "cvssRange": "4.9 - 7.2",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.23788036"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3q-release-notes/index.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2024-22274",
-            "CVE-2024-22275"
-          ],
-          "cvssRange": "4.9 - 7.2",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "5.1.1"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Cloud-Foundation/5.1.1/rn/vmware-cloud-foundation-511-release-notes/index.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "KB88287"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2024-22274",
-            "CVE-2024-22275"
-          ],
-          "cvssRange": "4.9 - 7.2",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2024-0006",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24266",
-      "publishedDate": "2024-05-08",
-      "updatedDate": "2024-07-11T04:44:55Z",
-      "severity": "Critical",
-      "cvssRange": "7.1 - 8.4",
-      "title": "VMSA-2024-0006:VMware ESXi, Workstation, and Fusion updates address multiple security vulnerabilities (CVE-2024-22252, CVE-2024-22253, CVE-2024-22254, CVE-2024-22255)",
-      "description": "CVE-2024-22252, CVE-2024-22253, CVE-2024-22254, CVE-2024-22255",
-      "impactedComponents": [
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2024-22252",
-            "CVE-2024-22253",
-            "CVE-2024-22254",
-            "CVE-2024-22255"
-          ],
-          "cvssRange": "7.1 - 8.4",
-          "minimumVersions": [
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB96682",
-          "additionalDocs": "FAQ"
         }
       ]
     },
@@ -2021,7 +1273,7 @@
       "severity": "Medium",
       "cvssRange": "6.7",
       "title": "VMSA-2024-0004:VMware Aria Operations updates address local privilege escalation vulnerability (CVE-2024-22235)",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "A local privilege escalation vulnerability affecting Aria Operations was responsibly reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -2040,70 +1292,6 @@
           "severity": "Medium",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2024-22235"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92148",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2024-22235"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92148",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2024-0002",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23681",
-      "publishedDate": "2024-02-04",
-      "updatedDate": "2024-02-04T18:38:50Z",
-      "severity": "High",
-      "cvssRange": "4.3 - 7.8",
-      "title": "VMSA-2024-0002:VMware Aria Operations for Networks (Formerly vRealize Network Insight) updates address multiple vulnerabilities",
-      "description": "CVE-2024-22237,CVE-2024-22238,CVE-2024-22239,CVE-2024-22240,CVE-2024-22241",
-      "impactedComponents": [
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2024-22237",
-            "CVE-2024-22238",
-            "CVE-2024-22239",
-            "CVE-2024-22240",
-            "CVE-2024-22241"
-          ],
-          "cvssRange": "4.3 - 7.8",
-          "minimumVersions": [
-            "6.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB96450",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -2115,7 +1303,7 @@
       "severity": "Critical",
       "cvssRange": "9.9",
       "title": "VMSA-2024-0001:VMware Aria Automation (formerly vRealize Automation) updates address a Missing Access Control vulnerability",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "A Missing Access Control vulnerability in Aria Automation was privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Automation",
@@ -2254,43 +1442,6 @@
           "severity": "Critical",
           "workaround": null,
           "additionalDocs": "FAQ"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2023-34048",
-            "CVE-2023-34056"
-          ],
-          "cvssRange": "4.3 - 9.8",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.22357613"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://customerconnect.vmware.com/downloads/details?downloadGroup=VC70U3O&amp;productId=974&amp;rPId=110262",
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2023-34048",
-            "CVE-2023-34056"
-          ],
-          "cvssRange": "4.3 - 9.8",
-          "minimumVersions": [
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": "FAQ"
         }
       ]
     },
@@ -2302,7 +1453,7 @@
       "severity": "High",
       "cvssRange": "8.1",
       "title": "VMSA-2023-0021:VMware Aria Operations for Logs updates address multiple vulnerabilities.",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities in VMware Aria Operations for Logs were privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -2393,24 +1544,6 @@
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2023-34051",
-            "CVE-2023-34052"
-          ],
-          "cvssRange": "8.1",
-          "minimumVersions": [
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB95212",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -2422,7 +1555,7 @@
       "severity": "Medium",
       "cvssRange": "6.7",
       "title": "VMSA-2023-0020:VMware Aria Operations updates address local privilege escalation vulnerability.",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "A local privilege escalation vulnerability affecting Aria Operations was responsibly reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -2477,67 +1610,6 @@
           "severity": "Medium",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2023-34043"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92148",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2023-34043"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92148",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2023-0018",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23663",
-      "publishedDate": "2023-08-28",
-      "updatedDate": "2023-08-29T18:38:50Z",
-      "severity": "Critical",
-      "cvssRange": "7.2 - 9.8",
-      "title": "VMSA-2023-0018:VMware Aria Operations for Networks updates address multiple vulnerabilities.",
-      "description": "Multiple vulnerabilities in Aria Operations for Networks were responsibly reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
-      "impactedComponents": [
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2023-20890",
-            "CVE-2023-34039"
-          ],
-          "cvssRange": "7.2 - 9.8",
-          "minimumVersions": [
-            "6.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB94152",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -2549,7 +1621,7 @@
       "severity": "High",
       "cvssRange": "8.1",
       "title": "VMSA-2023-0014:VMware vCenter Server updates address multiple memory corruption vulnerabilities",
-      "description": "CVE-2023-20892,CVE-2023-20893,CVE-2023-20894,CVE-2023-20895,CVE-2023-20896",
+      "description": "Multiple memory corruption vulnerabilities in VMware vCenter Server were privately reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "vCenter",
@@ -2569,99 +1641,6 @@
           "kbArticles": null,
           "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-80u1b-release-notes/index.html",
           "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2023-20892",
-            "CVE-2023-20893",
-            "CVE-2023-20894",
-            "CVE-2023-20895"
-          ],
-          "cvssRange": "8.1",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.21784236"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3m-release-notes/index.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2023-20892",
-            "CVE-2023-20893",
-            "CVE-2023-20894",
-            "CVE-2023-20895"
-          ],
-          "cvssRange": "8.1",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "8.0.1.21860503"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "KB88287"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2023-20892",
-            "CVE-2023-20893",
-            "CVE-2023-20894",
-            "CVE-2023-20895"
-          ],
-          "cvssRange": "8.1",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.21784236"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "KB88287"
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2023-0012",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23674",
-      "publishedDate": "2023-06-04",
-      "updatedDate": "2023-06-18T18:38:50Z",
-      "severity": "Critical",
-      "cvssRange": "8.8 - 9.8",
-      "title": "VMSA-2023-0012:VMware Aria Operations for Networks updates address multiple vulnerabilities.",
-      "description": "Aria Operations for Networks (Formerly vRealize Network Insight)",
-      "impactedComponents": [
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2023-20887",
-            "CVE-2023-20888",
-            "CVE-2023-20889"
-          ],
-          "cvssRange": "8.8 - 9.8",
-          "minimumVersions": [
-            "6.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92684",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
           "workaround": null,
           "additionalDocs": null
         }
@@ -2789,7 +1768,7 @@
       "severity": "Medium",
       "cvssRange": "4.3",
       "title": "VMSA-2023-0010:NSX-T update addresses cross-site scripting vulnerability",
-      "description": "An XSS vulnerability in NSX-T was privately reported to VMware. Updates are available to address this vulnerability in affected VMware product.",
+      "description": "An XSS vulnerability in NSX-T was privately reported to VMware. Updates are available to address this vulnerability in affected VMware product.",
       "impactedComponents": [
         {
           "component": "NSX",
@@ -2822,7 +1801,7 @@
             "3.2.3"
           ],
           "kbArticles": null,
-          "fixedVersionUrl": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-NSX/3.2.3/rn/vmware-nsxt-data-center-323-release-notes/index.html",
           "severity": "Medium",
           "workaround": null,
           "additionalDocs": "KB88287"
@@ -2837,7 +1816,7 @@
       "severity": "High",
       "cvssRange": "6.4 - 8.8",
       "title": "VMSA-2023-0009:VMware Aria Operations update addresses multiple Local Privilege Escalations and a Deserialization issue",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "VMware Aria Operations (formerly vRealize Operations)",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -2880,25 +1859,6 @@
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2023-20877",
-            "CVE-2023-20878",
-            "CVE-2023-20879",
-            "CVE-2023-20880"
-          ],
-          "cvssRange": "6.4 - 8.8",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92148",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
         }
       ]
     },
@@ -2910,7 +1870,7 @@
       "severity": "Critical",
       "cvssRange": "7.2 - 9.8",
       "title": "VMSA-2023-0007:VMware Aria Operations for Logs (Operations for Logs) update addresses multiple vulnerabilities.",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "VMware Aria Operations for Logs (formerly vRealize Log Insight)",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -2984,23 +1944,6 @@
           "severity": "Critical",
           "workaround": null,
           "additionalDocs": "KB91831"
-        },
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2023-20864",
-            "CVE-2023-20865"
-          ],
-          "cvssRange": "7.2 - 9.8",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB91865",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB91865",
-          "additionalDocs": "KB91831"
         }
       ]
     },
@@ -3012,7 +1955,7 @@
       "severity": "High",
       "cvssRange": "8.8",
       "title": "VMSA-2023-0005:VMware vRealize Orchestrator update addresses an XML External Entity (XXE) vulnerability",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "An XML External Entity (XXE) vulnerability affecting VMware vRealize Orchestrator was privately reported to VMware. Updates are available to address this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Automation",
@@ -3058,7 +2001,7 @@
       "severity": "Medium",
       "cvssRange": "6.5",
       "title": "VMSA-2023-0002:VMware vRealize Operations (vROps) update addresses a CSRF bypass vulnerability",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "A vulnerability in VMware vRealize Operations (vROps) was privately reported to VMware. A patch is available to address this vulnerability in the affected VMware product.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -3086,7 +2029,7 @@
       "severity": "Critical",
       "cvssRange": "5.3 - 9.8",
       "title": "VMSA-2023-0001:VMware vRealize Log Insight latest updates address multiple security vulnerabilities",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities in VMware vRealize Log Insight were privately reported to VMware. Updates and workarounds are available to address these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations for Logs",
@@ -3139,7 +2082,7 @@
       "severity": "High",
       "cvssRange": "4.4 - 7.2",
       "title": "VMSA-2022-0034:VMware vRealize Operations (vROps) updates address privilege escalation vulnerabilities",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities in VMware vRealize Operations (vROps) were privately reported to VMware. Patches and updates are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -3203,41 +2146,6 @@
           ],
           "kbArticles": null,
           "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-esxi-80a-release-notes/index.html",
-          "severity": "Critical",
-          "workaround": "KB87617",
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31705"
-          ],
-          "cvssRange": "5.9",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.20841705"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u3i-release-notes.html",
-          "severity": "Critical",
-          "workaround": "KB87617",
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31705"
-          ],
-          "cvssRange": "5.9",
-          "minimumVersions": [
-            "3.0",
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB90336",
-          "fixedVersionUrl": null,
           "severity": "Critical",
           "workaround": "KB87617",
           "additionalDocs": null
@@ -3332,7 +2240,7 @@
       "severity": "Critical",
       "cvssRange": "7.5 - 9.8",
       "title": "VMSA-2022-0031:VMware vRealize Network Insight (vRNI) updates address command injection and directory traversal security vulnerabilities",
-      "description": "Multiple vulnerabilities in VMware vRealize Network Insight (vRNI)were privately reported to VMware. Patches and updates are available to remediate these vulnerabilities in affected VMware products.",
+      "description": "Multiple vulnerabilities in VMware vRealize Network Insight (vRNI)were privately reported to VMware. Patches and updates are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations for Networks",
@@ -3451,190 +2359,6 @@
       ]
     },
     {
-      "vmsaId": "VMSA-2022-0030",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23648",
-      "publishedDate": "2022-12-06",
-      "updatedDate": "2022-12-06T18:38:50Z",
-      "severity": "High",
-      "cvssRange": "6.2 - 7.5",
-      "title": "VMSA-2022-0030:VMware ESXi and vCenter Server updates address multiple security vulnerabilities",
-      "description": "CVE-2022-31696,CVE-2022-31697,CVE-2022-31698,CVE-2022-31699",
-      "impactedComponents": [
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31696"
-          ],
-          "cvssRange": "7.5",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.20841705"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u3i-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31696"
-          ],
-          "cvssRange": "7.5",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.202210101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.7/rn/esxi670-202210001.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31696"
-          ],
-          "cvssRange": "7.5",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.202210101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/esxi650-202210001.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31696"
-          ],
-          "cvssRange": "7.5",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB90336",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31696"
-          ],
-          "cvssRange": "7.5",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB90336",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-31697"
-          ],
-          "cvssRange": "6.2",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.20845200"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3i-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-31697"
-          ],
-          "cvssRange": "6.2",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.20504362"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.7/rn/vsphere-vcenter-server-67u3s-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-31697"
-          ],
-          "cvssRange": "6.2",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.20510539"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/vsphere-vcenter-server-65u3u-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-31697"
-          ],
-          "cvssRange": "6.2",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB90336",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-31697"
-          ],
-          "cvssRange": "6.2",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB90336",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
       "vmsaId": "VMSA-2022-0026",
       "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23645",
       "publishedDate": "2022-10-09",
@@ -3642,7 +2366,7 @@
       "severity": "Medium",
       "cvssRange": "4.9",
       "title": "VMSA-2022-0026:VMware vRealize Operations patches address an arbitrary file read vulnerability",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "An arbitrary file read vulnerability in vRealize Operations was privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -3665,122 +2389,6 @@
       ]
     },
     {
-      "vmsaId": "VMSA-2022-0025",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23644",
-      "publishedDate": "2022-10-04",
-      "updatedDate": "2022-10-04T18:38:50Z",
-      "severity": "High",
-      "cvssRange": "3.8 - 7.2",
-      "title": "VMSA-2022-0025:VMware ESXi and vCenter Server updates address multiple security vulnerabilities",
-      "description": "Multiple vulnerabilities in VMware ESXi and vCenter Server were privately reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
-      "impactedComponents": [
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31681"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.20036586"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u3f-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31681"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.202210101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.7/rn/esxi670-202210001.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31681"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.202210101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/esxi650-202210001.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31681"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88695",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-31681"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB89692",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-31680"
-          ],
-          "cvssRange": "7.2",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.20510539"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/vsphere-vcenter-server-65u3u-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
       "vmsaId": "VMSA-2022-0022",
       "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23650",
       "publishedDate": "2022-08-07",
@@ -3788,7 +2396,7 @@
       "severity": "High",
       "cvssRange": "5.6 - 7.2",
       "title": "VMSA-2022-0022:VMware vRealize Operations contains multiple vulnerabilities",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities in vRealize Operations were privately reported to VMware. Patches are available to remediate this vulnerability in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations",
@@ -3821,7 +2429,7 @@
       "severity": "Critical",
       "cvssRange": "5.3 - 9.8",
       "title": "VMSA-2022-0021:VMware Workspace ONE Access, Access Connector, Identity Manager, Identity Manager Connector and vRealize Automation updates address multiple vulnerabilities",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Automation",
@@ -3961,124 +2569,6 @@
       ]
     },
     {
-      "vmsaId": "VMSA-2022-0020",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23636",
-      "publishedDate": "2022-07-10",
-      "updatedDate": "2022-10-23T18:38:50Z",
-      "severity": "Medium",
-      "cvssRange": "5.6",
-      "title": "VMSA-2022-0020:VMware ESXi addresses Return-Stack-Buffer-UnderfLOW and Branch Type Confusion vulnerabilities",
-      "description": "CVE-2022-29901,CVE-2022-28693,CVE-2022-23816,CVE-2022-23825,CVE-2022-26373",
-      "impactedComponents": [
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-23816",
-            "CVE-2022-23825",
-            "CVE-2022-26373",
-            "CVE-2022-28693",
-            "CVE-2022-29901"
-          ],
-          "cvssRange": "5.6",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.20036586"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u3f-release-notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-23816",
-            "CVE-2022-23825",
-            "CVE-2022-26373",
-            "CVE-2022-28693",
-            "CVE-2022-29901"
-          ],
-          "cvssRange": "5.6",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.202207401"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.7/rn/esxi670-202207001.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-23816",
-            "CVE-2022-23825",
-            "CVE-2022-26373",
-            "CVE-2022-28693",
-            "CVE-2022-29901"
-          ],
-          "cvssRange": "5.6",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.202207401"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/esxi650-202207001.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-23816",
-            "CVE-2022-23825",
-            "CVE-2022-26373",
-            "CVE-2022-28693",
-            "CVE-2022-29901"
-          ],
-          "cvssRange": "5.6",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88695",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-23816",
-            "CVE-2022-23825",
-            "CVE-2022-26373",
-            "CVE-2022-28693",
-            "CVE-2022-29901"
-          ],
-          "cvssRange": "5.6",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88927",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        }
-      ]
-    },
-    {
       "vmsaId": "VMSA-2022-0019",
       "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23635",
       "publishedDate": "2022-07-10",
@@ -4086,7 +2576,7 @@
       "severity": "Low",
       "cvssRange": "3.9",
       "title": "VMSA-2022-0019:VMware vRealize Log Insight contains multiple stored cross-site scripting vulnerabilities",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple cross-site scripting vulnerabilities in vRealize Log Insight were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Operations for Logs",
@@ -4110,210 +2600,6 @@
       ]
     },
     {
-      "vmsaId": "VMSA-2022-0018",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23634",
-      "publishedDate": "2022-07-10",
-      "updatedDate": "2022-07-21T18:38:50Z",
-      "severity": "Medium",
-      "cvssRange": "5.3",
-      "title": "VMSA-2022-0018:VMware vCenter Server updates address a server-side request forgery vulnerability",
-      "description": "A server-side request forgery (SSRF) vulnerability in VMware vCenter Server was privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
-      "impactedComponents": [
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22982"
-          ],
-          "cvssRange": "5.3",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.20051473"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3f-release-notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "KB89027 [1]"
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22982"
-          ],
-          "cvssRange": "5.3",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.19832280"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.7/rn/vsphere-vcenter-server-67u3r-release-notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22982"
-          ],
-          "cvssRange": "5.3",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.19757181"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/vsphere-vcenter-server-65u3t-release-notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22982"
-          ],
-          "cvssRange": "5.3",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22982"
-          ],
-          "cvssRange": "5.3",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88995",
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2022-0016",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23632",
-      "publishedDate": "2022-06-12",
-      "updatedDate": "2022-06-12T18:38:50Z",
-      "severity": "Low",
-      "cvssRange": "3.8",
-      "title": "VMSA-2022-0016:VMware ESXi addresses DirectPath I/O (PCI-Passthrough) Information Leak vulnerabilities",
-      "description": "Intel has disclosed multiple side-channel vulnerabilities that impact VMware products running on Intel processors. Patches and advanced settings are available to mitigate these vulnerabilities in affected VMware products.",
-      "impactedComponents": [
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-21123",
-            "CVE-2022-21125",
-            "CVE-2022-21166"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.19898904"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "Low",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-21123",
-            "CVE-2022-21125",
-            "CVE-2022-21166"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.202206101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "Low",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-21123",
-            "CVE-2022-21125",
-            "CVE-2022-21166"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88632",
-          "fixedVersionUrl": null,
-          "severity": "Low",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-21123",
-            "CVE-2022-21125",
-            "CVE-2022-21166"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88695",
-          "fixedVersionUrl": null,
-          "severity": "Low",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2022-21123",
-            "CVE-2022-21125",
-            "CVE-2022-21166"
-          ],
-          "cvssRange": "3.8",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88707",
-          "fixedVersionUrl": null,
-          "severity": "Low",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        }
-      ]
-    },
-    {
       "vmsaId": "VMSA-2022-0014",
       "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23630",
       "publishedDate": "2022-05-16",
@@ -4321,7 +2607,7 @@
       "severity": "Critical",
       "cvssRange": "9.8",
       "title": "VMSA-2022-0014:VMware Workspace ONE Access, Identity Manager and vRealize Automation updates address multiple vulnerabilities",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Automation",
@@ -4454,7 +2740,7 @@
       "severity": "Critical",
       "cvssRange": "5.3 - 9.8",
       "title": "VMSA-2022-0011:VMware Workspace ONE Access, Identity Manager and vRealize Automation updates address multiple vulnerabilities",
-      "description": "VCF Operations/Automation (formerly VMware Aria Suite)",
+      "description": "Multiple vulnerabilities were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
         {
           "component": "VCF Automation",
@@ -4590,108 +2876,6 @@
       ]
     },
     {
-      "vmsaId": "VMSA-2022-0009",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23623",
-      "publishedDate": "2022-03-27",
-      "updatedDate": "2022-05-16T18:38:50Z",
-      "severity": "Medium",
-      "cvssRange": "5.5",
-      "title": "VMSA-2022-0009:VMware vCenter Server updates address an information disclosure vulnerability",
-      "description": "E-mail list for product security notifications and announcements:",
-      "impactedComponents": [
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22948"
-          ],
-          "cvssRange": "5.5",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.19480866"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-vcenter-server-70u3d-release-notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22948"
-          ],
-          "cvssRange": "5.5",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.18831049"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.7/rn/vsphere-vcenter-server-67u3p-release-notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22948"
-          ],
-          "cvssRange": "5.5",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.18711281"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/vsphere-vcenter-server-65u3r-release-notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22948"
-          ],
-          "cvssRange": "5.5",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [
-            "4.4.1"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Cloud-Foundation/4.4.1/rn/vmware-cloud-foundation-441-release-notes/index.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "vCenter",
-          "cves": [
-            "CVE-2022-22948"
-          ],
-          "cvssRange": "5.5",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [
-            "3.11"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Cloud-Foundation/3.11/rn/VMware-Cloud-Foundation-311-Release-Notes.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
       "vmsaId": "VMSA-2022-0005",
       "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23620",
       "publishedDate": "2022-02-13",
@@ -4699,7 +2883,7 @@
       "severity": "High",
       "cvssRange": "8.8",
       "title": "VMSA-2022-0005:VMware NSX Data Center for vSphere update addresses CLI shell injection vulnerability",
-      "description": "VMware would like to thank Dimitri Di Cristofaro (@d_glenx) and Przemek Reszke (@kolokokop) from SECFORCE LTD for reporting this issue to us.",
+      "description": "E-mail list for product security notifications and announcements:",
       "impactedComponents": [
         {
           "component": "NSX",
@@ -4718,269 +2902,6 @@
           "severity": "High",
           "workaround": "KB87893",
           "additionalDocs": "KB87863"
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2022-0004",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23619",
-      "publishedDate": "2022-02-13",
-      "updatedDate": "2022-02-13T18:38:50Z",
-      "severity": "Critical",
-      "cvssRange": "5.3 - 8.4",
-      "title": "VMSA-2022-0004:VMware ESXi, Workstation, and Fusion updates address multiple security vulnerabilities",
-      "description": "CVE-2021-22040,CVE-2021-22041,CVE-2021-22042,CVE-2021-22043,CVE-2021-22050",
-      "impactedComponents": [
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22040",
-            "CVE-2021-22041"
-          ],
-          "cvssRange": "8.4",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.19193900"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u3c-release-notes.html",
-          "severity": "Critical",
-          "workaround": "KB87349",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22040",
-            "CVE-2021-22041"
-          ],
-          "cvssRange": "8.4",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.2.19290878"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u2e-release-notes.html",
-          "severity": "Critical",
-          "workaround": "KB87349",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22040",
-            "CVE-2021-22041"
-          ],
-          "cvssRange": "8.4",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.1.19324898"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/7.0/rn/vsphere-esxi-70u1e.html",
-          "severity": "Critical",
-          "workaround": "KB87349",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22040",
-            "CVE-2021-22041"
-          ],
-          "cvssRange": "8.4",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.202111101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.7/rn/esxi670-202111001.html",
-          "severity": "Critical",
-          "workaround": "KB87349",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22040",
-            "CVE-2021-22041"
-          ],
-          "cvssRange": "8.4",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.202202401"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/esxi650-202202001.html",
-          "severity": "Critical",
-          "workaround": "KB87349",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22040",
-            "CVE-2021-22041"
-          ],
-          "cvssRange": "8.4",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB87646",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB87349",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22040",
-            "CVE-2021-22041"
-          ],
-          "cvssRange": "8.4",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [
-            "3.11"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Cloud-Foundation/3.11/rn/VMware-Cloud-Foundation-311-Release-Notes.html",
-          "severity": "Critical",
-          "workaround": "KB87349",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22050"
-          ],
-          "cvssRange": "5.3",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.202110101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/6.5/rn/esxi650-202110001.html",
-          "severity": "Critical",
-          "workaround": null,
-          "additionalDocs": "FAQ"
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2022-0001",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23627",
-      "publishedDate": "2022-01-02",
-      "updatedDate": "2022-02-12T18:38:50Z",
-      "severity": "High",
-      "cvssRange": "7.7",
-      "title": "VMSA-2022-0001:VMware Workstation, Fusion and ESXi updates address a heap-overfLOW vulnerability",
-      "description": "A heap-overflow vulnerability in VMware Workstation, Fusion and ESXi was privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
-      "impactedComponents": [
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22045"
-          ],
-          "cvssRange": "7.7",
-          "minimumVersions": [
-            "7.0"
-          ],
-          "fixedVersions": [
-            "7.0.3.19193900"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": "KB87249",
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22045"
-          ],
-          "cvssRange": "7.7",
-          "minimumVersions": [
-            "6.7"
-          ],
-          "fixedVersions": [
-            "6.7.0.202111101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": "KB87249",
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22045"
-          ],
-          "cvssRange": "7.7",
-          "minimumVersions": [
-            "6.5"
-          ],
-          "fixedVersions": [
-            "6.5.0.202110101"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": "KB87249",
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22045"
-          ],
-          "cvssRange": "7.7",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [
-            "4.4"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": "KB87249",
-          "additionalDocs": null
-        },
-        {
-          "component": "ESXi",
-          "cves": [
-            "CVE-2021-22045"
-          ],
-          "cvssRange": "7.7",
-          "minimumVersions": [
-            "3.0"
-          ],
-          "fixedVersions": [
-            "3.11"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": "KB87249",
-          "additionalDocs": null
         }
       ]
     }
