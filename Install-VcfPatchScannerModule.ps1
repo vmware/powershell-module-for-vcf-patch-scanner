@@ -61,7 +61,7 @@
     Prerequisites:
       - PowerShell 7.4 or newer (enforced by #Requires).
       - VCF PowerCLI 9.0 or newer must already be installed.
-      - Python 3.9 or newer (required by the web UI server).
+      - Python 3.13 or newer (required by the web UI server).
 
 .PARAMETER SkipProfileUpdate
     When specified, skips all $PROFILE inspection and cleanup. Use for unattended

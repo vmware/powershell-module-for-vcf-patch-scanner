@@ -283,7 +283,7 @@ function Test-VcfPatchScannerDependencies {
           - PowerShell 7.4 or later.
           - VCF PowerCLI 9.0 or later — detected via Get-Module -ListAvailable on the
             VCF.PowerCLI module. No per-cmdlet probing; the module version is authoritative.
-          - Python 3 — runs Start-VCFPatchScannerServer.py; must be in PATH as 'python3' or 'python'.
+          - Python 3.13 or later — runs Start-VCFPatchScannerServer.py; must be in PATH as 'python3' or 'python'.
           - pwsh — launched by the Python server for each scan subprocess; must be in PATH.
 
         Returns $true when all checks pass. Writes WARNING messages and returns $false
@@ -330,14 +330,22 @@ function Test-VcfPatchScannerDependencies {
     if ($null -eq $pythonCmd) {
         $pythonCmd = Get-Command -Name python -ErrorAction SilentlyContinue
     }
+    $minPythonMinor = 13
     if ($null -eq $pythonCmd) {
-        $failures.Add("Python 3 was not found. Install Python 3 from python.org and ensure it is in your PATH$pathHint.")
+        $failures.Add("Python 3.13 or later was not found. Install Python 3.13+ from python.org and ensure it is in your PATH$pathHint.")
     } else {
-        # Confirm it is Python 3, not Python 2.
         try {
             $versionOutput = & $pythonCmd.Source --version 2>&1
-            if ($versionOutput -notmatch '^Python 3') {
-                $failures.Add("Python 2 was found at '$($pythonCmd.Source)' but Python 3 is required. Install Python 3 and ensure it precedes Python 2 in your PATH$pathHint.")
+            if ($versionOutput -match '^Python (\d+)\.(\d+)') {
+                $pyMajor = [Int]$Matches[1]
+                $pyMinor = [Int]$Matches[2]
+                if ($pyMajor -lt 3) {
+                    $failures.Add("Python $($Matches[0]) was found at '$($pythonCmd.Source)' but Python 3.13 or later is required. Install Python 3.13+ and ensure it precedes older versions in your PATH$pathHint.")
+                } elseif ($pyMajor -eq 3 -and $pyMinor -lt $minPythonMinor) {
+                    $failures.Add("Python $($Matches[0]) was found at '$($pythonCmd.Source)' but Python 3.$minPythonMinor or later is required. Upgrade to Python 3.$minPythonMinor+.")
+                }
+            } else {
+                $failures.Add("Could not parse the Python version from '$($pythonCmd.Source)' (output: $versionOutput).")
             }
         } catch {
             $failures.Add("Could not determine the Python version at '$($pythonCmd.Source)': $($_.Exception.Message)")
@@ -357,7 +365,7 @@ function Test-VcfPatchScannerDependencies {
         }
         if ($null -ne $pythonCmd) {
             $pyVer = if ($versionOutput -match 'Python (\S+)') { $Matches[1] } else { [String]$versionOutput }
-            Write-Host "    Python 3    : $pyVer" -ForegroundColor Gray
+            Write-Host "    Python 3.13+: $pyVer" -ForegroundColor Gray
         }
         return $true
     }

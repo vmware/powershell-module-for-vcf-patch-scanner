@@ -43,7 +43,7 @@ These components, which have versions under general support, can be scanned.
 | --- | --- |
 | PowerShell | 7.4 |
 | VCF PowerCLI | 9.0 |
-| Python | 3.10 |
+| Python | 3.13 |
 
 Both `pwsh` and `python3` (or `python`) must be on your `PATH`. VCF.PowerCLI must be imported in your PowerShell session before running the scanner.
 
@@ -117,10 +117,10 @@ At startup, the scan server performs a lightweight background check to see wheth
 
 | Status | Meaning |
 | --- | --- |
-| ✅ Up to date | Your local database matches the published version. The last updated date is shown. |
-| 🆕 Update available | A newer version is available. Click **Update Now** to download it. |
-| ⚠️ Offline | GitHub could not be reached. If this is expected (air-gapped environment), you will be prompted once to disable future checks. |
-| 🔕 Checks disabled | Update checks are turned off. A link lets you re-enable them. |
+| Up to date | Your local database matches the published version. The last updated date is shown. |
+| Update available | A newer version is available. Click **Update Now** to download it. |
+| Offline | GitHub could not be reached. If this is expected (air-gapped environment), you will be prompted once to disable future checks. |
+| Checks disabled | Update checks are turned off. A link lets you re-enable them. |
 
 **Checking for updates manually:** click **🔄 Check for Updates** in the page header at any time — no restart required.
 
@@ -187,7 +187,7 @@ The file uses schema version `2.0`. The `updatedAt` field records when the advis
 | --- | --- |
 | Operations (vROps / Aria Operations / VCF Operations) | 13 |
 | vCenter Server | 9 |
-| ESX | 6 |
+| ESXi | 6 |
 | Identity Manager / Workspace ONE Access | 5 |
 | Automation (vRA / Aria Automation / VCF Automation) | 5 |
 | Operations for Logs (vRealize Log Insight / Aria Ops for Logs) | 5 |

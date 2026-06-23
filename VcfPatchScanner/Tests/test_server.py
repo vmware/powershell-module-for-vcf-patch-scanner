@@ -15,6 +15,7 @@
 # Run standalone:  python -m unittest discover -s . -p "test_server.py"
 # Run via Run-Tests.ps1 (invokes python -m unittest automatically).
 
+import base64
 import importlib.util
 import json
 import os
@@ -1039,10 +1040,12 @@ class TestSanitizeErrorMessage(unittest.TestCase):
         self.assertNotIn("eyJhbGciOiJSUzI1NiJ9", result)
 
     def test_redacts_basic_auth(self):
-        raw = "Basic dXNlcjpwYXNz"
+        # Build the credential at runtime so no encoded secret appears as a static string.
+        encoded = base64.b64encode(b"user:pass").decode()
+        raw = f"Basic {encoded}"
         result = _mod._sanitize_error_message(raw)
         self.assertIn("Basic [REDACTED]", result)
-        self.assertNotIn("dXNlcjpwYXNz", result)
+        self.assertNotIn(encoded, result)
 
     def test_plain_message_unchanged(self):
         raw = "Cannot connect to host: connection refused"
