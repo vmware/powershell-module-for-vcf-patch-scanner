@@ -9,6 +9,43 @@
 
 A PowerShell module and browser-based UI for scanning VMware Cloud Foundation (VCF), VMware vSphere Foundation (VVF), and vSphere environments against Broadcom security advisories. Connects to your endpoints, collects installed component versions, and reports which components require patching.
 
+## Table of contents
+
+- [Supported environments](#supported-environments)
+- [Supported components](#supported-components)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Option 1 — PowerShell Gallery (recommended)](#option-1--powershell-gallery-recommended)
+  - [Option 2 — Manual install from GitHub](#option-2--manual-install-from-github)
+- [Uninstallation](#uninstallation)
+  - [PowerShell Gallery install](#powershell-gallery-install)
+  - [Manual install](#manual-install)
+  - [Removing the working directory (optional)](#removing-the-working-directory-optional)
+  - [Removing the profile entry](#removing-the-profile-entry)
+- [First-run setup (one time)](#first-run-setup-one-time)
+- [Using the web UI](#using-the-web-ui)
+  - [Running as a background process](#running-as-a-background-process)
+  - [Advisory database status](#advisory-database-status)
+  - [Workflow](#workflow)
+  - [Retry failed endpoints](#retry-failed-endpoints)
+- [Advisory database](#advisory-database)
+  - [Schema version](#schema-version)
+  - [Included advisories](#included-advisories)
+- [Network access requirements](#network-access-requirements)
+  - [VCF 9.x](#vcf-9x)
+  - [VVF 9.x](#vvf-9x)
+  - [VCF 5.x](#vcf-5x)
+  - [vSphere 8](#vsphere-8)
+- [Required credentials and privileges](#required-credentials-and-privileges)
+  - [VCF 9.x](#vcf-9x-1)
+  - [VVF 9.x](#vvf-9x-1)
+  - [VCF 5.x](#vcf-5x-1)
+  - [vSphere 8](#vsphere-8-1)
+- [Collecting logs](#collecting-logs)
+- [PowerShell cmdlets (advanced)](#powershell-cmdlets-advanced)
+  - [Programmatic advisory update](#programmatic-advisory-update)
+- [Security](#security)
+
 ## Supported environments
 
 | Product | Versions |
