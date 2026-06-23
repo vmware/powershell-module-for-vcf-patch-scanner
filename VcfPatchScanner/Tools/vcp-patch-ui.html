@@ -923,18 +923,21 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
       <h2 style="margin:0 0 4px">Scan Results</h2>
       <div id="scanTimingSummary" style="font-size:.8rem;color:var(--muted)"></div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-secondary btn-sm" onclick="downloadFindings('json')" id="exportJsonBtn" disabled title="Run a scan first to enable export">Export JSON</button>
-      <button class="btn btn-secondary btn-sm" onclick="downloadFindings('csv')"  id="exportCsvBtn"  disabled title="Run a scan first to enable export">Export CSV</button>
-      <button class="btn btn-secondary btn-sm" onclick="printFindings()"          id="printBtn"      disabled title="Run a scan first to enable export">Export PDF</button>
+    <div id="exportBtnGroup" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;visibility:hidden">
+      <button class="btn btn-secondary btn-sm" onclick="downloadFindings('json')" id="exportJsonBtn">Export JSON</button>
+      <button class="btn btn-secondary btn-sm" onclick="downloadFindings('csv')"  id="exportCsvBtn">Export CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="printFindings()"          id="printBtn">Export PDF</button>
       <button class="btn btn-secondary btn-sm hidden" id="filteredExportBtn" onclick="downloadFilteredFindings()" title="Save the currently filtered findings as a JSON file">Export Filtered</button>
     </div>
   </div>
 
-  <div id="resultsEmptyState" style="text-align:center;padding:40px 20px;color:var(--muted)">
-    <div style="font-size:2.5rem;margin-bottom:12px;opacity:.35">—</div>
-    <div style="font-weight:600;margin-bottom:6px">No scan results yet</div>
-    <div style="font-size:.88rem">Configure your environments, then run a scan to see findings here.</div>
+  <div id="resultsEmptyState" style="text-align:center;padding:52px 20px 44px;color:var(--muted)">
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3;margin-bottom:18px;display:block;margin-left:auto;margin-right:auto"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <div style="font-size:1.05rem;font-weight:600;margin-bottom:10px;color:var(--text)">No scan results yet</div>
+    <div style="font-size:.875rem;line-height:1.8;max-width:320px;margin:0 auto">
+      <span style="display:flex;align-items:baseline;justify-content:center;gap:8px"><span style="font-weight:600;color:var(--primary);min-width:18px">1.</span><span>Configure an environment in <a href="#" onclick="showTab('settings');return false" style="color:var(--primary);text-decoration:none;border-bottom:1px solid var(--primary)">Settings</a></span></span>
+      <span style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:4px"><span style="font-weight:600;color:var(--primary);min-width:18px">2.</span><span>Run a scan from the panel above</span></span>
+    </div>
   </div>
   <div id="resultsContent" class="hidden">
   <div class="summary-row">
@@ -1578,13 +1581,6 @@ function _setAdvBar(cls, msgHtml, actionsHtml) {
   bar.style.opacity = '1';
   msg.innerHTML = msgHtml;
   act.innerHTML  = actionsHtml || '';
-  if (cls === 'ok') {
-    _advBarDismissTimer = setTimeout(() => {
-      bar.style.transition = 'opacity .6s';
-      bar.style.opacity = '0';
-      setTimeout(() => { bar.style.display = 'none'; bar.style.transition = ''; bar.style.opacity = '1'; }, 650);
-    }, 6000);
-  }
 }
 
 function _fmtTs(ts) {
@@ -1592,7 +1588,7 @@ function _fmtTs(ts) {
   // ISO 8601 — convert to a human-readable local string where possible.
   try {
     const d = new Date(ts.endsWith('Z') ? ts : ts + 'Z');
-    if (!isNaN(d)) return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short', timeZoneName:'short'});
+    if (!isNaN(d)) return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'});
   } catch (_) {}
   // Fall back to the raw string; escape before returning because callers embed the
   // result directly in innerHTML template literals.
@@ -4058,12 +4054,8 @@ function _renderScanProgress(items) {
 // ── Results ────────────────────────────────────────────────────────────────
 function _updateExportButtons() {
   const hasResults = allFindings.length > 0;
-  ['exportJsonBtn', 'exportCsvBtn', 'printBtn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (!btn) return;
-    btn.disabled = !hasResults;
-    btn.title = hasResults ? '' : 'Run a scan first to enable export';
-  });
+  const grp = document.getElementById('exportBtnGroup');
+  if (grp) grp.style.visibility = hasResults ? 'visible' : 'hidden';
 }
 async function loadFindings(timing) {
   try {

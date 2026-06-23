@@ -40,6 +40,7 @@ import logging
 import os
 import re
 import shutil
+import signal
 import socket
 import ssl
 import subprocess
@@ -57,14 +58,15 @@ from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-# Unverified SSL context used exclusively for public read-only GitHub raw content requests.
-# Python's bundled SSL on macOS does not automatically trust the system keychain, so the
-# default context fails with CERTIFICATE_VERIFY_FAILED on machines that haven't run the
-# Python cert-install helper.  raw.githubusercontent.com is a public CDN; skipping
-# verification here carries no meaningful security risk for a read-only advisory check.
-_UPSTREAM_SSL_CTX = ssl.create_default_context()
-_UPSTREAM_SSL_CTX.check_hostname = False
-_UPSTREAM_SSL_CTX.verify_mode    = ssl.CERT_NONE
+# SSL context for upstream advisory and PSGallery requests.
+# certifi supplies a bundled CA store that works on macOS without running the Python
+# cert-install helper.  It is optional — Linux and Windows use system certs via the
+# default context; macOS users with the cert helper (python.org installer) also work.
+try:
+    import certifi as _certifi
+    _UPSTREAM_SSL_CTX = ssl.create_default_context(cafile=_certifi.where())
+except ImportError:
+    _UPSTREAM_SSL_CTX = ssl.create_default_context()
 
 _SERVER_VERSION             = "1.0.0.1001"
 _DEFAULT_ADVISORY_FILE      = "securityAdvisory.json"
@@ -2969,7 +2971,10 @@ def main() -> None:
     global SETTINGS_FILE
 
     _initialize_logging()
-    port = _DEFAULT_PORT
+    port          = _DEFAULT_PORT
+    no_browser    = False
+    pid_file_path: "Path | None" = None
+
     for i, arg in enumerate(sys.argv[1:], 1):
         if arg.startswith("--port="):
             raw_port = arg.split("=", 1)[1]
@@ -3002,6 +3007,19 @@ def main() -> None:
                 )
                 sys.exit(1)
             SETTINGS_FILE = candidate
+        elif arg == "--no-browser":
+            no_browser = True
+        elif arg.startswith("--pid-file="):
+            candidate = Path(arg.split("=", 1)[1]).resolve()
+            home_dir  = Path.home().resolve()
+            if not str(candidate).startswith(str(home_dir) + os.sep):
+                print(
+                    f"\n[ERROR] --pid-file path must be within the home directory ({home_dir}).\n"
+                    f"  Rejected: {candidate}\n",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            pid_file_path = candidate
 
     if not SCAN_SCRIPT.exists():
         print(f"ERROR: Invoke-VCFPatchScanner.ps1 not found at {SCAN_SCRIPT}")
@@ -3049,12 +3067,34 @@ def main() -> None:
         logger.warning(warn.strip())
     if log_dir:
         print(f"Log directory: {log_dir}")
-    print("Press Ctrl+C to stop.")
 
-    threading.Thread(
-        target=lambda: (time.sleep(0.8), webbrowser.open(url)),
-        daemon=True,
-    ).start()
+    if pid_file_path:
+        try:
+            pid_file_path.parent.mkdir(parents=True, exist_ok=True)
+            pid_file_path.write_text(str(os.getpid()), encoding="utf-8")
+            try:
+                pid_file_path.chmod(0o600)
+            except OSError:
+                pass
+        except OSError as exc:
+            print(f"[WARNING] Could not write PID file {pid_file_path}: {exc}", file=sys.stderr)
+            pid_file_path = None
+
+    if no_browser:
+        print("Running in daemon mode — browser will not be opened automatically.")
+        print(f"Open {url} manually to access the web UI.")
+    else:
+        print("Press Ctrl+C to stop.")
+        threading.Thread(
+            target=lambda: (time.sleep(0.8), webbrowser.open(url)),
+            daemon=True,
+        ).start()
+
+    # Install a SIGTERM handler on POSIX so `kill <pid>` triggers a clean shutdown
+    # identical to Ctrl+C.  Windows does not honour Python SIGTERM handlers (os.kill
+    # calls TerminateProcess directly), so the handler is skipped there.
+    if sys.platform != "win32":
+        signal.signal(signal.SIGTERM, lambda sig, frame: server.shutdown())
 
     # Run the advisory update check once in the background so the UI can show the result
     # without blocking startup.  Skipped when the user has disabled update checks.
@@ -3079,8 +3119,15 @@ def main() -> None:
     try:
         server.serve_forever()
     except KeyboardInterrupt:
+        pass
+    finally:
         stop_msg = "Server stopped."
         print(f"\n{stop_msg}")
         logger.info(stop_msg)
+        if pid_file_path:
+            try:
+                pid_file_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 if __name__ == "__main__":
     main()

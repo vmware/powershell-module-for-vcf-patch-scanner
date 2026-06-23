@@ -100,7 +100,7 @@ The base directory layout after initialization:
                vcf-findings-YYYYMMDD_HHMMSS.json
   Logs/        VcfPatchScannerEngine-YYYY-MM-DD.log   (PowerShell engine)
                VcfPatchScannerServer-YYYY-MM-DD.log   (Python web server)
-  Tools/       Start-VCFPatchScannerServer.py, vcp-patch-ui.html, Invoke-VCFPatchScanner.ps1
+  Tools/       Manage-VCFPatchScannerServer.py, Start-VCFPatchScannerServer.py, vcp-patch-ui.html, Invoke-VCFPatchScanner.ps1
 ```
 
 ## Using the web UI
@@ -110,6 +110,37 @@ Start-VCFPatchScannerServer
 ```
 
 This starts a local web server (port 8765 by default) and opens the browser UI. The server binds to `127.0.0.1` only — it is not accessible from other machines.
+
+### Running as a background process
+
+Use `-Background` to start the server as a detached background process that survives terminal closure. A companion set of cmdlets manages the lifecycle:
+
+```powershell
+# Start in the background (returns immediately; browser opens automatically)
+Start-VCFPatchScannerServer -Background
+
+# Suppress the automatic browser launch (useful in scripts or CI)
+Start-VCFPatchScannerServer -Background -NoBrowser
+
+# Custom port
+Start-VCFPatchScannerServer -Background -Port 9000
+
+# Check whether the background server is running
+Get-VCFPatchScannerServerStatus
+# IsRunning : True
+# ProcessId : 84312
+# Url       : http://localhost:8765
+
+# Stop the background server gracefully
+Stop-VCFPatchScannerServer
+
+# Restart (stop + start background server in one call)
+Restart-VCFPatchScannerServer
+```
+
+On macOS and Linux the background process is detached via `setsid`; on Windows it uses `DETACHED_PROCESS`. The server writes its PID to `Logs/vcfpatch-server.pid` after binding the socket — `Stop-VCFPatchScannerServer` reads that file and sends SIGTERM on macOS/Linux (triggering a clean shutdown) or terminates the process on Windows. Background server startup output is appended to `Logs/VcfPatchScannerServer-daemon.log`.
+
+> **Note:** `Stop-VCFPatchScannerServer` and `Get-VCFPatchScannerServerStatus` only work for servers started with `-Background`. A foreground server (started without `-Background`) is stopped with Ctrl+C as before.
 
 ### Advisory database status
 
@@ -303,6 +334,8 @@ Log files are written to `~/VcfPatchScanner/Logs/`:
 | --- | --- |
 | `VcfPatchScannerEngine-YYYY-MM-DD.log` | PowerShell scan engine — inventory collection, advisory matching, and error details |
 | `VcfPatchScannerServer-YYYY-MM-DD.log` | Python web server — HTTP requests, discovery calls, and security events |
+| `VcfPatchScannerServer-daemon.log` | Background server startup output (only present when started with `-Background`) |
+| `vcfpatch-server.pid` | Background server PID file — read by `Stop-VCFPatchScannerServer` and `Get-VCFPatchScannerServerStatus` |
 
 ## PowerShell cmdlets (advanced)
 
@@ -311,7 +344,10 @@ The web UI is the recommended interface. For automation or scripting, the follow
 | Cmdlet | Purpose |
 | --- | --- |
 | `Initialize-VcfPatchScanner` | One-time setup |
-| `Start-VCFPatchScannerServer` | Launch the web UI |
+| `Start-VCFPatchScannerServer` | Launch the web UI (foreground or `-Background` background) |
+| `Stop-VCFPatchScannerServer` | Stop the background server gracefully |
+| `Get-VCFPatchScannerServerStatus` | Check whether the background server is running and get its PID and URL |
+| `Restart-VCFPatchScannerServer` | Stop then restart the background server in one call |
 | `Invoke-VCFPatchScanner` | Run a scan programmatically |
 | `Test-PatchScanConnection` | Validate credentials for all endpoints |
 | `Get-PatchScanSettings` | Load settings from `Config/scan-settings.json` |

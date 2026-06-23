@@ -66,6 +66,9 @@
         'Export-PatchScanFindingsCSV'
         'Write-LogMessage'
         'Start-VCFPatchScannerServer'
+        'Stop-VCFPatchScannerServer'
+        'Get-VCFPatchScannerServerStatus'
+        'Restart-VCFPatchScannerServer'
         'Get-VcfPatchScannerToolsPath'
     )
 
@@ -87,6 +90,7 @@
         'Private\EntryPoint.ps1'
         'Private\Tools.ps1'
         'Tools\Invoke-VCFPatchScanner.ps1'
+        'Tools\Manage-VCFPatchScannerServer.py'
         'Tools\Start-VCFPatchScannerServer.py'
         'Tools\vcp-patch-ui.html'
     )

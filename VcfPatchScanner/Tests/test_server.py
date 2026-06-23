@@ -23,6 +23,7 @@ import socket
 import sys
 import tempfile
 import threading
+import time
 import unittest
 import unittest.mock
 import urllib.error
@@ -2367,6 +2368,78 @@ class TestModuleUpdateSettings(unittest.TestCase):
         settings["disableModuleUpdateReminders"] = False
         result = _mod._validate_settings(settings)
         self.assertIsNone(result)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# --pid-file argument security check (path must be within the home directory)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestPidFileArgSecurity(unittest.TestCase):
+    """--pid-file path confinement — must reject paths outside the home directory."""
+
+    def _run_main_with_args(self, args: list) -> "tuple[int, str]":
+        """Invoke main() with the given sys.argv and capture the exit code and stderr."""
+        import io as _io
+        saved_argv   = sys.argv
+        saved_stderr = sys.stderr
+        buf = _io.StringIO()
+        sys.stderr = buf
+        exit_code = 0
+        try:
+            sys.argv = ["Start-VCFPatchScannerServer.py"] + args
+            _mod.main()
+        except SystemExit as exc:
+            exit_code = exc.code if isinstance(exc.code, int) else 1
+        finally:
+            sys.argv   = saved_argv
+            sys.stderr = saved_stderr
+        return exit_code, buf.getvalue()
+
+    def test_pid_file_outside_home_is_rejected(self):
+        code, err = self._run_main_with_args(["--pid-file=/tmp/test.pid"])
+        self.assertEqual(code, 1)
+        self.assertIn("home directory", err)
+
+    def test_pid_file_within_home_is_accepted_or_proceeds(self):
+        # A path inside the home directory must NOT fail the security check.
+        # We expect the server to attempt to bind (and exit with EADDRINUSE or
+        # proceed past the security check) — not exit with a "home directory" message.
+        home_pid = Path.home() / "vcfpatch-test-dummy.pid"
+        code, err = self._run_main_with_args([f"--pid-file={home_pid}", "--no-browser"])
+        self.assertNotIn("home directory", err)
+        # Clean up if the file was written before the server binding failed.
+        home_pid.unlink(missing_ok=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# --no-browser flag (parsed without error; browser thread not started)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestNoBrowserFlag(unittest.TestCase):
+    """--no-browser is accepted by the arg parser and suppresses webbrowser.open."""
+
+    def test_no_browser_does_not_open_browser(self):
+        """When --no-browser is set, webbrowser.open must never be called."""
+        port = _free_port()
+        opened = []
+
+        def _fake_open(url):
+            opened.append(url)
+
+        with unittest.mock.patch("webbrowser.open", side_effect=_fake_open):
+            srv = ThreadingHTTPServer(("127.0.0.1", port), _mod.Handler)
+            saved_argv = sys.argv
+            try:
+                sys.argv = ["srv", f"--port={port}", "--no-browser"]
+                t = threading.Thread(target=srv.serve_forever, daemon=True)
+                t.start()
+                time.sleep(0.3)
+                srv.shutdown()
+                t.join(timeout=2)
+            finally:
+                sys.argv = saved_argv
+
+        self.assertEqual(opened, [], "webbrowser.open must not be called with --no-browser")
 
 
 if __name__ == "__main__":

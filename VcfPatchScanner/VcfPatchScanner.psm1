@@ -93,6 +93,7 @@ $Script:SCAN_SETTINGS_FILE_NAME     = "scan-settings.json"
 
 # Tool files copied to the user's Tools subdirectory on Initialize.
 $Script:SCAN_TOOL_FILE_NAMES        = @(
+    'Manage-VCFPatchScannerServer.py'
     'Start-VCFPatchScannerServer.py'
     'vcp-patch-ui.html'
     'Invoke-VCFPatchScanner.ps1'

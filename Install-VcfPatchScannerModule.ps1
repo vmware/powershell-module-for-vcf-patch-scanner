@@ -58,10 +58,12 @@
 
     Use -SkipProfileUpdate to suppress all profile checks for unattended installs.
 
-    Prerequisites:
-      - PowerShell 7.4 or newer (enforced by #Requires).
-      - VCF PowerCLI 9.0 or newer must already be installed.
+    Prerequisites are checked at install time and reported with pass/fail status.
+    The module files are copied regardless; imports may fail until all prerequisites are met.
+      - PowerShell 7.4 or newer (enforced by #Requires and verified at startup).
+      - VCF PowerCLI 9.0 or newer (VCF.PowerCLI module).
       - Python 3.13 or newer (required by the web UI server).
+      - pwsh in PATH (required by the Python server to launch scan subprocesses).
 
 .PARAMETER SkipProfileUpdate
     When specified, skips all $PROFILE inspection and cleanup. Use for unattended
@@ -138,6 +140,91 @@ function Invoke-ProfileCleanup {
         Write-Host "  Removed. Shell startup is now fast." -ForegroundColor Green
     }
 }
+function Invoke-PrerequisiteCheck {
+
+    <#
+    .SYNOPSIS
+        Checks all prerequisites required by VcfPatchScanner and reports pass/fail to the console.
+    .NOTES
+        Write-Host is the primary output mechanism in this function; all Write-Host calls are
+        intentional interactive console output. Returns the number of failed checks so the caller
+        can emit a summary warning.
+    #>
+
+    [CmdletBinding()]
+    [OutputType([Int])]
+    Param ()
+
+    Write-Host "Checking prerequisites..."
+    $failCount = 0
+    $pathHint  = if ($IsWindows) { ' ($env:PATH)' } else { '' }
+
+    # PowerShell version — already enforced by #Requires above; shown for transparency.
+    $minPsVersion = [Version]"7.4"
+    if ($PSVersionTable.PSVersion -ge $minPsVersion) {
+        Write-Host ("  [PASS] {0,-20}: {1}" -f "PowerShell 7.4+", $PSVersionTable.PSVersion) -ForegroundColor Green
+    } else {
+        Write-Host ("  [FAIL] {0,-20}: {1} — 7.4 or later required" -f "PowerShell 7.4+", $PSVersionTable.PSVersion) -ForegroundColor Red
+        $failCount++
+    }
+
+    # VCF PowerCLI 9.0+ — required by all scanner inventory and discovery functions.
+    $minPowerCliVersion = [Version]"9.0"
+    $vcfMod = Get-Module -ListAvailable -Name 'VCF.PowerCLI' -ErrorAction SilentlyContinue |
+        Sort-Object -Property Version -Descending | Select-Object -First 1
+    if ($null -eq $vcfMod) {
+        Write-Host ("  [FAIL] {0,-20}: not installed — download from Broadcom Support Portal" -f "VCF PowerCLI 9.0+") -ForegroundColor Red
+        $failCount++
+    } elseif ($vcfMod.Version -lt $minPowerCliVersion) {
+        Write-Host ("  [FAIL] {0,-20}: {1} — 9.0 or later required" -f "VCF PowerCLI 9.0+", $vcfMod.Version) -ForegroundColor Red
+        $failCount++
+    } else {
+        Write-Host ("  [PASS] {0,-20}: {1}" -f "VCF PowerCLI 9.0+", $vcfMod.Version) -ForegroundColor Green
+    }
+
+    # Python 3.13+ — required by the web UI server (Start-VCFPatchScannerServer.py).
+    $minPythonMinor = 13
+    $pythonCmd = Get-Command -Name python3 -ErrorAction SilentlyContinue
+    if ($null -eq $pythonCmd) {
+        $pythonCmd = Get-Command -Name python -ErrorAction SilentlyContinue
+    }
+    if ($null -eq $pythonCmd) {
+        Write-Host ("  [FAIL] {0,-20}: not found — install from python.org and add to PATH$pathHint" -f "Python 3.13+") -ForegroundColor Red
+        $failCount++
+    } else {
+        try {
+            $versionOutput = & $pythonCmd.Source --version 2>&1
+            if ($versionOutput -match '^Python (\d+)\.(\d+)') {
+                $pyMajor      = [Int]$Matches[1]
+                $pyMinor      = [Int]$Matches[2]
+                $pyDisplayVer = if ($versionOutput -match 'Python (\S+)') { $Matches[1] } else { [String]$versionOutput }
+                if ($pyMajor -lt 3 -or ($pyMajor -eq 3 -and $pyMinor -lt $minPythonMinor)) {
+                    Write-Host ("  [FAIL] {0,-20}: {1} — 3.{2} or later required" -f "Python 3.13+", $pyDisplayVer, $minPythonMinor) -ForegroundColor Red
+                    $failCount++
+                } else {
+                    Write-Host ("  [PASS] {0,-20}: {1}" -f "Python 3.13+", $pyDisplayVer) -ForegroundColor Green
+                }
+            } else {
+                Write-Host ("  [WARN] {0,-20}: could not determine version from '{1}' — {2}" -f "Python 3.13+", $pythonCmd.Source, $versionOutput) -ForegroundColor Yellow
+                $failCount++
+            }
+        } catch {
+            Write-Host ("  [FAIL] {0,-20}: error reading version at '{1}': {2}" -f "Python 3.13+", $pythonCmd.Source, $_.Exception.Message) -ForegroundColor Red
+            $failCount++
+        }
+    }
+
+    # pwsh — required by the Python server to launch scan subprocesses.
+    $pwshCmd = Get-Command -Name pwsh -ErrorAction SilentlyContinue
+    if ($null -eq $pwshCmd) {
+        Write-Host ("  [FAIL] {0,-20}: not found — install PowerShell 7 and add to PATH$pathHint" -f "pwsh in PATH") -ForegroundColor Red
+        $failCount++
+    } else {
+        Write-Host ("  [PASS] {0,-20}: {1}" -f "pwsh in PATH", $pwshCmd.Source) -ForegroundColor Green
+    }
+
+    return $failCount
+}
 
 $moduleSourcePath = Join-Path -Path $SourcePath -ChildPath "VcfPatchScanner"
 $itemsToCopy      = @("VcfPatchScanner.psd1", "VcfPatchScanner.psm1", "Private", "Data", "Tools")
@@ -146,7 +233,12 @@ Write-Host ""
 Write-Host "VcfPatchScanner Module Installer" -ForegroundColor Cyan
 Write-Host "=================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "PREREQUISITE: VCF PowerCLI 9.0 or newer must be installed before importing this module." -ForegroundColor Yellow
+$prereqFailCount = Invoke-PrerequisiteCheck
+if ($prereqFailCount -gt 0) {
+    Write-Host ""
+    Write-Host "  $prereqFailCount prerequisite(s) not met. The module files will still be installed but" -ForegroundColor Yellow
+    Write-Host "  some functionality requires all prerequisites to be satisfied." -ForegroundColor Yellow
+}
 Write-Host ""
 
 try {
