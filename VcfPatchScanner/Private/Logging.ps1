@@ -769,12 +769,13 @@ function Initialize-VcfPatchScanner {
           Data/      — securityAdvisory.json reference data
           Findings/  — scan result JSON files
           Logs/      — diagnostic log files
-          Tools/     — Python server, HTML UI, PowerShell wrapper (refreshed from module on every run)
+          Tools/     — Python server, PowerShell wrapper, and HTML UI (refreshed from module on every run)
 
         Files copied on each run:
-          Tools/Start-VCFPatchScannerServer.py   (always overwritten — tools are safe to replace)
-          Tools/vcp-patch-ui.html             (always overwritten)
-          Tools/Invoke-VCFPatchScanner.ps1       (always overwritten)
+          Tools/Invoke-VCFPatchScanner.ps1       (always overwritten — tools are safe to replace)
+          Tools/Manage-VCFPatchScannerServer.py  (always overwritten)
+          Tools/Start-VCFPatchScannerServer.py   (always overwritten)
+          Tools/vcp-patch-ui.html                (always overwritten)
           Data/securityAdvisory.json          (only when the bundled copy has a newer updatedAt
                                                than the existing file — never downgrades a database
                                                refreshed via the UI update flow)
@@ -797,9 +798,9 @@ function Initialize-VcfPatchScanner {
         dependency check, directory prompt, and environment persistence.
 
         .PARAMETER RefreshTools
-        Partial refresh: re-copies all Tools/ files (server, UI, PowerShell wrapper) from the module
-        to the existing base directory. Requires VcfPatchScannerBaseDirectory to already be set.
-        Skips the dependency check, directory prompt, and environment persistence.
+        Partial refresh: re-copies all Tools/ files (Python server, PowerShell wrapper, HTML UI)
+        from the module to the existing base directory. Requires VcfPatchScannerBaseDirectory to
+        already be set. Skips the dependency check, directory prompt, and environment persistence.
 
         .OUTPUTS
         [String] Absolute path to the initialized base directory, or $null on failure.
@@ -815,8 +816,8 @@ function Initialize-VcfPatchScanner {
 
         .EXAMPLE
         Initialize-VcfPatchScanner -RefreshTools
-        Re-copies Start-VCFPatchScannerServer.py, vcp-patch-ui.html, and Invoke-VCFPatchScanner.ps1 from
-        the module to the existing base directory. Run after updating the VcfPatchScanner module.
+        Re-copies all Tools/ files (Python server scripts, PowerShell wrappers, HTML UI) from the
+        module to the existing base directory. Run after updating the VcfPatchScanner module.
 
         .EXAMPLE
         Initialize-VcfPatchScanner -RefreshData

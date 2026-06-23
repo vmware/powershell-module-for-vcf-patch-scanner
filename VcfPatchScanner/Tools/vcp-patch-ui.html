@@ -1588,7 +1588,7 @@ function _fmtTs(ts) {
   // ISO 8601 — convert to a human-readable local string where possible.
   try {
     const d = new Date(ts.endsWith('Z') ? ts : ts + 'Z');
-    if (!isNaN(d)) return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'});
+    if (!isNaN(d)) return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short', timeZoneName:'short'});
   } catch (_) {}
   // Fall back to the raw string; escape before returning because callers embed the
   // result directly in innerHTML template literals.

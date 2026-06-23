@@ -75,6 +75,55 @@ The installer copies the module to your `$env:PSModulePath`, validates the manif
 > Get-ChildItem -Path .\powershell-module-for-vcf-patch-scanner -Recurse | Unblock-File
 > ```
 
+## Uninstallation
+
+### PowerShell Gallery install
+
+```powershell
+Uninstall-Module -Name VcfPatchScanner
+```
+
+### Manual install
+
+Remove the module directory that the installer copied to your module path:
+
+```powershell
+$installPath = Join-Path -Path ($env:PSModulePath -split [System.IO.Path]::PathSeparator)[0] `
+    -ChildPath "VcfPatchScanner"
+Remove-Item -Path $installPath -Recurse -Force
+```
+
+### Removing the working directory (optional)
+
+`Initialize-VcfPatchScanner` creates a working directory (default: `~/VcfPatchScanner`) that holds your scan settings, advisory database, findings history, and logs. This directory is **not** removed by either uninstall method above. Delete it manually if you no longer need it:
+
+```powershell
+# Uses the path stored in the current session; substitute your actual path if unset.
+Remove-Item -Path $env:VcfPatchScannerBaseDirectory -Recurse -Force
+```
+
+### Removing the profile entry
+
+`Initialize-VcfPatchScanner` appends one line to your `$PROFILE`:
+
+```powershell
+$env:VcfPatchScannerBaseDirectory = "<your base directory>"
+```
+
+Remove it manually in your editor, or run this one-liner to strip it automatically:
+
+```powershell
+$profileContent = Get-Content -LiteralPath $PROFILE -Raw
+$cleaned = $profileContent -replace '(?m)^\$env:VcfPatch[A-Za-z]*BaseDirectory\s*=\s*"[^"]*"\r?\n?', ''
+Set-Content -LiteralPath $PROFILE -Value $cleaned.TrimEnd() -Encoding UTF8 -NoNewline
+```
+
+> **Windows only:** `Initialize-VcfPatchScanner` also persists the variable to the user environment registry. Remove it with:
+>
+> ```powershell
+> [System.Environment]::SetEnvironmentVariable('VcfPatchScannerBaseDirectory', $null, 'User')
+> ```
+
 ## First-run setup (one time)
 
 After installing by either method, run:

@@ -136,7 +136,10 @@ def _locate_module_psd1() -> Path:
        changing any code.
     2. Resolved sibling of Tools/ (follows symlinks) — correct for the git-repo
        layout and for deployments that keep the module alongside the Tools directory.
-    3. Unresolved sibling of Tools/ — retained as a last-resort fallback.
+    3. PSModulePath directory search — finds modules installed by
+       Install-VcfPatchScannerModule.ps1 when the working directory is deployed
+       separately from the module (the normal Initialize-VcfPatchScanner layout).
+    4. Unresolved sibling of Tools/ — retained as a last-resort fallback.
 
     In all cases the returned path is logged at startup; if it does not exist as a
     file a prominent warning is printed so the operator can act immediately.
@@ -152,6 +155,24 @@ def _locate_module_psd1() -> Path:
     resolved = Path(__file__).resolve().parent.parent / "VcfPatchScanner.psd1"
     if resolved.is_file():
         return resolved
+
+    # Search PSModulePath directories — finds modules installed by
+    # Install-VcfPatchScannerModule.ps1 when the working directory is deployed
+    # separately from the module (the normal Initialize-VcfPatchScanner layout).
+    # PSModulePath is set in the environment when the server is launched from a
+    # PowerShell session; fall back to the well-known user-level path otherwise.
+    _sep = ";" if sys.platform == "win32" else ":"
+    _ps_search_dirs = [d for d in os.environ.get("PSModulePath", "").split(_sep) if d]
+    _default_user_dir = (
+        Path.home() / "Documents" / "PowerShell" / "Modules"
+        if sys.platform == "win32"
+        else Path.home() / ".local" / "share" / "powershell" / "Modules"
+    )
+    _ps_search_dirs.append(str(_default_user_dir))
+    for _module_dir in _ps_search_dirs:
+        candidate = Path(_module_dir) / "VcfPatchScanner" / "VcfPatchScanner.psd1"
+        if candidate.is_file():
+            return candidate
 
     # Final fallback: unresolved path (matches the original behaviour).
     return Path(__file__).parent.parent / "VcfPatchScanner.psd1"
@@ -3059,8 +3080,10 @@ def main() -> None:
         warn = (
             f"\nWARNING: VcfPatchScanner module not found at: {_MODULE_PSD1}\n"
             "Scans and discovery will fail until the module is available.\n"
-            "To fix, set the VCFPATCHSCANNER_MODULE_PSD1 environment variable to the\n"
-            "full path of VcfPatchScanner.psd1 before starting the server.  Example:\n"
+            "To fix, run Install-VcfPatchScannerModule.ps1 from the repository to install\n"
+            "the module to PSModulePath, then restart the server.  Alternatively, set the\n"
+            "VCFPATCHSCANNER_MODULE_PSD1 environment variable to the full path of\n"
+            "VcfPatchScanner.psd1 before starting the server.  Example:\n"
             f"  export VCFPATCHSCANNER_MODULE_PSD1=/path/to/VcfPatchScanner/VcfPatchScanner.psd1\n"
         )
         print(warn)
