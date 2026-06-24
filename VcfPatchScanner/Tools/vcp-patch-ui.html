@@ -82,8 +82,14 @@ body.light .btn-primary:disabled,body.light .btn-secondary:disabled{background:#
 .dot.pulse{animation:pulse 1.4s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .log-auth{color:var(--log-auth-color)}
-.log-box{background:var(--depth-bg);border:1px solid var(--border);border-radius:7px;padding:12px;height:280px;
-  overflow-y:auto;font:13px/1.6 'Cascadia Code','Fira Mono',monospace;color:var(--muted);white-space:pre-wrap;word-break:break-all}
+.log-box{background:var(--depth-bg);border:1px solid var(--border);border-radius:7px;padding:12px;height:280px;min-height:120px;
+  overflow-y:auto;font:13px/1.6 'Cascadia Code','Fira Mono',monospace;color:var(--muted);white-space:pre-wrap;word-break:break-all;
+  resize:vertical}
+.log-box-placeholder{display:flex;align-items:center;justify-content:center;height:100%;
+  font:inherit;font-style:italic;color:var(--muted);opacity:.55;pointer-events:none}
+.log-copy-btn{background:none;border:none;cursor:pointer;padding:2px 6px;color:var(--muted);
+  font-size:.8rem;border-radius:4px;line-height:1;opacity:.65;transition:opacity .12s}
+.log-copy-btn:hover,.log-copy-btn:focus-visible{opacity:1;outline:2px solid var(--accent);outline-offset:1px}
 
 .summary-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
 .vuln-banner{font-size:1.05rem;font-weight:700;padding:11px 20px;border-radius:8px;white-space:nowrap}
@@ -341,7 +347,7 @@ body.light{--sel-bg:#dbeafe}
 .sddc-server-item button{padding:2px 6px;font-size:.8rem;min-width:auto}
 /* ── Summary filter bar (always-visible strip below stat cards) ────── */
 .sfilter-bar{display:flex;align-items:center;gap:10px;padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;flex-wrap:wrap}
-.sfilter-bar.filter-active{border-color:color-mix(in srgb,var(--warn) 45%,var(--border));background:color-mix(in srgb,var(--warn) 4%,var(--surface2))}
+.sfilter-bar.filter-active{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--surface2));box-shadow:0 0 0 1px color-mix(in srgb,var(--warn) 30%,transparent)}
 .sfilter-divider{width:1px;height:20px;background:var(--border);flex-shrink:0;align-self:center}
 .sfilter-label{font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
 .sev-chips{display:flex;gap:4px;flex-wrap:wrap}
@@ -867,8 +873,8 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span style="font-size:.87rem;font-weight:500;color:var(--muted)">Select environments to scan</span>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-secondary btn-sm" onclick="selectAllEnvs()">Select All</button>
-        <button class="btn btn-secondary btn-sm" onclick="clearEnvSel()">Clear</button>
+        <button class="btn btn-secondary btn-sm" id="selectAllBtn" onclick="selectAllEnvs()">Select All</button>
+        <button class="btn btn-secondary btn-sm" id="clearSelBtn"  onclick="clearEnvSel()">Clear</button>
       </div>
     </div>
     <div id="scanEnvCards" class="scan-env-grid"></div>
@@ -881,8 +887,8 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
   </div>
 
   <div class="actions">
-    <button class="btn btn-primary btn-sm"   id="runBtn"      onclick="runScan()"           disabled>▶ Run Scan</button>
-    <button class="btn btn-secondary btn-sm" id="validateBtn" onclick="doValidate()" title="Verify credentials and endpoint reachability before scanning" disabled>✔ Test Credentials</button>
+    <button class="btn btn-primary btn-sm"   id="runBtn"      onclick="runScan()"   title="Save an environment in Settings to enable scanning" disabled>▶ Run Scan</button>
+    <button class="btn btn-secondary btn-sm" id="validateBtn" onclick="doValidate()" title="Verify credentials and endpoint reachability before scanning"                  disabled>✔ Test Credentials</button>
     <button class="btn btn-secondary btn-sm hidden" id="retryBtn" onclick="runRetryFailed()" title="Re-scan only the endpoints that failed during the last scan"></button>
     <button class="btn btn-danger btn-sm auth-cancel-pulse hidden" id="stopBtn"         onclick="stopScan()">■ Stop Scan</button>
     <button class="btn btn-danger btn-sm auth-cancel-pulse hidden" id="stopValidateBtn" onclick="stopValidation()">■ Stop Validation</button>
@@ -911,14 +917,17 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
   <div style="margin-top:16px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <span style="font-size:.87rem;color:var(--muted)">Live Log</span>
-      <span style="font-size:.82rem;color:var(--muted)" id="logHint"></span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:.82rem;color:var(--muted)" id="logHint"></span>
+        <button id="logCopyBtn" class="log-copy-btn" onclick="_copyLog()" title="Copy log to clipboard">&#x2398; Copy</button>
+      </div>
     </div>
-    <div class="log-box" id="logBox">No activity yet. Run a validation or scan to see live output here.</div>
+    <div class="log-box" id="logBox"><span class="log-box-placeholder">No activity yet — run a scan or validation to see output.</span></div>
   </div>
 </div>
 
 <!-- ── Results ───────────────────────────────────────────────────────────── -->
-<div class="card" id="resultsCard">
+<div class="card hidden" id="resultsCard">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
     <div>
       <h2 style="margin:0 0 4px">Scan Results</h2>
@@ -932,13 +941,8 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
     </div>
   </div>
 
-  <div id="resultsEmptyState" style="text-align:center;padding:52px 20px 44px;color:var(--muted)">
-    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3;margin-bottom:18px;display:block;margin-left:auto;margin-right:auto"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <div style="font-size:1.05rem;font-weight:600;margin-bottom:10px;color:var(--text)">No scan results yet</div>
-    <div style="font-size:.875rem;line-height:1.8;max-width:320px;margin:0 auto">
-      <span style="display:flex;align-items:baseline;justify-content:center;gap:8px"><span style="font-weight:600;color:var(--primary);min-width:18px">1.</span><span>Configure an environment in <a href="#" onclick="showTab('settings');return false" style="color:var(--primary);text-decoration:none;border-bottom:1px solid var(--primary)">Settings</a></span></span>
-      <span style="display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:4px"><span style="font-weight:600;color:var(--primary);min-width:18px">2.</span><span>Run a scan from the panel above</span></span>
-    </div>
+  <div id="resultsEmptyState" style="text-align:center;padding:20px;color:var(--muted);font-size:.875rem">
+    No results to display — run a scan above.
   </div>
   <div id="resultsContent" class="hidden">
   <div class="summary-row">
@@ -1399,6 +1403,22 @@ function unlockScan() {
 function lockScan() {
   settingsSaved = false;
   document.getElementById('scanLockedBanner')?.classList.remove('hidden');
+  const rb = document.getElementById('runBtn');
+  const vb = document.getElementById('validateBtn');
+  if (rb) rb.title = 'Save an environment in Settings to enable scanning';
+  if (vb) vb.title = 'Save an environment in Settings to enable scanning';
+}
+function _setScanBusyTitles() {
+  const rb = document.getElementById('runBtn');
+  const vb = document.getElementById('validateBtn');
+  if (rb) rb.title = 'A scan or validation is already in progress';
+  if (vb) vb.title = 'A scan or validation is already in progress';
+}
+function _clearScanBusyTitles() {
+  const rb = document.getElementById('runBtn');
+  const vb = document.getElementById('validateBtn');
+  if (rb) rb.title = '';
+  if (vb) vb.title = 'Verify credentials and endpoint reachability before scanning';
 }
 function _isConnectionError(e) {
   const msg = (e && e.message) || String(e);
@@ -2503,7 +2523,7 @@ function resetDiscovery() {
   document.getElementById('discoverOpsPass').value = '';
   // Reset Live Log so the next discovery run starts from a clean slate.
   const logBox = document.getElementById('logBox');
-  if (logBox) logBox.innerHTML = 'No activity yet. Run a validation or scan to see live output here.';
+  if (logBox) _resetLog();
   clearAlert('envEditorAlert');
   setTimeout(() => document.getElementById('discoverOpsPass')?.focus(), 50);
 }
@@ -3004,7 +3024,10 @@ function renderScanEnvCards() {
   const envs = curSettings.environments || [];
   const container = document.getElementById('scanEnvCards');
   const noMsg = document.getElementById('scanNoEnvsMsg');
-  if (!envs.length) {
+  const hasEnvs = envs.length > 0;
+  document.getElementById('selectAllBtn').disabled = !hasEnvs;
+  document.getElementById('clearSelBtn').disabled  = !hasEnvs;
+  if (!hasEnvs) {
     container.innerHTML = '';
     noMsg.classList.remove('hidden');
     _onSelectionChanged();
@@ -3564,6 +3587,7 @@ async function _startValidation(queue, mode) {
   const validateBtn = document.getElementById('validateBtn');
   if (runBtn)      runBtn.disabled      = true;
   if (validateBtn) validateBtn.disabled = true;
+  _setScanBusyTitles();
 
   setStatus('checking');
   document.getElementById('scanProgressPanel').classList.add('hidden');
@@ -3884,6 +3908,7 @@ async function _executeScan(queue) {
     if (stopBtn) { stopBtn.textContent = '■ Stop Scan'; stopBtn.classList.remove('hidden'); }
     document.getElementById('runBtn').disabled      = true;
     document.getElementById('validateBtn').disabled = true;
+    _setScanBusyTitles();
     document.getElementById('scanProgressPanel').classList.remove('hidden');
   } catch(e) {
     if (_isConnectionError(e)) { _showServerDown(); return; }
@@ -3919,6 +3944,7 @@ async function stopScan() {
   document.getElementById('stopValidateBtn').classList.add('hidden');
   document.getElementById('validationPanel').classList.add('hidden');
   document.getElementById('retryBtn').disabled = false;
+  _clearScanBusyTitles();
   _updateValidateButtonState();
 }
 
@@ -4024,6 +4050,7 @@ async function poll() {
       document.getElementById('stopBtn').classList.add('hidden');
       document.getElementById('scanProgressPanel').classList.add('hidden');
       document.getElementById('retryBtn').disabled = false;
+      _clearScanBusyTitles();
       _updateValidateButtonState();
       // Store failed endpoints and refresh env cards to show warning badges.
       _lastFailedEndpoints = s.failedEndpoints || {};
@@ -4073,8 +4100,10 @@ async function loadFindings(timing) {
     allFindings = Array.isArray(d) ? d : (d.findings||[]);
     _lastScanTiming = timing || null;
     renderResults();
+    document.getElementById('resultsCard')?.classList.remove('hidden');
     document.getElementById('resultsEmptyState')?.classList.add('hidden');
     document.getElementById('resultsContent')?.classList.remove('hidden');
+    document.getElementById('resultsCard')?.scrollIntoView({behavior:'smooth', block:'start'});
     _updateExportButtons();
     await _saveScanMetaToSettings();
     renderScanEnvCards();
@@ -5177,6 +5206,23 @@ function setStatus(status, queuePos, queueTotal, envName) {
   if (hint) hint.textContent = isActive ? 'Polling every 2 s' : '';
 }
 
+const _LOG_PLACEHOLDER = '<span class="log-box-placeholder">No activity yet — run a scan or validation to see output.</span>';
+function _resetLog() {
+  const b = document.getElementById('logBox');
+  if (b) b.innerHTML = _LOG_PLACEHOLDER;
+}
+function _copyLog() {
+  const b = document.getElementById('logBox');
+  if (!b) return;
+  const text = b.innerText || b.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('logCopyBtn');
+    if (!btn) return;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✔ Copied';
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  });
+}
 function showAlert(id, type, msg) {
   const alertClass = type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success';
   document.getElementById(id).innerHTML =

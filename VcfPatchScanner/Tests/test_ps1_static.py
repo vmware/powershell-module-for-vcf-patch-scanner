@@ -97,6 +97,27 @@ class TestStartServerModulePathInjection(unittest.TestCase):
             "Test-Path guard must appear before the VCFPATCHSCANNER_MODULE_PSD1 assignment",
         )
 
+    def test_module_psd1_written_to_session_env_before_background_branch(self):
+        # The background code path inherits $env: (not processInfo.Environment), so
+        # $env:VCFPATCHSCANNER_MODULE_PSD1 must be set before the if ($Background) block.
+        fn = self._fn
+        session_m    = re.search(r"\$env:VCFPATCHSCANNER_MODULE_PSD1\s*=", fn)
+        background_m = re.search(r"if\s*\(\s*\$Background\s*\)", fn)
+        self.assertIsNotNone(
+            session_m,
+            "Start-VCFPatchScannerServer must write $env:VCFPATCHSCANNER_MODULE_PSD1 so "
+            "the background code path (& python manage.py start) inherits it via the "
+            "session environment. PSGallery installs use a versioned subfolder that the "
+            "Python server's PSModulePath search missed in v1001, causing Import-Module "
+            "to fail with the base-directory fallback path.",
+        )
+        self.assertIsNotNone(background_m, "if ($Background) branch not found in function body")
+        self.assertLess(
+            session_m.start(), background_m.start(),
+            "$env:VCFPATCHSCANNER_MODULE_PSD1 must be assigned before the if ($Background) "
+            "block so both foreground and background code paths inherit the correct module path.",
+        )
+
 
 class TestSubprocessEnvAllowlist(unittest.TestCase):
     """

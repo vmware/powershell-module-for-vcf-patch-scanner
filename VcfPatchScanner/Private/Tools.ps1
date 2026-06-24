@@ -177,6 +177,12 @@ function Start-VCFPatchScannerServer {
             Write-LogMessage -Type INFO -Message "Tool files refreshed. Server will use the current module version."
         }
 
+        $modulePsd1 = Join-Path -Path $MyInvocation.MyCommand.Module.ModuleBase -ChildPath 'VcfPatchScanner.psd1'
+        if (Test-Path -LiteralPath $modulePsd1 -PathType Leaf) {
+            # Set in the current session so the background manage script inherits it via $env:.
+            $env:VCFPATCHSCANNER_MODULE_PSD1 = $modulePsd1
+        }
+
         if ($Background) {
             $manageScript = Join-Path -Path $toolsPath -ChildPath "Manage-VCFPatchScannerServer.py"
             if (-not (Test-Path -LiteralPath $manageScript -PathType Leaf)) {
@@ -211,9 +217,8 @@ function Start-VCFPatchScannerServer {
             $env_vars[$Script:VCF_PATCH_SCANNER_ENV_VAR] = $env:VcfPatchScannerBaseDirectory.Trim()
         }
 
-        $modulePsd1 = Join-Path -Path $MyInvocation.MyCommand.Module.ModuleBase -ChildPath 'VcfPatchScanner.psd1'
-        if (Test-Path -LiteralPath $modulePsd1 -PathType Leaf) {
-            $env_vars['VCFPATCHSCANNER_MODULE_PSD1'] = $modulePsd1
+        if (-not [String]::IsNullOrWhiteSpace($env:VCFPATCHSCANNER_MODULE_PSD1)) {
+            $env_vars['VCFPATCHSCANNER_MODULE_PSD1'] = $env:VCFPATCHSCANNER_MODULE_PSD1
         }
 
         foreach ($key in $env_vars.Keys) {
