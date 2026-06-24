@@ -68,7 +68,7 @@ try:
 except ImportError:
     _UPSTREAM_SSL_CTX = ssl.create_default_context()
 
-_SERVER_VERSION             = "1.0.0.1002"
+_SERVER_VERSION             = "1.0.0.1003"
 _DEFAULT_ADVISORY_FILE      = "securityAdvisory.json"
 _VCENTER_BUILD_MAP_FILE     = "vcenterBuildMap.json"
 _DEFAULT_FINDINGS_DIR       = "Findings"
