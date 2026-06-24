@@ -114,13 +114,13 @@ The installer copies the module to your `$env:PSModulePath`, validates the manif
 
 ## Uninstallation
 
-### PowerShell Gallery install
+### PowerShell Gallery
 
 ```powershell
 Uninstall-Module -Name VcfPatchScanner
 ```
 
-### Manual install
+### Manual
 
 Remove the module directory that the installer copied to your module path:
 
@@ -282,35 +282,6 @@ The advisory database (`securityAdvisory.json`) is a JSON file that maps VMSA ad
 
 The file uses schema version `2.0`. The `updatedAt` field records when the advisory content last changed (not when the file was last generated). The file is only rewritten when at least one advisory is added, removed, or modified — running the conversion script against unchanged upstream data produces no output file change.
 
-### Included advisories
-
-46 Broadcom security advisories (2022–2026) are currently in the database. Only components under general support are included — EOL versions (ESXi/vCenter 6.x/7.0, NSX-T 3.x, vROps/vRA 7.x and below) are excluded from pre-2025 advisories. See [`InternalTools/ADVISORY-EXCLUSIONS.md`](InternalTools/ADVISORY-EXCLUSIONS.md) for the full exclusion audit log.
-
-**By severity:** 15 Critical · 20 High · 10 Medium · 1 Low
-
-**By year:**
-
-| Year | Advisories |
-| --- | --- |
-| 2022 | 10 |
-| 2023 | 13 |
-| 2024 | 10 |
-| 2025 | 11 |
-| 2026 | 2 |
-
-**Advisories per product family** (one advisory may span multiple families):
-
-| Product family | Advisories |
-| --- | --- |
-| Operations (vROps / Aria Operations / VCF Operations) | 13 |
-| vCenter Server | 9 |
-| ESXi | 6 |
-| Identity Manager / Workspace ONE Access | 5 |
-| Automation (vRA / Aria Automation / VCF Automation) | 5 |
-| Operations for Logs (vRealize Log Insight / Aria Ops for Logs) | 5 |
-| NSX | 4 |
-| Operations for Networks (vRNI / Aria Ops for Networks) | 4 |
-
 > Product names in the advisory database reflect the name Broadcom published at the time. The same product appears under different names across eras: vRealize-branded (pre-2023), Aria-branded (2023–2024), and VCF-branded (2025+). The scraper also handles suite-wrapper labels such as `"VMware Cloud Foundation (vIDM)"` and footnote-suffixed names such as `"vRealize Automation [1]"`, normalizing all variants to their canonical form before inclusion.
 
 ---
@@ -325,9 +296,9 @@ The **update check** requires outbound HTTPS access to `raw.githubusercontent.co
 
 | Endpoint | How it is provided |
 | --- | --- |
-| VCF Operations (e.g. `ops01a.example.com`) | Entered manually in the environment wizard |
+| VCF Operations (e.g. `ops.example.com`) | Entered manually in the environment wizard |
 | SDDC Manager (e.g. `vcf01.example.com`) | Auto-discovered via VCF Operations |
-| Fleet Manager / Fleet Lifecycle (e.g. `fm01.example.com`) | Auto-discovered via VCF Operations |
+| Fleet Manager / Fleet Lifecycle (e.g. `fm.example.com`) | Auto-discovered via VCF Operations |
 | vCenter Servers | Auto-discovered from SDDC Manager workload domain inventory |
 | NSX Managers | Auto-discovered from SDDC Manager workload domain inventory |
 | ESXi hosts | Inventoried via vCenter (no direct ESXi connection required) |
@@ -336,7 +307,7 @@ The **update check** requires outbound HTTPS access to `raw.githubusercontent.co
 
 | Endpoint | How it is provided |
 | --- | --- |
-| VCF Operations (e.g. `ops01a.example.com`) | Entered manually in the environment wizard |
+| VCF Operations (e.g. `ops.example.com`) | Entered manually in the environment wizard |
 | Fleet Manager / Fleet Lifecycle | Auto-discovered via VCF Operations |
 | vCenter Server | Auto-discovered via VCF Operations |
 | ESXi hosts | Inventoried via vCenter (no direct ESXi connection required) |
@@ -392,7 +363,7 @@ The scanner uses read-only API access for all endpoints. No changes are made to 
 | --- | --- | --- |
 | **SDDC Manager** | SSO admin (e.g. `administrator@vsphere.local`) | Enumerates workload domains, vCenter FQDNs, NSX Manager FQDNs, and detects registered vRSLCM. |
 | **vCenter** | Any SSO user with read-only permissions | Component version inventory. |
-| **NSX Manager** | Any user with read-only API access | NSX Manager version inventory. Also used for NSX Edge node discovery when `NSX_MANAGER_PASSWORD` is set. |
+| **NSX Manager** | Any user with read-only API access | NSX Manager version inventory. |
 | **vRSLCM** (optional) | vRSLCM admin | Enumerates lifecycle managed products. Only required when vRSLCM is registered with SDDC Manager. |
 
 ### vSphere 8

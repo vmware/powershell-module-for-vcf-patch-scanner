@@ -483,6 +483,7 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
     <button class="btn btn-secondary btn-sm" onclick="collectLogs()" title="Download all scan logs as a zip" id="collectLogsBtn">Collect Logs</button>
     <!-- Utility group -->
     <div style="width:1px;height:18px;background:var(--border);flex-shrink:0"></div>
+    <button class="btn btn-secondary btn-sm" onclick="window.open('https://github.com/vmware/powershell-module-for-vcf-patch-scanner/','_blank','noopener,noreferrer')" title="Open documentation on GitHub">Online Help</button>
     <button class="btn btn-secondary btn-sm" onclick="window.open('https://github.com/vmware/powershell-module-for-vcf-patch-scanner/issues','_blank','noopener,noreferrer')" title="Open a GitHub issue">Report Issue</button>
     <div style="width:1px;height:18px;background:var(--border);flex-shrink:0"></div>
     <button class="btn btn-secondary btn-sm" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme" style="padding:7px 10px"></button>
@@ -858,7 +859,7 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
     <h2 style="margin-bottom:0">Run Scan</h2>
   </div>
   <div class="scan-locked-banner" id="scanLockedBanner">
-    Save at least one environment in <strong>Settings</strong> to enable scanning.
+    <span>Save at least one environment in <strong>Settings</strong> to enable scanning.</span>
   </div>
   <div id="scanAlert"></div>
 
@@ -1585,10 +1586,17 @@ function _setAdvBar(cls, msgHtml, actionsHtml) {
 
 function _fmtTs(ts) {
   if (!ts) return '';
-  // ISO 8601 — convert to a human-readable local string where possible.
+  // dateStyle/timeStyle shortcuts cannot be combined with timeZoneName (ECMA-402 throws
+  // RangeError across all engines). Use individual component options instead.
   try {
     const d = new Date(ts.endsWith('Z') ? ts : ts + 'Z');
-    if (!isNaN(d)) return d.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short', timeZoneName:'short'});
+    if (!isNaN(d)) {
+      return d.toLocaleString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit',
+        timeZoneName: 'short'
+      });
+    }
   } catch (_) {}
   // Fall back to the raw string; escape before returning because callers embed the
   // result directly in innerHTML template literals.

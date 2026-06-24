@@ -68,7 +68,7 @@ try:
 except ImportError:
     _UPSTREAM_SSL_CTX = ssl.create_default_context()
 
-_SERVER_VERSION             = "1.0.0.1001"
+_SERVER_VERSION             = "1.0.0.1002"
 _DEFAULT_ADVISORY_FILE      = "securityAdvisory.json"
 _VCENTER_BUILD_MAP_FILE     = "vcenterBuildMap.json"
 _DEFAULT_FINDINGS_DIR       = "Findings"
@@ -136,9 +136,11 @@ def _locate_module_psd1() -> Path:
        changing any code.
     2. Resolved sibling of Tools/ (follows symlinks) — correct for the git-repo
        layout and for deployments that keep the module alongside the Tools directory.
-    3. PSModulePath directory search — finds modules installed by
-       Install-VcfPatchScannerModule.ps1 when the working directory is deployed
-       separately from the module (the normal Initialize-VcfPatchScanner layout).
+    3. PSModulePath directory search — handles two install layouts:
+       - Flat:     .../Modules/VcfPatchScanner/VcfPatchScanner.psd1
+                   (Install-VcfPatchScannerModule.ps1)
+       - Versioned: .../Modules/VcfPatchScanner/<version>/VcfPatchScanner.psd1
+                   (Install-Module from PSGallery; highest version wins)
     4. Unresolved sibling of Tools/ — retained as a last-resort fallback.
 
     In all cases the returned path is logged at startup; if it does not exist as a
@@ -156,11 +158,9 @@ def _locate_module_psd1() -> Path:
     if resolved.is_file():
         return resolved
 
-    # Search PSModulePath directories — finds modules installed by
-    # Install-VcfPatchScannerModule.ps1 when the working directory is deployed
-    # separately from the module (the normal Initialize-VcfPatchScanner layout).
-    # PSModulePath is set in the environment when the server is launched from a
-    # PowerShell session; fall back to the well-known user-level path otherwise.
+    # Search PSModulePath directories — PSModulePath is set in the environment when
+    # the server is launched from a PowerShell session; fall back to the well-known
+    # user-level path otherwise.
     _sep = ";" if sys.platform == "win32" else ":"
     _ps_search_dirs = [d for d in os.environ.get("PSModulePath", "").split(_sep) if d]
     _default_user_dir = (
@@ -170,9 +170,30 @@ def _locate_module_psd1() -> Path:
     )
     _ps_search_dirs.append(str(_default_user_dir))
     for _module_dir in _ps_search_dirs:
-        candidate = Path(_module_dir) / "VcfPatchScanner" / "VcfPatchScanner.psd1"
+        module_root = Path(_module_dir) / "VcfPatchScanner"
+        if not module_root.is_dir():
+            continue
+
+        # Flat layout used by Install-VcfPatchScannerModule.ps1.
+        candidate = module_root / "VcfPatchScanner.psd1"
         if candidate.is_file():
             return candidate
+
+        # Versioned layout used by Install-Module (PSGallery): pick highest version.
+        try:
+            versioned = sorted(
+                [
+                    d / "VcfPatchScanner.psd1"
+                    for d in module_root.iterdir()
+                    if d.is_dir() and (d / "VcfPatchScanner.psd1").is_file()
+                ],
+                key=lambda p: [int(x) for x in re.split(r"[.\-]", p.parent.name) if x.isdigit()],
+                reverse=True,
+            )
+            if versioned:
+                return versioned[0]
+        except OSError:
+            pass
 
     # Final fallback: unresolved path (matches the original behaviour).
     return Path(__file__).parent.parent / "VcfPatchScanner.psd1"
@@ -1159,7 +1180,9 @@ def _base_subprocess_env() -> dict:
 
     VCFPATCHSCANNER_MODULE_PSD1 is injected unconditionally so that
     Invoke-VCFPatchScanner.ps1 can find the module manifest regardless of whether the
-    Tools directory is deployed to a separate base directory or run from the git repo.
+    Tools directory is deployed to a separate base directory or run from the git repo,
+    and whether the module was installed flat (Install-VcfPatchScannerModule.ps1) or in
+    a versioned subfolder (Install-Module from PSGallery).
     """
     ev = {k: v for k, v in os.environ.items() if k.upper() in _SUBPROCESS_ENV_ALLOWLIST}
     if _MODULE_PSD1.exists():
@@ -1761,6 +1784,8 @@ def _check_upstream_advisory(local_path: Path) -> dict:
         )
         with urllib.request.urlopen(req, timeout=_UPSTREAM_CHECK_TIMEOUT_SECONDS, context=_UPSTREAM_SSL_CTX) as resp:
             upstream_etag = resp.headers.get("ETag", "").strip('" ')
+    except urllib.error.HTTPError as exc:
+        error = f"Upstream advisory source returned HTTP {exc.code} {exc.reason}"
     except urllib.error.URLError as exc:
         error = f"Could not reach upstream advisory source: {exc.reason}"
     except Exception as exc:
@@ -1843,6 +1868,9 @@ def _download_advisory_if_changed(local_path: Path) -> dict:
         )
         with urllib.request.urlopen(req, timeout=_UPSTREAM_CHECK_TIMEOUT_SECONDS, context=_UPSTREAM_SSL_CTX) as resp:
             upstream_etag = resp.headers.get("ETag", "").strip('" ')
+    except urllib.error.HTTPError as exc:
+        return {"downloaded": False, "skipped": False, "upstreamEtag": None,
+                "localUpdatedAt": None, "error": f"Upstream advisory source returned HTTP {exc.code} {exc.reason}"}
     except urllib.error.URLError as exc:
         return {"downloaded": False, "skipped": False, "upstreamEtag": None,
                 "localUpdatedAt": None, "error": f"Upstream unreachable: {exc.reason}"}
