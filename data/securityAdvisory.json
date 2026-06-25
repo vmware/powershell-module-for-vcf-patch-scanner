@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "updatedAt": "2026-06-23T20:20:10Z",
+  "updatedAt": "2026-06-25T14:26:59Z",
   "advisories": [
     {
       "vmsaId": "VMSA-2026-0004",
@@ -12,25 +12,6 @@
       "title": "VMSA-2026-0004: VMware Cloud Foundation Operations updates address multiple vulnerabilities (CVE-2026-41722, CVE-2026-41723 and CVE-2026-41724)",
       "description": "Multiple vulnerabilities in VMware Cloud Foundation Operations were privately reported to Broadcom. Patches and updates are available to remediate these vulnerabilities in affected Broadcom products.",
       "impactedComponents": [
-        {
-          "component": "VCF Operations",
-          "cves": [
-            "CVE-2026-41722",
-            "CVE-2026-41723"
-          ],
-          "cvssRange": "8.0",
-          "minimumVersions": [
-            "9.1.0.0"
-          ],
-          "fixedVersions": [
-            "9.1.0.0"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-1/release-notes/vmware-cloud-foundation-9-1-0-0-release-notes.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
         {
           "component": "VCF Operations",
           "cves": [
@@ -1004,42 +985,6 @@
           "severity": "Medium",
           "workaround": null,
           "additionalDocs": null
-        },
-        {
-          "component": "NSX",
-          "cves": [
-            "CVE-2024-38817"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [
-            "4.2.1"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-NSX/4.2.1/rn/vmware-nsx-421-release-notes/index.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "NSX",
-          "cves": [
-            "CVE-2024-38817"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [
-            "3.2.4.1"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX-T%20Data%20Center&displayGroup=VMware%20NSX-T%20Data%20Center&release=3.2.4.1&os=&servicePk=524217&language=EN",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
         }
       ]
     },
@@ -1112,7 +1057,9 @@
           "minimumVersions": [
             "8.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "8.17.0"
+          ],
           "kbArticles": "KB325790",
           "fixedVersionUrl": null,
           "severity": "High",
@@ -1318,7 +1265,9 @@
           "minimumVersions": [
             "6.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "6.12"
+          ],
           "kbArticles": "KB96450",
           "fixedVersionUrl": null,
           "severity": "High",
@@ -1581,72 +1530,6 @@
       ]
     },
     {
-      "vmsaId": "VMSA-2023-0020",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23665",
-      "publishedDate": "2023-09-24",
-      "updatedDate": "2023-09-24T18:38:50Z",
-      "severity": "Medium",
-      "cvssRange": "6.7",
-      "title": "VMSA-2023-0020:VMware Aria Operations updates address local privilege escalation vulnerability.",
-      "description": "A local privilege escalation vulnerability affecting Aria Operations was responsibly reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
-      "impactedComponents": [
-        {
-          "component": "VMware Aria Operations",
-          "cves": [
-            "CVE-2023-34043"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "8.12.0"
-          ],
-          "fixedVersions": [
-            "8.12"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VMware Aria Operations",
-          "cves": [
-            "CVE-2023-34043"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "8.10.0"
-          ],
-          "fixedVersions": [
-            "8.10"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VMware Aria Operations",
-          "cves": [
-            "CVE-2023-34043"
-          ],
-          "cvssRange": "6.7",
-          "minimumVersions": [
-            "8.6.0"
-          ],
-          "fixedVersions": [
-            "8.6"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
       "vmsaId": "VMSA-2023-0018",
       "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23663",
       "publishedDate": "2023-08-28",
@@ -1666,7 +1549,9 @@
           "minimumVersions": [
             "6.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "6.11"
+          ],
           "kbArticles": "KB94152",
           "fixedVersionUrl": null,
           "severity": "Critical",
@@ -1853,90 +1738,6 @@
       ]
     },
     {
-      "vmsaId": "VMSA-2023-0010",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23672",
-      "publishedDate": "2023-05-21",
-      "updatedDate": "2023-05-21T18:38:50Z",
-      "severity": "Medium",
-      "cvssRange": "4.3",
-      "title": "VMSA-2023-0010:NSX-T update addresses cross-site scripting vulnerability",
-      "description": "An XSS vulnerability in NSX-T was privately reported to VMware. Updates are available to address this vulnerability in affected VMware product.",
-      "impactedComponents": [
-        {
-          "component": "NSX",
-          "cves": [
-            "CVE-2023-20868"
-          ],
-          "cvssRange": "4.3",
-          "minimumVersions": [
-            "4.5.0"
-          ],
-          "fixedVersions": [
-            "3.2.3"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-NSX/3.2.3/rn/vmware-nsxt-data-center-323-release-notes/index.html",
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": "KB88287"
-        }
-      ]
-    },
-    {
-      "vmsaId": "VMSA-2023-0009",
-      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23671",
-      "publishedDate": "2023-05-09",
-      "updatedDate": "2023-05-09T18:38:50Z",
-      "severity": "High",
-      "cvssRange": "6.4 - 8.8",
-      "title": "VMSA-2023-0009:VMware Aria Operations update addresses multiple Local Privilege Escalations and a Deserialization issue",
-      "description": "VMware Aria Operations (formerly vRealize Operations)",
-      "impactedComponents": [
-        {
-          "component": "VMware Aria Operations",
-          "cves": [
-            "CVE-2023-20877",
-            "CVE-2023-20878",
-            "CVE-2023-20879",
-            "CVE-2023-20880"
-          ],
-          "cvssRange": "6.4 - 8.8",
-          "minimumVersions": [
-            "8.10.0"
-          ],
-          "fixedVersions": [
-            "8.10"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VMware Aria Operations",
-          "cves": [
-            "CVE-2023-20877",
-            "CVE-2023-20878",
-            "CVE-2023-20879",
-            "CVE-2023-20880"
-          ],
-          "cvssRange": "6.4 - 8.8",
-          "minimumVersions": [
-            "8.6.0"
-          ],
-          "fixedVersions": [
-            "8.6"
-          ],
-          "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        }
-      ]
-    },
-    {
       "vmsaId": "VMSA-2023-0007",
       "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23669",
       "publishedDate": "2023-04-18",
@@ -2029,7 +1830,9 @@
           "minimumVersions": [
             "4.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "8.6.0"
+          ],
           "kbArticles": "KB91865",
           "fixedVersionUrl": null,
           "severity": "Critical",
@@ -2105,7 +1908,9 @@
           "minimumVersions": [
             "8.6.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "8.10"
+          ],
           "kbArticles": "KB90672",
           "fixedVersionUrl": null,
           "severity": "Medium",
@@ -2853,7 +2658,9 @@
           "minimumVersions": [
             "4.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "7.6"
+          ],
           "kbArticles": "KB88099",
           "fixedVersionUrl": "https://kb.omnissa.com/s/article/88099",
           "severity": "Critical",
