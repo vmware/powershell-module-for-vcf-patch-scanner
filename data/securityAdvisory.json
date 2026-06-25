@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "updatedAt": "2026-06-25T14:26:59Z",
+  "updatedAt": "2026-06-25T15:40:26Z",
   "advisories": [
     {
       "vmsaId": "VMSA-2026-0004",
@@ -208,77 +208,6 @@
           ],
           "kbArticles": null,
           "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX-T%20Data%20Center&displayGroup=VMware%20NSX-T%20Data%20Center&release=3.2.4.3&os=&servicePk=&language=EN",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "NSX",
-          "cves": [
-            "CVE-2025-41251",
-            "CVE-2025-41252"
-          ],
-          "cvssRange": "7.5 - 8.1",
-          "minimumVersions": [
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "NSX",
-          "cves": [
-            "CVE-2025-41251",
-            "CVE-2025-41252"
-          ],
-          "cvssRange": "7.5 - 8.1",
-          "minimumVersions": [
-            "4.5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88287",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": "Async Patching Guide: KB88287"
-        },
-        {
-          "component": "NSX",
-          "cves": [
-            "CVE-2025-41251",
-            "CVE-2025-41252"
-          ],
-          "cvssRange": "7.5 - 8.1",
-          "minimumVersions": [
-            "2.0",
-            "3.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB411518",
-          "fixedVersionUrl": null,
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "NSX",
-          "cves": [
-            "CVE-2025-41251",
-            "CVE-2025-41252"
-          ],
-          "cvssRange": "7.5 - 8.1",
-          "minimumVersions": [
-            "3.0",
-            "4.0",
-            "5.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB411518",
-          "fixedVersionUrl": null,
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
@@ -1520,7 +1449,9 @@
             "4.0",
             "5.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "8.14"
+          ],
           "kbArticles": "KB95212",
           "fixedVersionUrl": null,
           "severity": "High",
@@ -1662,22 +1593,6 @@
             "3.3.7"
           ],
           "kbArticles": null,
-          "fixedVersionUrl": null,
-          "severity": "Medium",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2023-20884"
-          ],
-          "cvssRange": "6.1",
-          "minimumVersions": [
-            "1.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB92512",
           "fixedVersionUrl": null,
           "severity": "Medium",
           "workaround": null,
@@ -1963,7 +1878,9 @@
             "3.0",
             "4.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "8.10.2"
+          ],
           "kbArticles": "KB90668",
           "fixedVersionUrl": null,
           "severity": "Critical",
@@ -2011,7 +1928,9 @@
           "minimumVersions": [
             "8.6.0"
           ],
-          "fixedVersions": [],
+          "fixedVersions": [
+            "8.10.1"
+          ],
           "kbArticles": "KB90232",
           "fixedVersionUrl": null,
           "severity": "High",
@@ -2077,17 +1996,19 @@
           "additionalDocs": null
         },
         {
-          "component": "VMware Identity Manager",
+          "component": "VMware Workspace ONE Access",
           "cves": [
-            "CVE-2022-31700",
-            "CVE-2022-31701"
+            "CVE-2022-31700"
           ],
           "cvssRange": "7.2",
           "minimumVersions": [
-            "1.0"
+            "21.08.0.0",
+            "21.08.0.1"
           ],
-          "fixedVersions": [],
-          "kbArticles": "KB90384",
+          "fixedVersions": [
+            "22.9.1.0"
+          ],
+          "kbArticles": "KB90399",
           "fixedVersionUrl": null,
           "severity": "High",
           "workaround": null,
@@ -2107,23 +2028,6 @@
           ],
           "kbArticles": null,
           "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Workspace-ONE-Access/22.09.1.0/rn/vmware-workspace-one-access-220910-release-notes/index.html",
-          "severity": "High",
-          "workaround": null,
-          "additionalDocs": null
-        },
-        {
-          "component": "VMware Workspace ONE Access",
-          "cves": [
-            "CVE-2022-31700"
-          ],
-          "cvssRange": "7.2",
-          "minimumVersions": [
-            "21.08.0.0",
-            "21.08.0.1"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB90399",
-          "fixedVersionUrl": null,
           "severity": "High",
           "workaround": null,
           "additionalDocs": null
@@ -2348,56 +2252,6 @@
           "additionalDocs": "FAQ"
         },
         {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2022-31656"
-          ],
-          "cvssRange": "9.8",
-          "minimumVersions": [
-            "7.6"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB89096",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB89084",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2022-31656"
-          ],
-          "cvssRange": "9.8",
-          "minimumVersions": [
-            "4.2.0",
-            "4.3.0",
-            "4.4.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB89096",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB89084",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2022-31656"
-          ],
-          "cvssRange": "9.8",
-          "minimumVersions": [
-            "8.0"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB89096",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB89084",
-          "additionalDocs": "FAQ"
-        },
-        {
           "component": "VMware Identity Manager Connector",
           "cves": [
             "CVE-2022-31662"
@@ -2511,49 +2365,14 @@
           "additionalDocs": "FAQ"
         },
         {
-          "component": "VMware Identity Manager",
+          "component": "VMware Workspace ONE Access",
           "cves": [
             "CVE-2022-22972"
           ],
           "cvssRange": "9.8",
           "minimumVersions": [
-            "7.6"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88438",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB88433",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2022-22972"
-          ],
-          "cvssRange": "9.8",
-          "minimumVersions": [
-            "4.0.0",
-            "4.1",
-            "4.2.0",
-            "4.3.0",
-            "4.4"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88438",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB88433",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2022-22972"
-          ],
-          "cvssRange": "9.8",
-          "minimumVersions": [
-            "8.0"
+            "20.10.0.0",
+            "20.10.0.1"
           ],
           "fixedVersions": [],
           "kbArticles": "KB88438",
@@ -2578,23 +2397,6 @@
           "severity": "Critical",
           "workaround": "KB88433",
           "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Workspace ONE Access",
-          "cves": [
-            "CVE-2022-22972"
-          ],
-          "cvssRange": "9.8",
-          "minimumVersions": [
-            "20.10.0.0",
-            "20.10.0.1"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88438",
-          "fixedVersionUrl": null,
-          "severity": "Critical",
-          "workaround": "KB88433",
-          "additionalDocs": "FAQ"
         }
       ]
     },
@@ -2604,7 +2406,7 @@
       "publishedDate": "2022-04-04",
       "updatedDate": "2024-09-05T18:09:12Z",
       "severity": "Critical",
-      "cvssRange": "5.3 - 9.8",
+      "cvssRange": "9.8",
       "title": "VMSA-2022-0011:VMware Workspace ONE Access, Identity Manager and vRealize Automation updates address multiple vulnerabilities",
       "description": "Multiple vulnerabilities were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
       "impactedComponents": [
@@ -2628,58 +2430,14 @@
           "additionalDocs": "FAQ"
         },
         {
-          "component": "VMware Identity Manager",
+          "component": "VMware Workspace ONE Access",
           "cves": [
-            "CVE-2022-22957",
-            "CVE-2022-22958"
+            "CVE-2022-22954"
           ],
-          "cvssRange": "9.1",
+          "cvssRange": "9.8",
           "minimumVersions": [
-            "7.6"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88099",
-          "fixedVersionUrl": "https://kb.omnissa.com/s/article/88099",
-          "severity": "Critical",
-          "workaround": "KB88098",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2022-22954",
-            "CVE-2022-22957",
-            "CVE-2022-22958",
-            "CVE-2022-22959",
-            "CVE-2022-22960",
-            "CVE-2022-22961"
-          ],
-          "cvssRange": "5.3 - 9.8",
-          "minimumVersions": [
-            "4.0"
-          ],
-          "fixedVersions": [
-            "7.6"
-          ],
-          "kbArticles": "KB88099",
-          "fixedVersionUrl": "https://kb.omnissa.com/s/article/88099",
-          "severity": "Critical",
-          "workaround": "KB88098",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Identity Manager",
-          "cves": [
-            "CVE-2022-22954",
-            "CVE-2022-22957",
-            "CVE-2022-22958",
-            "CVE-2022-22959",
-            "CVE-2022-22960",
-            "CVE-2022-22961"
-          ],
-          "cvssRange": "5.3 - 9.8",
-          "minimumVersions": [
-            "8.0"
+            "20.10.0.0",
+            "20.10.0.1"
           ],
           "fixedVersions": [],
           "kbArticles": "KB88099",
@@ -2697,23 +2455,6 @@
           "minimumVersions": [
             "21.08.0.0",
             "21.08.0.1"
-          ],
-          "fixedVersions": [],
-          "kbArticles": "KB88099",
-          "fixedVersionUrl": "https://kb.omnissa.com/s/article/88099",
-          "severity": "Critical",
-          "workaround": "KB88098",
-          "additionalDocs": "FAQ"
-        },
-        {
-          "component": "VMware Workspace ONE Access",
-          "cves": [
-            "CVE-2022-22954"
-          ],
-          "cvssRange": "9.8",
-          "minimumVersions": [
-            "20.10.0.0",
-            "20.10.0.1"
           ],
           "fixedVersions": [],
           "kbArticles": "KB88099",
