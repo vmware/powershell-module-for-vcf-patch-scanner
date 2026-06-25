@@ -79,6 +79,55 @@ function Get-VcfPatchScannerToolsPath {
 
     return (Resolve-Path -LiteralPath $userToolsPath -ErrorAction Stop).Path
 }
+function Get-TcpListenerProcessId {
+
+    <#
+        .SYNOPSIS
+        Return the PID of the process listening on a TCP port, or $null if none.
+
+        .DESCRIPTION
+        On Windows, queries Get-NetTCPConnection. On macOS and Linux, invokes lsof.
+        Returns $null when no process is listening on the port or when the required
+        platform tool is unavailable.
+
+        .PARAMETER Port
+        TCP port number to query.
+
+        .EXAMPLE
+        $ownerPid = Get-TcpListenerProcessId -Port 8765
+        if ($null -ne $ownerPid) {
+            Write-LogMessage -Type WARNING -Message "Port 8765 is held by PID $ownerPid."
+        }
+
+        .OUTPUTS
+        [Int] PID of the listening process, or $null if none is found.
+    #>
+
+    [CmdletBinding()]
+    [OutputType([Int])]
+    Param (
+        [Parameter(Mandatory = $true)] [ValidateRange(1, 65535)] [Int]$Port
+    )
+
+    if ($IsWindows) {
+        $conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($null -eq $conn) { return $null }
+        return [Int]$conn.OwningProcess
+    }
+
+    if ($null -eq (Get-Command -Name lsof -ErrorAction SilentlyContinue)) { return $null }
+
+    $iFlag     = "-iTCP:$Port"
+    $pidLines  = @(& lsof -nP $iFlag -sTCP:LISTEN -t 2>/dev/null)
+    [Int]$ownerPid = 0
+    foreach ($line in $pidLines) {
+        if ([Int]::TryParse($line.Trim(), [ref]$ownerPid) -and $ownerPid -gt 0) {
+            return $ownerPid
+        }
+    }
+    return $null
+}
 
 function Start-VCFPatchScannerServer {
 
@@ -99,6 +148,10 @@ function Start-VCFPatchScannerServer {
         Start the server as a background process. Returns immediately after confirming startup.
         Use Stop-VCFPatchScannerServer to stop a background server.
 
+        .PARAMETER Force
+        Kill any process currently holding the port before starting. Without this switch,
+        Start-VCFPatchScannerServer exits with an error when the port is already in use.
+
         .PARAMETER NoBrowser
         Suppress the automatic browser launch on startup. Useful when starting as a background process
         from a login script or CI pipeline.
@@ -111,6 +164,9 @@ function Start-VCFPatchScannerServer {
 
         .EXAMPLE
         Start-VCFPatchScannerServer -Port 9000
+
+        .EXAMPLE
+        Start-VCFPatchScannerServer -Force
 
         .EXAMPLE
         Start-VCFPatchScannerServer -Background
@@ -132,6 +188,7 @@ function Start-VCFPatchScannerServer {
     [OutputType([Int])]
     Param (
         [Parameter(Mandatory = $false)] [Switch]$Background,
+        [Parameter(Mandatory = $false)] [Switch]$Force,
         [Parameter(Mandatory = $false)] [Switch]$NoBrowser,
         [Parameter(Mandatory = $false)] [ValidateRange(1, 65535)] [Int]$Port = 8765
     )
@@ -181,6 +238,18 @@ function Start-VCFPatchScannerServer {
         if (Test-Path -LiteralPath $modulePsd1 -PathType Leaf) {
             # Set in the current session so the background manage script inherits it via $env:.
             $env:VCFPATCHSCANNER_MODULE_PSD1 = $modulePsd1
+        }
+
+        $portOwner = Get-TcpListenerProcessId -Port $Port
+        if ($null -ne $portOwner) {
+            if (-not $Force) {
+                Write-LogMessage -Type ERROR -Message "Port $Port is already in use by PID $portOwner."
+                Write-LogMessage -Type INFO  -Message "Run: Stop-VCFPatchScannerServer -Port $Port"
+                Write-LogMessage -Type INFO  -Message "Or:  Start-VCFPatchScannerServer -Force to kill it and restart."
+                return
+            }
+            Write-LogMessage -Type WARNING -Message "Port $Port is held by PID $portOwner — stopping it (-Force)."
+            $null = Stop-VCFPatchScannerServer -Port $Port
         }
 
         if ($Background) {
@@ -249,19 +318,25 @@ function Stop-VCFPatchScannerServer {
 
     <#
         .SYNOPSIS
-        Stop a running VCF Patch Scan Server background process.
+        Stop the VCF Patch Scan Server.
 
         .DESCRIPTION
-        Reads the PID written by the background server to
-        <VcfPatchScannerBaseDirectory>/Logs/vcfpatch-server.pid and stops the process.
-        On macOS and Linux the process receives SIGTERM so the server exits cleanly.
-        On Windows the process is terminated immediately.
+        Stops the server whether it was started in background mode (tracked via PID file) or
+        foreground mode (no PID file). After killing the tracked process, the function also
+        kills any other process holding the configured port — this handles orphaned foreground
+        servers and processes started outside of Start-VCFPatchScannerServer. Waits for the
+        port to be fully released before returning so that Start-VCFPatchScannerServer can
+        immediately bind the port again. Stopping an already-stopped server is idempotent.
 
-        If the server is not running (no PID file or stale PID) the function returns
-        $true without error — stopping an already-stopped server is idempotent.
+        .PARAMETER Port
+        TCP port the server is running on. Default: 8765. Used to detect and kill untracked
+        processes (foreground servers) holding the port.
 
         .EXAMPLE
         Stop-VCFPatchScannerServer
+
+        .EXAMPLE
+        Stop-VCFPatchScannerServer -Port 9000
 
         .EXAMPLE
         if (-not (Stop-VCFPatchScannerServer)) {
@@ -270,42 +345,63 @@ function Stop-VCFPatchScannerServer {
 
         .OUTPUTS
         [Bool] $true when the server was stopped (or was already stopped); $false on error.
-
-        .NOTES
-        Only effective when the server was started with -Background (which writes the PID file).
-        A foreground server (started without -Background) must be stopped with Ctrl+C.
     #>
 
     [CmdletBinding()]
     [OutputType([Bool])]
-    Param ()
+    Param (
+        [Parameter(Mandatory = $false)] [ValidateRange(1, 65535)] [Int]$Port = 8765
+    )
 
-    $status = Get-VCFPatchScannerServerStatus
+    $status = Get-VCFPatchScannerServerStatus -Port $Port
     if ($null -eq $status) {
         Write-LogMessage -Type ERROR -Message "Could not read server status. Ensure $($Script:VCF_PATCH_SCANNER_ENV_VAR) is set."
         return $false
     }
 
-    if (-not $status.IsRunning) {
+    if ($status.IsRunning) {
+        Write-LogMessage -Type INFO -Message "Stopping VCF Patch Scan Server (PID $($status.ProcessId))..."
+        Stop-Process -Id $status.ProcessId -ErrorAction SilentlyContinue
+
+        $processDead = $false
+        $deadline    = (Get-Date).AddSeconds(10)
+        while ((Get-Date) -lt $deadline) {
+            if ($null -eq (Get-Process -Id $status.ProcessId -ErrorAction SilentlyContinue)) {
+                $processDead = $true
+                break
+            }
+            Start-Sleep -Milliseconds 200
+        }
+
+        if (-not $processDead) {
+            Write-LogMessage -Type WARNING -Message "Server did not stop within 10 seconds — sending force-stop."
+            Stop-Process -Id $status.ProcessId -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    $portOwner = Get-TcpListenerProcessId -Port $Port
+    if ($null -ne $portOwner) {
+        $msg = if ($status.IsRunning) { "Port $Port still held by PID $portOwner after stopping tracked process — killing it." } `
+                                 else { "No tracked server found but port $Port is held by PID $portOwner (untracked process) — stopping it." }
+        Write-LogMessage -Type WARNING -Message $msg
+        Stop-Process -Id $portOwner -ErrorAction SilentlyContinue
+    }
+
+    if (-not $status.IsRunning -and $null -eq $portOwner) {
         Write-LogMessage -Type INFO -Message "Server is not running."
         return $true
     }
 
-    Write-LogMessage -Type INFO -Message "Stopping VCF Patch Scan Server (PID $($status.ProcessId))..."
-    Stop-Process -Id $status.ProcessId -ErrorAction SilentlyContinue
-
-    $deadline = (Get-Date).AddSeconds(10)
-    while ((Get-Date) -lt $deadline) {
-        if ($null -eq (Get-Process -Id $status.ProcessId -ErrorAction SilentlyContinue)) {
+    $portDeadline = (Get-Date).AddSeconds(5)
+    while ((Get-Date) -lt $portDeadline) {
+        if ($null -eq (Get-TcpListenerProcessId -Port $Port)) {
             Write-LogMessage -Type INFO -Message "Server stopped."
             return $true
         }
         Start-Sleep -Milliseconds 200
     }
 
-    Write-LogMessage -Type WARNING -Message "Server did not stop within 10 seconds — sending force-stop."
-    Stop-Process -Id $status.ProcessId -Force -ErrorAction SilentlyContinue
-    Write-LogMessage -Type INFO -Message "Server force-stopped."
+    Write-LogMessage -Type WARNING -Message "Port $Port was not released within 5 seconds."
     return $true
 }
 function Get-VCFPatchScannerServerStatus {
@@ -409,9 +505,9 @@ function Restart-VCFPatchScannerServer {
         [Int] Exit code from the background server start (0 = success, non-zero = failure).
 
         .NOTES
-        If no background server is currently running, the stop step is a no-op and the start
-        proceeds normally. The 500 ms pause between stop and start ensures the port
-        is fully released before the new process binds it.
+        If no server is currently running, the stop step is a no-op and the start proceeds
+        normally. Stop-VCFPatchScannerServer waits for the port to be fully released before
+        returning, so the new process can bind immediately.
     #>
 
     [CmdletBinding()]
@@ -421,8 +517,7 @@ function Restart-VCFPatchScannerServer {
         [Parameter(Mandatory = $false)] [ValidateRange(1, 65535)] [Int]$Port = 8765
     )
 
-    $null = Stop-VCFPatchScannerServer
-    Start-Sleep -Milliseconds 500
+    $null = Stop-VCFPatchScannerServer -Port $Port
     return Start-VCFPatchScannerServer -Background -Port $Port -NoBrowser:$NoBrowser.IsPresent
 }
 function Resolve-HtmlAwareErrorMessage {

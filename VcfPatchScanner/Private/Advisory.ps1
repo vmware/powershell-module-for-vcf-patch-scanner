@@ -44,6 +44,7 @@ $Script:PRODUCT_FAMILY_COMPONENTS = @{
                 'VCF Automation', 'VCF Services Runtime',
                 'Fleet Lifecycle', 'VCF Fleet Management',
                 'Identity Broker', 'VCF Identity', 'VCF Identity Broker',
+                'VMware Identity Manager', 'VMware Workspace ONE Access', 'VMware Aria Identity Manager',
                 'Salt Master', 'VCF Salt Master',
                 'Salt RaaS', 'VCF Salt RaaS',
                 'Software Depot', 'VCF Software Depot',
@@ -82,7 +83,7 @@ function Invoke-AdvisoryDownloadIfChanged {
 
         .EXAMPLE
         $result = Invoke-AdvisoryDownloadIfChanged -DestinationPath "C:\VcfPatchScanner\Data\securityAdvisory.json"
-        if ($result.Downloaded) { Write-Host "Advisory database updated to $($result.UpdatedAt)" }
+        if ($result.Downloaded) { Write-LogMessage -Type INFO -Message "Advisory database updated to $($result.UpdatedAt)" }
 
         .NOTES
         Returns [PSCustomObject] with:
@@ -98,7 +99,7 @@ function Invoke-AdvisoryDownloadIfChanged {
     Param (
         [Parameter(Mandatory = $true)]  [ValidateNotNullOrEmpty()] [String]$DestinationPath,
         [Parameter(Mandatory = $false)] [ValidateRange(1, 300)]    [Int]$TimeoutSeconds = 10,
-        [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$Uri = "https://raw.githubusercontent.com/vmware/powershell-module-for-vcf-patch-scanner/main/data/securityAdvisory.json"
+        [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$Uri = "https://raw.githubusercontent.com/vmware/powershell-module-for-vcf-patch-scanner/main/VcfPatchScanner/Data/securityAdvisory.json"
     )
 
     $etagPath = "$DestinationPath.etag"
@@ -158,7 +159,7 @@ function Invoke-AdvisoryDownloadIfChanged {
 
     # Validate schema before touching the file on disk.
     try {
-        $document = $body | ConvertFrom-Json -Depth 5 -ErrorAction Stop
+        $document = $body | ConvertFrom-Json -Depth $Script:JSON_PARSE_MAX_DEPTH -ErrorAction Stop
     } catch {
         return [PSCustomObject]@{
             Downloaded   = $false
@@ -346,7 +347,6 @@ function Get-SecurityAdvisory {
         throw [System.InvalidOperationException]::new("Failed to parse advisory file: $($_.Exception.Message)", $_.Exception)
     }
 }
-
 function ConvertFrom-AdvisoryDocument {
 
     <#
@@ -394,7 +394,6 @@ function ConvertFrom-AdvisoryDocument {
 
     return $Advisory
 }
-
 function Get-AdvisoryComponentMatches {
 
     <#
@@ -438,19 +437,19 @@ function Get-AdvisoryComponentMatches {
 
     foreach ($advisory in $Advisories) {
         try {
-            $advisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
+            $validatedAdvisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
         }
         catch {
             Write-LogMessage -Type WARNING -Message "Skipping invalid advisory: $($_.Exception.Message)"
             continue
         }
 
-        foreach ($component in @($advisory.impactedComponents)) {
+        foreach ($component in @($validatedAdvisory.impactedComponents)) {
             $componentNameFromAdvisory = [String]$component.component
             if ($componentNameFromAdvisory -eq $ComponentName) {
                 $advisoryMatches.Add([PSCustomObject]@{
-                    vmsaId          = $advisory.vmsaId
-                    severity        = $advisory.severity
+                    vmsaId          = $validatedAdvisory.vmsaId
+                    severity        = $validatedAdvisory.severity
                     componentName   = $componentNameFromAdvisory
                     minimumVersions = $component.minimumVersions
                     fixedVersions   = $component.fixedVersions
@@ -464,7 +463,6 @@ function Get-AdvisoryComponentMatches {
 
     return @($advisoryMatches)
 }
-
 function Test-AdvisorySchemaValidity {
 
     <#
@@ -550,7 +548,6 @@ function Test-AdvisorySchemaValidity {
         }
     }
 }
-
 function Select-AdvisoryByEnvironmentType {
 
     <#
@@ -591,7 +588,7 @@ function Select-AdvisoryByEnvironmentType {
 
     foreach ($advisory in $Advisories) {
         try {
-            $advisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
+            $validatedAdvisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
         }
         catch {
             Write-LogMessage -Type WARNING -Message "Skipping invalid advisory: $($_.Exception.Message)"
@@ -600,14 +597,23 @@ function Select-AdvisoryByEnvironmentType {
 
         $isApplicable = $false
 
-        foreach ($component in @($advisory.impactedComponents)) {
+        foreach ($component in @($validatedAdvisory.impactedComponents)) {
             $componentName = [String]$component.component
 
             switch ($EnvironmentType) {
                 'vcf5' {
                     # ESX is an alias for ESXi; VCF Operations Workload Mobility is HCX.
+                    # All vRealize/Aria era product names are included: vRSLCM manages vrops/vra/vrli/vrni
+                    # and reports them under the VCF-era inventory keys. Advisory alias resolution in
+                    # Invoke-VulnerabilityScan maps each historical name to the correct inventory key.
                     if (@('ESXi', 'ESX', 'vCenter', 'NSX', 'SDDC Manager',
-                          'VCF Operations Workload Mobility') -contains $componentName) {
+                          'VCF Operations Workload Mobility',
+                          'VMware Identity Manager', 'VMware Workspace ONE Access',
+                          'VMware Aria Identity Manager', 'VMware Identity Manager Connector',
+                          'VMware Aria Operations', 'VMware vRealize Operations', 'VMware vRealize Operations Manager', 'VCF Operations',
+                          'VMware Aria Automation', 'VMware vRealize Automation', 'VMware vRealize Orchestrator', 'VCF Automation',
+                          'VMware Aria Operations for Logs', 'VMware vRealize Log Insight', 'VCF Operations for Logs',
+                          'VMware Aria Operations for Networks', 'VMware vRealize Network Insight', 'VCF Operations for Networks') -contains $componentName) {
                         $isApplicable = $true
                     }
                 }
@@ -650,7 +656,7 @@ function Select-AdvisoryByEnvironmentType {
         }
 
         if ($isApplicable) {
-            $applicableAdvisories.Add($advisory)
+            $applicableAdvisories.Add($validatedAdvisory)
         }
     }
 
@@ -717,15 +723,15 @@ function Select-AdvisoryByProductFamily {
         foreach ($advisory in $Advisories) {
             $totalInput++
             try {
-                $advisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
+                $validatedAdvisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
             }
             catch {
                 Write-LogMessage -Type WARNING -Message "Skipping invalid advisory: $($_.Exception.Message)"
                 continue
             }
-            foreach ($component in @($advisory.impactedComponents)) {
+            foreach ($component in @($validatedAdvisory.impactedComponents)) {
                 if ($familyComponents -contains [String]$component.component) {
-                    $result.Add($advisory)
+                    $result.Add($validatedAdvisory)
                     break
                 }
             }
@@ -784,15 +790,15 @@ function Select-AdvisoryByComponent {
         foreach ($advisory in $Advisories) {
             $totalInput++
             try {
-                $advisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
+                $validatedAdvisory = ConvertFrom-AdvisoryDocument -Advisory $advisory
             }
             catch {
                 Write-LogMessage -Type WARNING -Message "Skipping invalid advisory: $($_.Exception.Message)"
                 continue
             }
-            foreach ($comp in @($advisory.impactedComponents)) {
+            foreach ($comp in @($validatedAdvisory.impactedComponents)) {
                 if ($Component -contains [String]$comp.component) {
-                    $result.Add($advisory)
+                    $result.Add($validatedAdvisory)
                     break
                 }
             }

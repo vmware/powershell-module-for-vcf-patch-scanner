@@ -20,6 +20,7 @@ import importlib.util
 import json
 import os
 import socket
+import subprocess
 import sys
 import tempfile
 import threading
@@ -148,9 +149,10 @@ class TestValidateEnvConfig(unittest.TestCase):
         self.assertIsNotNone(err)
         self.assertIn("VCF Operations Username", err)
 
-    def test_vvf9_missing_fm_server(self):
-        err = self._v({"type": "vvf9", "vcfOpsServer": "ops.lab",
-                       "vcfOpsUser": "admin", "vcenterUser": "admin"})
+    def test_vvf91_missing_fm_server(self):
+        err = self._v({"type": "vvf9", "vcfMinorVersion": "9.1",
+                       "vcfOpsServer": "ops.lab", "vcfOpsUser": "admin",
+                       "vcenterUser": "admin"})
         self.assertIsNotNone(err)
         self.assertIn("Fleet Manager Server", err)
 
@@ -312,6 +314,53 @@ class TestBuildEnvVars(unittest.TestCase):
                 os.environ.pop("VCFPATCHSCANNER_MODULE_PSD1", None)
             else:
                 os.environ["VCFPATCHSCANNER_MODULE_PSD1"] = saved
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _build_ps_args — scan subprocess argument construction
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestBuildPsArgs(unittest.TestCase):
+    """_build_ps_args — retry-mode and standard argument construction."""
+
+    def _call(self, env, settings, retry_fqdns=None):
+        with tempfile.TemporaryDirectory() as tmp:
+            with unittest.mock.patch.object(_mod, "_USER_BASE_DIR", Path(tmp)):
+                args, cfg_path = _mod._build_ps_args(env, {}, settings, retry_fqdns=retry_fqdns)
+                if cfg_path is not None:
+                    try:
+                        cfg_path.unlink(missing_ok=True)
+                    except OSError:
+                        pass
+                return args
+
+    def _minimal_settings(self):
+        return {"logLevel": "INFO", "connectionTimeoutSeconds": 30}
+
+    def _minimal_env(self):
+        return {"type": "vcf5", "sddcManagerServer": "sddc.lab", "sddcManagerUser": "admin"}
+
+    def test_retry_mode_includes_retry_flag(self):
+        args = self._call(self._minimal_env(), self._minimal_settings(),
+                          retry_fqdns=["sddc.lab"])
+        self.assertIn("-RetryFailedEndpointsOnly", args)
+
+    def test_retry_mode_includes_failed_endpoint_fqdns(self):
+        args = self._call(self._minimal_env(), self._minimal_settings(),
+                          retry_fqdns=["sddc.lab", "nsx.lab"])
+        self.assertIn("-FailedEndpointFqdns", args)
+        fqdns_index = args.index("-FailedEndpointFqdns") + 1
+        self.assertIn("sddc.lab", args[fqdns_index])
+
+    def test_no_retry_flags_when_retry_fqdns_absent(self):
+        args = self._call(self._minimal_env(), self._minimal_settings())
+        self.assertNotIn("-RetryFailedEndpointsOnly", args)
+        self.assertNotIn("-FailedEndpointFqdns", args)
+
+    def test_no_retry_flags_when_retry_fqdns_empty(self):
+        args = self._call(self._minimal_env(), self._minimal_settings(), retry_fqdns=[])
+        self.assertNotIn("-RetryFailedEndpointsOnly", args)
+        self.assertNotIn("-FailedEndpointFqdns", args)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -490,6 +539,111 @@ class TestBaseSubprocessEnv(unittest.TestCase):
         finally:
             if saved is not None:
                 os.environ["VCFPATCHSCANNER_MODULE_PSD1"] = saved
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _locate_module_psd1 — PowerShell-assisted fallback (step 4)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestLocateModulePsd1PowerShellFallback(unittest.TestCase):
+    """_locate_module_psd1 — step 4 PowerShell-assisted search.
+
+    When all Python-side searches fail (no env override, no sibling file, no
+    PSModulePath match), the function spawns 'pwsh -Command Get-Module ...' as a
+    last resort.  These tests verify that the subprocess result is honoured when
+    it returns a valid path and is silently bypassed when pwsh is absent or fails.
+    """
+
+    def _all_steps_fail_env(self):
+        """Save and clear VCFPATCHSCANNER_MODULE_PSD1, returning the saved value."""
+        saved = os.environ.get("VCFPATCHSCANNER_MODULE_PSD1")
+        os.environ.pop("VCFPATCHSCANNER_MODULE_PSD1", None)
+        return saved
+
+    def _restore_env(self, saved):
+        if saved is None:
+            os.environ.pop("VCFPATCHSCANNER_MODULE_PSD1", None)
+        else:
+            os.environ["VCFPATCHSCANNER_MODULE_PSD1"] = saved
+
+    def test_powershell_fallback_returns_path_when_pwsh_succeeds(self):
+        """When steps 1–3 all fail, a successful pwsh response is used."""
+        expected = "/tmp/VcfPatchScanner/VcfPatchScanner.psd1"
+        mock_result = unittest.mock.MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = expected + "\n"
+
+        def _only_expected_exists(self):
+            return str(self) == expected
+
+        saved = self._all_steps_fail_env()
+        try:
+            with (
+                unittest.mock.patch("subprocess.run", return_value=mock_result),
+                unittest.mock.patch("pathlib.Path.is_file", new=_only_expected_exists),
+                unittest.mock.patch("pathlib.Path.is_dir", return_value=False),
+                unittest.mock.patch("pathlib.Path.iterdir", return_value=iter([])),
+            ):
+                result = _mod._locate_module_psd1()
+        finally:
+            self._restore_env(saved)
+
+        self.assertEqual(str(result), expected)
+
+    def test_powershell_fallback_skipped_when_pwsh_not_found(self):
+        """FileNotFoundError from a missing pwsh silently falls through to the hardcoded path."""
+        saved = self._all_steps_fail_env()
+        try:
+            with (
+                unittest.mock.patch("subprocess.run", side_effect=FileNotFoundError),
+                unittest.mock.patch("pathlib.Path.is_file", return_value=False),
+                unittest.mock.patch("pathlib.Path.is_dir", return_value=False),
+                unittest.mock.patch("pathlib.Path.iterdir", return_value=iter([])),
+            ):
+                result = _mod._locate_module_psd1()
+        finally:
+            self._restore_env(saved)
+
+        self.assertIsInstance(result, type(_mod._MODULE_PSD1))
+
+    def test_powershell_fallback_skipped_when_pwsh_returns_nonzero(self):
+        """A non-zero pwsh exit code silently falls through to the hardcoded path."""
+        mock_result = unittest.mock.MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+
+        saved = self._all_steps_fail_env()
+        try:
+            with (
+                unittest.mock.patch("subprocess.run", return_value=mock_result),
+                unittest.mock.patch("pathlib.Path.is_file", return_value=False),
+                unittest.mock.patch("pathlib.Path.is_dir", return_value=False),
+                unittest.mock.patch("pathlib.Path.iterdir", return_value=iter([])),
+            ):
+                result = _mod._locate_module_psd1()
+        finally:
+            self._restore_env(saved)
+
+        self.assertIsInstance(result, type(_mod._MODULE_PSD1))
+
+    def test_powershell_fallback_skipped_on_timeout(self):
+        """TimeoutExpired from pwsh silently falls through to the hardcoded path."""
+        saved = self._all_steps_fail_env()
+        try:
+            with (
+                unittest.mock.patch(
+                    "subprocess.run",
+                    side_effect=subprocess.TimeoutExpired(cmd="pwsh", timeout=20),
+                ),
+                unittest.mock.patch("pathlib.Path.is_file", return_value=False),
+                unittest.mock.patch("pathlib.Path.is_dir", return_value=False),
+                unittest.mock.patch("pathlib.Path.iterdir", return_value=iter([])),
+            ):
+                result = _mod._locate_module_psd1()
+        finally:
+            self._restore_env(saved)
+
+        self.assertIsInstance(result, type(_mod._MODULE_PSD1))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -779,7 +933,7 @@ class TestHttpHandlerNegative(unittest.TestCase):
     def test_post_scan_validate_while_running_returns_409(self):
         # Set done=False to simulate in-progress validation. Send env dict directly
         # (not envIndex) so env resolution succeeds and the 409 guard is reached.
-        original_done = _mod._validate_state.get("done", True)
+        original_validate_state = dict(_mod._validate_state)
         _mod._validate_state["done"] = False
         try:
             valid_env = {"type": "vcf5", "sddcManagerServer": "sddc.lab", "sddcManagerUser": "admin"}
@@ -787,7 +941,8 @@ class TestHttpHandlerNegative(unittest.TestCase):
             self.assertEqual(code, 409)
             self.assertIn("error", body)
         finally:
-            _mod._validate_state["done"] = original_done
+            _mod._validate_state.clear()
+            _mod._validate_state.update(original_validate_state)
 
     # Unknown path → 404
     def test_get_unknown_path_returns_404(self):
@@ -821,14 +976,15 @@ class TestHttpHandlerNegative(unittest.TestCase):
     def test_post_scan_start_while_running_returns_409(self):
         # The guard checks _scan_state["status"] == "running". Send env dict directly
         # so env resolution succeeds before _start_scan is called.
-        original_status = _mod._scan_state.get("status", "idle")
+        original_scan_state = dict(_mod._scan_state)
         _mod._scan_state["status"] = "running"
         try:
             valid_env = {"type": "vcf5", "sddcManagerServer": "sddc.lab", "sddcManagerUser": "admin"}
             code, body = self._post("/scan/start", {"env": valid_env, "passwords": {}})
             self.assertEqual(code, 409)
         finally:
-            _mod._scan_state["status"] = original_status
+            _mod._scan_state.clear()
+            _mod._scan_state.update(original_scan_state)
 
     # POST /settings with invalid log level → 400 (validation rejects before save)
     def test_post_settings_invalid_log_level_returns_400(self):
@@ -841,6 +997,38 @@ class TestHttpHandlerNegative(unittest.TestCase):
         code, body = self._post("/settings", {"connectionTimeoutSeconds": 9999})
         self.assertEqual(code, 400)
         self.assertIn("error", body)
+
+    # GET /scan/findings when scan has never run → 200 with empty list
+    def test_get_scan_findings_idle_returns_empty_list(self):
+        original_scan_state = dict(_mod._scan_state)
+        _mod._scan_state["status"] = "idle"
+        try:
+            code, body = self._get_json("/scan/findings")
+            self.assertEqual(code, 200)
+            self.assertIsInstance(body, list)
+            self.assertEqual(body, [])
+        finally:
+            _mod._scan_state.clear()
+            _mod._scan_state.update(original_scan_state)
+
+    # GET /scan/download when scan has never run → 404
+    def test_get_scan_download_idle_returns_404(self):
+        original_scan_state = dict(_mod._scan_state)
+        _mod._scan_state["status"] = "idle"
+        try:
+            code = self._get("/scan/download")
+            self.assertEqual(code, 404)
+        finally:
+            _mod._scan_state.clear()
+            _mod._scan_state.update(original_scan_state)
+
+    def _get_json(self, path):
+        req = urllib.request.Request(self._base + path)
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return resp.status, json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -930,6 +1118,53 @@ class TestHttpHandlerPositive(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(body.get("ok"), True)
 
+    def test_get_scan_findings_returns_200_with_list(self):
+        # Arrange: write a minimal findings file and set scan state to complete.
+        findings_dir = Path(_BASE_DIR) / "Findings"
+        findings_dir.mkdir(parents=True, exist_ok=True)
+        findings_file = findings_dir / "vcf-findings-test-positive.json"
+        findings_file.write_text(
+            json.dumps([{"vmsaId": "VMSA-2026-0001", "component": "ESXi"}]),
+            encoding="utf-8",
+        )
+        import time as _time
+        original_scan_state = dict(_mod._scan_state)
+        _mod._scan_state["status"] = "complete"
+        _mod._scan_state["sessionStartTime"] = _time.time() - 5
+        try:
+            code, body = self._get_json("/scan/findings")
+            self.assertEqual(code, 200)
+            self.assertIsInstance(body, list)
+        finally:
+            _mod._scan_state.clear()
+            _mod._scan_state.update(original_scan_state)
+            findings_file.unlink(missing_ok=True)
+
+    def test_get_scan_download_returns_200_with_attachment(self):
+        # Arrange: write a minimal findings file and set scan state to complete.
+        findings_dir = Path(_BASE_DIR) / "Findings"
+        findings_dir.mkdir(parents=True, exist_ok=True)
+        findings_file = findings_dir / "vcf-findings-test-download.json"
+        findings_file.write_text(
+            json.dumps([{"vmsaId": "VMSA-2026-0002", "component": "vCenter Server"}]),
+            encoding="utf-8",
+        )
+        import time as _time
+        original_scan_state = dict(_mod._scan_state)
+        _mod._scan_state["status"] = "complete"
+        _mod._scan_state["sessionStartTime"] = _time.time() - 5
+        try:
+            req = urllib.request.Request(self._base + "/scan/download")
+            with urllib.request.urlopen(req) as resp:
+                code = resp.status
+                content_type = resp.headers.get("Content-Type", "")
+        finally:
+            _mod._scan_state.clear()
+            _mod._scan_state.update(original_scan_state)
+            findings_file.unlink(missing_ok=True)
+        self.assertEqual(code, 200)
+        self.assertIn("application/json", content_type)
+
 
 class TestSanitizeEnvDirname(unittest.TestCase):
     """Unit tests for _sanitize_env_dirname."""
@@ -963,6 +1198,9 @@ class TestSanitizeEnvDirname(unittest.TestCase):
 
     def test_whitespace_only_returns_default(self):
         self.assertEqual(_mod._sanitize_env_dirname("   "), "default")
+
+    def test_all_unsafe_returns_default(self):
+        self.assertEqual(_mod._sanitize_env_dirname("<<<>>>"), "default")
 
     def test_leading_dots_stripped(self):
         result = _mod._sanitize_env_dirname("...hidden")
@@ -1800,6 +2038,98 @@ class TestValidateStateLifecycle(unittest.TestCase):
             _mod._run_all_validation_bg(self._validate_list(), 30)
         self.assertFalse(_mod._validate_stop_requested)
 
+    def test_validate_state_prepopulated_with_checking_items_before_powershell_returns(self):
+        """_validate_state must have 'checking' items visible to the UI while PowerShell runs.
+
+        The mock captures _validate_state at the moment PowerShell would be called (before
+        any results are available) and verifies that each item carries status='checking'
+        with the correct endpoint name and server.
+        """
+        # Ensure the loop is not short-circuited: a prior HTTP test (/scan/validate-stop)
+        # leaves _validate_stop_requested=True which setUp saves and tearDown restores,
+        # causing the for-loop to break before the mock is ever called.
+        _mod._validate_stop_requested = False
+        captured: list = []
+
+        def _capture_then_return(*_args, **_kwargs):
+            with _mod._validate_lock:
+                captured.extend(_mod._validate_state.get("items", []))
+            return ([], None)
+
+        with unittest.mock.patch.object(_mod, "_run_validation_in_powershell", side_effect=_capture_then_return):
+            _mod._run_all_validation_bg(self._validate_list(), 30)
+
+        self.assertEqual(len(captured), 1)
+        item = captured[0]
+        self.assertEqual(item["status"], "checking")
+        self.assertEqual(item["server"], "sddc.lab")
+        self.assertIn("SDDC Manager", item["label"])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _build_pending_endpoint_items
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestBuildPendingEndpointItems(unittest.TestCase):
+    """Unit tests for _build_pending_endpoint_items."""
+
+    def _env(self, t: str, **servers) -> dict:
+        return {"type": t, "name": "test-env", **servers}
+
+    def test_vcf9_all_servers_present(self):
+        env = self._env(
+            "vcf9",
+            sddcManagerServer="sddc.lab",
+            vcfOpsServer="ops.lab",
+            vcfFMServer="fm.lab",
+        )
+        items = _mod._build_pending_endpoint_items(env, "")
+        endpoints = [i["endpoint"] for i in items]
+        self.assertEqual(endpoints, ["SDDC Manager", "VCF Operations", "Fleet Manager"])
+        for item in items:
+            self.assertEqual(item["status"], "checking")
+
+    def test_vcf9_optional_fm_absent(self):
+        env = self._env("vcf9", sddcManagerServer="sddc.lab", vcfOpsServer="ops.lab")
+        items = _mod._build_pending_endpoint_items(env, "")
+        endpoints = [i["endpoint"] for i in items]
+        self.assertEqual(endpoints, ["SDDC Manager", "VCF Operations"])
+
+    def test_vcf5_two_servers(self):
+        env = self._env("vcf5", sddcManagerServer="sddc.lab", vrslcmServer="lcm.lab")
+        items = _mod._build_pending_endpoint_items(env, "")
+        self.assertEqual([i["endpoint"] for i in items], ["SDDC Manager", "vRSLCM"])
+
+    def test_vsphere8_two_servers(self):
+        env = self._env("vsphere8", vcenterServer="vc.lab", nsxManagerServer="nsx.lab")
+        items = _mod._build_pending_endpoint_items(env, "")
+        self.assertEqual([i["endpoint"] for i in items], ["vCenter", "NSX Manager"])
+
+    def test_vvf9_includes_vcenter_server(self):
+        env = self._env("vvf9", vcfOpsServer="ops.lab", vcfFMServer="fm.lab", vcenterServer="vc.lab")
+        items = _mod._build_pending_endpoint_items(env, "")
+        self.assertEqual([i["endpoint"] for i in items], ["VCF Operations", "Fleet Manager", "vCenter"])
+
+    def test_multi_env_prefix_applied(self):
+        env = self._env("vcf5", sddcManagerServer="sddc.lab")
+        items = _mod._build_pending_endpoint_items(env, "[my-env] ")
+        self.assertTrue(items[0]["label"].startswith('[my-env] SDDC Manager'))
+
+    def test_label_contains_server_hostname(self):
+        env = self._env("vcf5", sddcManagerServer="sddc.example.com")
+        items = _mod._build_pending_endpoint_items(env, "")
+        self.assertIn('"sddc.example.com"', items[0]["label"])
+
+    def test_unknown_env_type_returns_empty(self):
+        env = self._env("unknown_type", sddcManagerServer="sddc.lab")
+        items = _mod._build_pending_endpoint_items(env, "")
+        self.assertEqual(items, [])
+
+    def test_all_servers_empty_returns_empty(self):
+        env = self._env("vcf5", sddcManagerServer="", vrslcmServer="  ")
+        items = _mod._build_pending_endpoint_items(env, "")
+        self.assertEqual(items, [])
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _start_scan — scan state reset between sequential scans
@@ -2414,6 +2744,176 @@ class TestPidFileArgSecurity(unittest.TestCase):
 # ─────────────────────────────────────────────────────────────────────────────
 # --no-browser flag (parsed without error; browser thread not started)
 # ─────────────────────────────────────────────────────────────────────────────
+
+class TestGenerateEnvironmentsConfigSkeleton(unittest.TestCase):
+    """Unit tests for _generate_environments_config_skeleton."""
+
+    def _env(self, t: str, name: str = "my-env", **fields) -> dict:
+        return {"type": t, "name": name, **fields}
+
+    def test_vcf9_all_endpoints_present(self):
+        env = self._env(
+            "vcf9", "prod-vcf9",
+            sddcManagerServer="sddc.example.com", sddcManagerUser="admin@vsphere.local",
+            vcfOpsServer="ops.example.com",        vcfOpsUser="admin@vsphere.local",
+            vcfFMServer="fm.example.com",           vcfFMUser="admin@vsphere.local",
+        )
+        config = _mod._generate_environments_config_skeleton(env)
+        eps = config["environments"][0]["endpoints"]
+        self.assertIn("sddc_manager", eps)
+        self.assertIn("vcf_ops", eps)
+        self.assertIn("vcf_fm", eps)
+        self.assertEqual(eps["sddc_manager"]["server"], "sddc.example.com")
+        self.assertEqual(eps["sddc_manager"]["password_secret_ref"], "PROD_VCF9_SDDC_MANAGER_1_PASSWORD")
+
+    def test_vcf9_empty_server_omitted(self):
+        env = self._env(
+            "vcf9", "prod-vcf9",
+            sddcManagerServer="sddc.example.com", sddcManagerUser="admin",
+            vcfOpsServer="",
+            vcfFMServer="fm.example.com",
+        )
+        config = _mod._generate_environments_config_skeleton(env)
+        eps = config["environments"][0]["endpoints"]
+        self.assertIn("sddc_manager", eps)
+        self.assertNotIn("vcf_ops", eps)
+        self.assertIn("vcf_fm", eps)
+
+    def test_vcf5_endpoints(self):
+        env = self._env(
+            "vcf5", "lab-vcf5",
+            sddcManagerServer="sddc.lab", sddcManagerUser="admin",
+            vrslcmServer="lcm.lab",       vrslcmUser="admin",
+        )
+        config = _mod._generate_environments_config_skeleton(env)
+        eps = config["environments"][0]["endpoints"]
+        self.assertIn("sddc_manager", eps)
+        self.assertIn("vrslcm", eps)
+        self.assertNotIn("vcf_fm", eps)
+        self.assertEqual(eps["vrslcm"]["password_secret_ref"], "LAB_VCF5_VRSLCM_1_PASSWORD")
+
+    def test_vsphere8_endpoints(self):
+        env = self._env(
+            "vsphere8", "lab-vsphere",
+            vcenterServer="vc.lab",       vcenterUser="admin",
+            nsxManagerServer="nsx.lab",   nsxManagerUser="admin",
+        )
+        config = _mod._generate_environments_config_skeleton(env)
+        eps = config["environments"][0]["endpoints"]
+        self.assertIn("vcenter", eps)
+        self.assertIn("nsx_manager", eps)
+
+    def test_vvf9_endpoints(self):
+        env = self._env(
+            "vvf9", "lab-vvf9",
+            vcfOpsServer="ops.lab",   vcfOpsUser="admin",
+            vcfFMServer="fm.lab",     vcfFMUser="admin",
+            vcenterServer="vc.lab",   vcenterUser="admin",
+        )
+        config = _mod._generate_environments_config_skeleton(env)
+        eps = config["environments"][0]["endpoints"]
+        self.assertIn("vcf_ops", eps)
+        self.assertIn("vcf_fm", eps)
+        self.assertIn("vcenter", eps)
+        self.assertNotIn("sddc_manager", eps)
+
+    def test_secret_ref_uses_env_name(self):
+        env = self._env("vcf9", "prod-west", sddcManagerServer="sddc.prod", sddcManagerUser="admin")
+        config = _mod._generate_environments_config_skeleton(env)
+        ref = config["environments"][0]["endpoints"]["sddc_manager"]["password_secret_ref"]
+        self.assertEqual(ref, "PROD_WEST_SDDC_MANAGER_1_PASSWORD")
+
+    def test_unknown_type_returns_empty_endpoints(self):
+        env = self._env("unknown-type", "bad-env", sddcManagerServer="sddc.lab")
+        config = _mod._generate_environments_config_skeleton(env)
+        self.assertEqual(config["environments"][0]["endpoints"], {})
+
+    def test_version_and_structure(self):
+        env = self._env("vcf9", "e", sddcManagerServer="s", sddcManagerUser="u")
+        config = _mod._generate_environments_config_skeleton(env)
+        self.assertEqual(config["version"], "1.0")
+        self.assertEqual(len(config["environments"]), 1)
+        self.assertEqual(config["environments"][0]["name"], "e")
+        self.assertEqual(config["environments"][0]["type"], "vcf9")
+
+
+class TestExportEnvironmentsConfig(unittest.TestCase):
+    """Integration tests for POST /environments/export-config via a live HTTP server."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls._port = _free_port()
+        cls._srv  = ThreadingHTTPServer(("127.0.0.1", cls._port), _mod.Handler)
+        cls._thr  = threading.Thread(target=cls._srv.serve_forever, daemon=True)
+        cls._thr.start()
+        time.sleep(0.1)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._srv.shutdown()
+        cls._thr.join(timeout=2)
+
+    def _url(self, path: str) -> str:
+        return f"http://127.0.0.1:{self._port}{path}"
+
+    def _post(self, path: str, body: dict) -> "tuple[int, dict | bytes]":
+        data = json.dumps(body).encode()
+        req  = urllib.request.Request(
+            self._url(path), data=data,
+            headers={"Content-Type": "application/json", "Origin": f"http://127.0.0.1:{self._port}"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req) as r:
+                raw = r.read()
+                ct  = r.headers.get("Content-Type", "")
+                return r.status, raw if "json" not in ct else json.loads(raw)
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
+
+    def test_single_env_returns_json_download(self):
+        env = {
+            "type": "vcf9", "name": "prod",
+            "sddcManagerServer": "sddc.example.com", "sddcManagerUser": "admin",
+            "vcfFMServer": "fm.example.com", "vcfFMUser": "admin",
+        }
+        status, raw = self._post("/environments/export-config", {"envs": [env]})
+        self.assertEqual(status, 200)
+        config = raw if isinstance(raw, dict) else json.loads(raw)
+        self.assertEqual(config["version"], "1.0")
+        self.assertEqual(len(config["environments"]), 1)
+        eps = config["environments"][0]["endpoints"]
+        self.assertIn("sddc_manager", eps)
+        # password_secret_ref is a reference name, not a plaintext value — no actual password in output.
+        for ep in eps.values():
+            self.assertNotIn("password", ep.keys())
+
+    def test_multi_env_combined_in_single_file(self):
+        envs = [
+            {"type": "vcf9", "name": "prod", "sddcManagerServer": "sddc.prod", "sddcManagerUser": "a"},
+            {"type": "vsphere8", "name": "lab", "vcenterServer": "vc.lab", "vcenterUser": "b"},
+        ]
+        status, raw = self._post("/environments/export-config", {"envs": envs})
+        self.assertEqual(status, 200)
+        config = raw if isinstance(raw, dict) else json.loads(raw)
+        self.assertEqual(len(config["environments"]), 2)
+
+    def test_no_environments_returns_400(self):
+        status, body = self._post("/environments/export-config", {})
+        self.assertEqual(status, 400)
+        self.assertIn("error", body)
+
+    def test_invalid_env_type_returns_400(self):
+        status, body = self._post("/environments/export-config", {"envs": [{"type": ""}]})
+        self.assertEqual(status, 400)
+
+    def test_legacy_single_env_key_accepted(self):
+        env = {"type": "vcf5", "name": "lab", "sddcManagerServer": "sddc.lab", "sddcManagerUser": "admin"}
+        status, raw = self._post("/environments/export-config", {"env": env})
+        self.assertEqual(status, 200)
+        config = raw if isinstance(raw, dict) else json.loads(raw)
+        self.assertEqual(len(config["environments"]), 1)
+
 
 class TestNoBrowserFlag(unittest.TestCase):
     """--no-browser is accepted by the arg parser and suppresses webbrowser.open."""

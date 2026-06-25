@@ -41,11 +41,12 @@ $Script:VCF_FLEET_MANAGER_COMPONENT_TYPE_FRIENDLY = @{
 # Maps Fleet Manager componentType IDs to advisory Component names
 # NOTE: Keep in sync with ADVISORY_COMPONENT_TO_BUNDLE_TYPE
 $Script:VCF_FLEET_MANAGER_COMPONENT_TYPE_TO_ADVISORY_NAME = @{
+    "vidm"   = "VMware Identity Manager"
+    "vidb"   = "VCF Identity"
     "vra"    = "VCF Automation"
-    "vrops"  = "VCF Operations"
     "vrli"   = "VCF Operations for Logs"
     "vrni"   = "VCF Operations for Networks"
-    "vidb"   = "VCF Identity"
+    "vrops"  = "VCF Operations"
     "vrslcm" = "Fleet Lifecycle"
 }
 
@@ -161,9 +162,8 @@ $Script:ADVISORY_COMPONENT_ALIASES = @{
     "VMware Aria Operations for Logs"       = "VCF Operations for Logs"
     "VMware vRealize Network Insight"       = "VCF Operations for Networks"
     "VMware Aria Operations for Networks"   = "VCF Operations for Networks"
-    "VMware Identity Manager"               = "VCF Identity"
-    "VMware Workspace ONE Access"           = "VCF Identity"
-    "VMware Aria Identity Manager"          = "VCF Identity"
+    "VMware Workspace ONE Access"           = "VMware Identity Manager"
+    "VMware Aria Identity Manager"          = "VMware Identity Manager"
     "VMware Workspace ONE Access Connector" = "Identity Broker"
     "VMware Identity Manager Connector"     = "Identity Broker"
     # VCF 9.0 advisory names → VCF 9.1 inventory keys
@@ -179,8 +179,8 @@ $Script:ADVISORY_COMPONENT_ALIASES = @{
 }
 
 # Advisory component names that should be filtered out (not patchable via VCF)
-$Script:ADVISORY_COMPONENT_DISALLOW_LIST = [System.Collections.Generic.HashSet[string]]::new(
-    [string[]]@(
+$Script:ADVISORY_COMPONENT_DISALLOW_LIST = [System.Collections.Generic.HashSet[String]]::new(
+    [String[]]@(
         "NSX Data Center for vSphere",
         "VMware Cloud Director",
         "VMware Cloud Director Appliance",
@@ -268,7 +268,6 @@ function Get-ComponentMapping {
         return $Script:ADVISORY_COMPONENT_TO_TARGET_PRODUCT_TYPE[$resolvedName]
     }
 }
-
 function Test-ValidAdvisoryComponent {
 
     <#

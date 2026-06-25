@@ -166,26 +166,28 @@ function Test-EndpointTcpConnection {
     # Stage 1: Test TCP connectivity to port 443
     try {
         $tcpClient = [System.Net.Sockets.TcpClient]::new()
-        $tcpClient.ReceiveTimeout = $TimeoutSeconds * 1000
-        $tcpClient.SendTimeout = $TimeoutSeconds * 1000
-        $asyncResult = $tcpClient.BeginConnect($Server, 443, $null, $null)
-        $isConnected = $asyncResult.AsyncWaitHandle.WaitOne([TimeSpan]::FromSeconds($TimeoutSeconds))
+        try {
+            $asyncResult = $tcpClient.BeginConnect($Server, 443, $null, $null)
+            $isConnected = $asyncResult.AsyncWaitHandle.WaitOne([TimeSpan]::FromSeconds($TimeoutSeconds))
+            try { $tcpClient.EndConnect($asyncResult) } catch { }
 
-        if (-not ($isConnected -and $tcpClient.Connected)) {
-            Write-LogMessage -Type WARNING -Message "$EndpointName port 443 unreachable: $Server"
-            if ($tcpClient.Connected) { $tcpClient.Close() }
-            return [PSCustomObject]@{
-                Endpoint  = $EndpointName
-                Server    = $Server
-                Status    = "Failed"
-                Connected = $false
-                Message   = "Port 443 unreachable (connectivity test failed)"
-                Password  = $null
+            if (-not ($isConnected -and $tcpClient.Connected)) {
+                Write-LogMessage -Type WARNING -Message "$EndpointName port 443 unreachable: $Server"
+                return [PSCustomObject]@{
+                    Endpoint  = $EndpointName
+                    Server    = $Server
+                    Status    = "Failed"
+                    Connected = $false
+                    Message   = "Port 443 unreachable (connectivity test failed)"
+                    Password  = $null
+                }
             }
-        }
 
-        $tcpClient.Close()
-        Write-LogMessage -Type DEBUG -Message "$EndpointName port 443 reachable: $Server"
+            Write-LogMessage -Type DEBUG -Message "$EndpointName port 443 reachable: $Server"
+        }
+        finally {
+            $tcpClient.Dispose()
+        }
     }
     catch {
         Write-LogMessage -Type WARNING -Message "$EndpointName connectivity test error: $($_.Exception.Message)"
@@ -345,6 +347,96 @@ function Test-FleetManagerAuthentication {
         Connected = $true
         Message   = $authFailMsg
         Password  = $null
+    }
+}
+function Test-VrslcmAuthentication {
+
+    <#
+        .SYNOPSIS
+        Validate vRSLCM connectivity and credentials via REST API probe.
+
+        .DESCRIPTION
+        Performs a two-stage validation:
+        1. TCP/443 reachability and password availability (via Test-EndpointTcpConnection).
+        2. Basic auth probe via GET /lcm/lcops/api/v2/settings/system-details — a 401/403
+           response indicates wrong credentials; a 200 response confirms authentication.
+
+        .PARAMETER Server
+        vRSLCM appliance FQDN or IP address.
+
+        .PARAMETER TimeoutSeconds
+        Request timeout in seconds (1-300).
+
+        .EXAMPLE
+        $result = Test-VrslcmAuthentication -Server 'vrslcm.example.com' -User 'vcfadmin@local' -TimeoutSeconds 30
+        if ($result.Status -ne 'Connected') {
+            Write-LogMessage -Type ERROR -Message "vRSLCM auth failed: $($result.Message)"
+        }
+
+        .OUTPUTS
+        [PSCustomObject] with properties: Endpoint, Server, Status, Connected, Message.
+        Status: "Connected" | "Failed" | "Unauthenticated"
+
+        .NOTES
+        Reads VRSLCM_PASSWORD from the environment via Test-EndpointTcpConnection.
+        Uses GET /lcm/lcops/api/v2/settings/system-details with Basic auth as the credential probe.
+    #>
+
+    [CmdletBinding()]
+    [OutputType([PSCustomObject])]
+    Param (
+        [Parameter(Mandatory = $true)] [ValidateNotNullOrEmpty()] [String]$Server,
+        [Parameter(Mandatory = $true)] [ValidateNotNullOrEmpty()] [String]$User,
+        [Parameter(Mandatory = $true)] [ValidateRange(1, 300)] [Int]$TimeoutSeconds
+    )
+
+    $tcpResult = Test-EndpointTcpConnection -EndpointName "vRSLCM" -PasswordEnvVar "VRSLCM_PASSWORD" -Server $Server -TimeoutSeconds $TimeoutSeconds
+    if ($tcpResult.Status -ne "Connected") {
+        return $tcpResult
+    }
+
+    $password = $tcpResult.Password
+    $encoded  = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("${User}:${password}"))
+    $headers  = @{ "Authorization" = "Basic $encoded"; "Accept" = "application/json" }
+
+    try {
+        $null = Invoke-RestMethod -Uri "https://$Server/lcm/lcops/api/v2/settings/system-details" `
+            -Method GET -Headers $headers -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+        Write-LogMessage -Type INFO -Message "Authenticated: vRSLCM — $Server"
+        return [PSCustomObject]@{
+            Endpoint  = "vRSLCM"
+            Server    = $Server
+            Status    = "Connected"
+            Connected = $true
+            Message   = "Authenticated successfully via GET /lcm/lcops/api/v2/settings/system-details"
+            Password  = $null
+        }
+    }
+    catch {
+        $statusCode = $null
+        if ($null -ne $_.Exception.Response) {
+            $statusCode = [Int]$_.Exception.Response.StatusCode
+        }
+        if ($statusCode -in @(401, 403)) {
+            Write-LogMessage -Type WARNING -Message "Authentication failed: vRSLCM — $Server"
+            return [PSCustomObject]@{
+                Endpoint  = "vRSLCM"
+                Server    = $Server
+                Status    = "Unauthenticated"
+                Connected = $true
+                Message   = "Authentication failed — check password"
+                Password  = $null
+            }
+        }
+        Write-LogMessage -Type WARNING -Message "vRSLCM auth probe failed on $Server — $($_.Exception.Message)"
+        return [PSCustomObject]@{
+            Endpoint  = "vRSLCM"
+            Server    = $Server
+            Status    = "Failed"
+            Connected = $false
+            Message   = "Auth probe failed: $($_.Exception.Message)"
+            Password  = $null
+        }
     }
 }
 function Test-SddcManagerAuthentication {
@@ -851,16 +943,16 @@ function Test-PatchScanConnection {
             }
         }
 
-        # Test vRSLCM (VCF 5.x, optional) — TCP + env var (no REST auth endpoint available).
+        # Test vRSLCM (VCF 5.x, optional) — real Basic auth REST probe.
         if ($EnvironmentType -eq 'vcf5' -and -not [String]::IsNullOrWhiteSpace($VrslcmServer)) {
-            $result = Test-EndpointTcpConnection -EndpointName "vRSLCM" -PasswordEnvVar "VRSLCM_PASSWORD" `
-                -Server $VrslcmServer -TimeoutSeconds $TimeoutSeconds
+            $vrslcmUser = if ([String]::IsNullOrWhiteSpace($VrslcmUser)) { "vcfadmin@local" } else { $VrslcmUser }
+            $result = Test-VrslcmAuthentication -Server $VrslcmServer -User $vrslcmUser -TimeoutSeconds $TimeoutSeconds
             $testResults.Add($result)
             if ($result.Status -ne "Connected") { $allSuccess = $false }
         }
 
         # Test VCF Operations (VCF 9 only) — real REST token probe.
-        if ($EnvironmentType -eq 'vcf9') {
+        if (@('vcf9', 'vvf9') -contains $EnvironmentType) {
             if ([String]::IsNullOrWhiteSpace($VcfOpsServer)) {
                 $testResults.Add([PSCustomObject]@{
                     Endpoint  = "VCF Operations"
@@ -878,8 +970,9 @@ function Test-PatchScanConnection {
             }
         }
 
-        # Test Fleet Manager / Fleet Lifecycle Manager (VCF 9 only) — real VSP bearer + lcops Basic auth probe.
-        if ($EnvironmentType -eq 'vcf9') {
+        # Test Fleet Manager / Fleet Lifecycle Manager (VCF 9, VVF 9.1) — real VSP bearer + lcops Basic auth probe.
+        # VVF 9.0 skips naturally when vcfFMServer is not configured.
+        if (@('vcf9', 'vvf9') -contains $EnvironmentType) {
             $fmLabel = if ($VcfMinorVersion -eq '9.1') { "Fleet Lifecycle Manager" } else { "Fleet Manager" }
             if ([String]::IsNullOrWhiteSpace($VcfFMServer)) {
                 $testResults.Add([PSCustomObject]@{
@@ -1162,7 +1255,7 @@ function Get-SddcManagerListFromVcfOps {
         }
 
         if ($results.Count -eq 0) {
-            Write-LogMessage -Type WARNING -Message "No SDDC Manager instances found via VcfAdapter."
+            Write-LogMessage -Type DEBUG -Message "No SDDC Manager instances found via VcfAdapter."
         } else {
             Write-LogMessage -Type INFO -Message "Found $($results.Count) SDDC Manager(s)"
         }
@@ -1341,6 +1434,11 @@ function Get-SddcCredentialFromFleetManager {
         throw [System.InvalidOperationException]::new($err)
     }
     $vmid = $parts[2]
+    if ($vmid -notmatch '^[\w-]+$') {
+        $err = "Unexpected vmid format in locker reference — path manipulation blocked: '$lockerRef'."
+        Write-LogMessage -Type ERROR -Message $err
+        throw [System.InvalidOperationException]::new($err)
+    }
 
     Write-LogMessage -Type DEBUG -Message "Decrypting SDDC Manager password via locker vmid $vmid"
     try {

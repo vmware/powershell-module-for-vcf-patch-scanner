@@ -232,5 +232,65 @@ class TestInvokeScriptModulePathPriority(unittest.TestCase):
         )
 
 
+class TestInvokeScriptFindingsFilenamePattern(unittest.TestCase):
+    """
+    Guards that per-environment findings filenames produced by the ConfigFile scan path
+    match the server-side glob pattern "vcf-findings-*.json".
+
+    _find_session_findings() and _find_latest_findings() in Start-VCFPatchScannerServer.py
+    use rglob("vcf-findings-*.json") to locate findings written by a scan subprocess.
+    If Invoke-VCFPatchScanner.ps1 names per-environment files with a different prefix
+    (e.g. "VCF5-findings.json") the glob returns nothing and the UI shows 0 results.
+    """
+
+    def setUp(self):
+        self._invoke_src = _load(_INVOKE_PS1)
+        self._server_src = _load(_SERVER_PY)
+
+    def test_server_glob_pattern(self):
+        """_FINDINGS_GLOB must be exactly "vcf-findings-*.json"."""
+        m = re.search(r'_FINDINGS_GLOB\s*=\s*["\']([^"\']+)["\']', self._server_src)
+        self.assertIsNotNone(m, "_FINDINGS_GLOB constant not found in server source")
+        self.assertEqual(
+            m.group(1), "vcf-findings-*.json",
+            "_FINDINGS_GLOB value changed — update this test AND the PS script filename "
+            "pattern in the same commit so the glob always matches what PS writes.",
+        )
+
+    def test_invoke_ps1_uses_vcf_findings_prefix(self):
+        """Per-environment findings filenames in the ConfigFile path must start with 'vcf-findings-'."""
+        # The multi-environment loop uses $envFindingsPath — find that assignment and verify
+        # the string literal it constructs starts with "vcf-findings-".
+        m = re.search(r'Join-Path[^"\']*["\']vcf-findings-', self._invoke_src)
+        self.assertIsNotNone(
+            m,
+            "The ConfigFile scan path in Invoke-VCFPatchScanner.ps1 must name per-environment "
+            "findings files with a 'vcf-findings-' prefix so they match _FINDINGS_GLOB "
+            "('vcf-findings-*.json') in Start-VCFPatchScannerServer.py. "
+            "Without this match, _find_session_findings() returns nothing and the UI shows 0 results.",
+        )
+
+    def test_glob_matches_generated_filename(self):
+        """Verify the filename template in PS matches the Python glob at the string level."""
+        import fnmatch
+
+        # Extract the filename template from the PS script.
+        # Expected form: "vcf-findings-$($env.name)-$envTs.json" (variable parts present)
+        m = re.search(r'"(vcf-findings-[^"]+\.json)"', self._invoke_src)
+        self.assertIsNotNone(
+            m,
+            "Could not find the vcf-findings-*.json filename template in Invoke-VCFPatchScanner.ps1. "
+            "Ensure the per-environment findings file is named with the 'vcf-findings-' prefix.",
+        )
+        template = m.group(1)
+        # Substitute PowerShell variable references with representative values to form a real filename.
+        concrete = re.sub(r'\$\([^)]+\)|\$\w+', lambda mo: "VCF5", template)
+        self.assertTrue(
+            fnmatch.fnmatch(concrete, "vcf-findings-*.json"),
+            f"Filename template '{template}' → concrete '{concrete}' does not match "
+            f"glob 'vcf-findings-*.json'. The server will never find findings written by this script.",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

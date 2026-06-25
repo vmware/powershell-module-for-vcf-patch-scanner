@@ -38,6 +38,7 @@ import io
 import json
 import logging
 import os
+import platform
 import re
 import shutil
 import signal
@@ -45,6 +46,7 @@ import socket
 import ssl
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -68,7 +70,7 @@ try:
 except ImportError:
     _UPSTREAM_SSL_CTX = ssl.create_default_context()
 
-_SERVER_VERSION             = "1.0.0.1003"
+_SERVER_VERSION             = "1.0.0.1004"
 _DEFAULT_ADVISORY_FILE      = "securityAdvisory.json"
 _VCENTER_BUILD_MAP_FILE     = "vcenterBuildMap.json"
 _DEFAULT_FINDINGS_DIR       = "Findings"
@@ -141,7 +143,14 @@ def _locate_module_psd1() -> Path:
                    (Install-VcfPatchScannerModule.ps1)
        - Versioned: .../Modules/VcfPatchScanner/<version>/VcfPatchScanner.psd1
                    (Install-Module from PSGallery; highest version wins)
-    4. Unresolved sibling of Tools/ — retained as a last-resort fallback.
+    4. PowerShell-assisted search — spawns ``pwsh -Command Get-Module`` as a last resort
+       when all Python-side searches fail.  This is the definitive fallback because
+       PowerShell resolves the full ``$env:PSModulePath`` (including paths added by
+       profile scripts or machine-level MSI installers that are absent from the
+       Python process environment).  The subprocess is only launched when steps 1–3
+       all fail, so the overhead is zero for normal deployments.
+    5. Unresolved sibling of Tools/ — retained as the absolute last-resort so the
+       return type is always ``Path`` even when ``pwsh`` is unavailable.
 
     In all cases the returned path is logged at startup; if it does not exist as a
     file a prominent warning is printed so the operator can act immediately.
@@ -195,7 +204,35 @@ def _locate_module_psd1() -> Path:
         except OSError:
             pass
 
-    # Final fallback: unresolved path (matches the original behaviour).
+    # Last-resort: ask PowerShell directly.  This catches install layouts that the
+    # Python-side search misses — for example, when PSModulePath was augmented by a
+    # machine-level MSI installer that did not set the variable in the parent process
+    # environment, or when the module was placed in a custom path not listed in any
+    # well-known location.  Only attempted when pwsh is reachable; a missing pwsh
+    # binary, a timeout, or any other subprocess failure silently falls through to the
+    # hardcoded path below so server startup is never blocked.
+    try:
+        result = subprocess.run(
+            [
+                "pwsh", "-NoProfile", "-NonInteractive", "-Command",
+                "(Get-Module VcfPatchScanner -ListAvailable"
+                " | Sort-Object Version -Descending"
+                " | Select-Object -First 1).Path",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        if result.returncode == 0:
+            ps_path = result.stdout.strip()
+            if ps_path:
+                p = Path(ps_path)
+                if p.is_file():
+                    return p
+    except Exception:
+        pass
+
+    # Absolute final fallback: unresolved path (matches the original behaviour).
     return Path(__file__).parent.parent / "VcfPatchScanner.psd1"
 
 
@@ -384,7 +421,7 @@ def _resolve_advisory_path(settings: dict) -> Path:
         candidate = _USER_BASE_DIR / p
     resolved = candidate.resolve()
     home = Path.home().resolve()
-    if not str(resolved).startswith(str(home)):
+    if not str(resolved).startswith(str(home) + os.sep):
         logger.warning("securityAdvisoryFile '%s' is outside the home directory; using default.", raw)
         return default
     return resolved
@@ -429,6 +466,8 @@ _scan_state = {
 
 _validate_lock            = threading.Lock()
 _validate_state           = {"items": [], "done": True}
+_validate_generation      = 0   # incremented on each new /scan/validate call; prevents a stale
+                                # background thread from overwriting a newer run's done state
 
 # Timestamp (time.time()) set at the start of each discovery call so /discovery/log
 # can return only the log lines written during that call.
@@ -537,6 +576,12 @@ def _validate_settings(data: dict) -> "str | None":
             return "environments must be a list."
         if len(envs) > 100:
             return "environments must contain at most 100 items."
+        for i, env in enumerate(envs):
+            if not isinstance(env, dict):
+                return f"environments[{i}] must be an object."
+            env_error = _validate_env_config(env)
+            if env_error:
+                return f"environments[{i}]: {env_error}"
 
     hidden_cols = data.get("hiddenCols")
     if hidden_cols is not None and not isinstance(hidden_cols, list):
@@ -593,6 +638,22 @@ def _extract_json_from_output(output: str) -> "dict | list | None":
     return None
 
 
+# Maps endpoint type (Python key) to config file endpoint type name
+_ENDPOINT_TYPE_MAP: dict = {
+    "sddcManagerServer": "sddc_manager",
+    "sddcManagerUser": "sddc_manager",
+    "vcfOpsServer": "vcf_ops",
+    "vcfOpsUser": "vcf_ops",
+    "vcfFMServer": "vcf_fm",
+    "vcfFMUser": "vcf_fm",
+    "vrslcmServer": "vrslcm",
+    "vrslcmUser": "vrslcm",
+    "vcenterServer": "vcenter",
+    "vcenterUser": "vcenter",
+    "nsxManagerServer": "nsx_manager",
+    "nsxManagerUser": "nsx_manager",
+}
+
 _VSPHERE_FIELDS: list = [
     ("vcenterServer",    "-VcenterServer"),
     ("vcenterUser",      "-VcenterUser"),
@@ -623,9 +684,233 @@ _ENV_TYPE_FIELDS: dict = {
         ("vcfOpsUser",   "-VcfOpsUser"),
         ("vcfFMServer",  "-VcfFMServer"),
         ("vcfFMUser",    "-VcfFMUser"),
-        ("vcenterUser",  "-VcenterUser"),
+        # vcenterUser/vcenterServer are resolved from vcenterCredentials below.
     ],
 }
+
+# Maps env-dict server field names to the display labels shown in the UI validation list.
+_SERVER_FIELD_DISPLAY_NAMES: dict = {
+    "sddcManagerServer": "SDDC Manager",
+    "vcfOpsServer":      "VCF Operations",
+    "vcfFMServer":       "Fleet Manager",
+    "vrslcmServer":      "vRSLCM",
+    "vcenterServer":     "vCenter",
+    "nsxManagerServer":  "NSX Manager",
+}
+
+# Ordered server fields per env type (matches the order PowerShell tests them).
+_ENV_TYPE_SERVER_FIELDS: dict = {
+    "vcf9":     ["sddcManagerServer", "vcfOpsServer", "vcfFMServer"],
+    "vcf5":     ["sddcManagerServer", "vrslcmServer"],
+    "vsphere8": ["vcenterServer", "nsxManagerServer"],
+    "vvf9":     ["vcfOpsServer", "vcfFMServer", "vcenterServer"],
+}
+
+
+def _generate_secret_reference_name(env_name: str, endpoint_type: str, instance: int = 1) -> str:
+    """Generate a secret reference name in the format: {ENV}_{ENDPOINT}_{INSTANCE}_PASSWORD.
+
+    Mirrors the PowerShell New-SecretReferenceName function.
+    Environment names: hyphens converted to underscores, forced uppercase.
+    Endpoint types: underscores preserved, forced uppercase.
+    """
+    env_upper = env_name.replace("-", "_").upper()
+    type_upper = endpoint_type.replace("-", "_").upper()
+    return f"{env_upper}_{type_upper}_{instance}_PASSWORD"
+
+
+def _generate_environments_config(env: dict, passwords: dict) -> dict:
+    """Generate environments.json config from UI environment dict and passwords.
+
+    Returns a dict suitable for JSON serialization that can be passed to
+    PowerShell's Import-EnvironmentsFromConfig function.
+    """
+    env_name = env.get("name", "").strip() or env.get("type", "")
+    env_type = env.get("type", "")
+
+    config: dict = {
+        "version": "1.0",
+        "environments": [
+            {
+                "name": env_name,
+                "displayName": env.get("displayName", env_name),
+                "type": env_type,
+                "endpoints": {}
+            }
+        ]
+    }
+
+    endpoints = config["environments"][0]["endpoints"]
+
+    # Map environment fields to endpoint config
+    single_pass = env.get("useSinglePassword", False)
+    fallback_pass = passwords.get("sddcPass") if single_pass else None
+
+    # VCF 9.x / VCF 5.x endpoints
+    if env_type in ("vcf9", "vcf5"):
+        sddc_pass = passwords.get("sddcPass")
+        if sddc_pass:
+            endpoints["sddc_manager"] = {
+                "server": env.get("sddcManagerServer", "").strip(),
+                "username": env.get("sddcManagerUser", "").strip(),
+                "password_secret_ref": _generate_secret_reference_name(env_name, "sddc_manager", 1)
+            }
+
+        if env_type == "vcf9":
+            # VCF Operations (skip for 9.1 where Fleet Controller is authoritative)
+            if env.get("vcfMinorVersion", "") != "9.1":
+                ops_pass = passwords.get("opsPass") or fallback_pass
+                if ops_pass:
+                    endpoints["vcf_ops"] = {
+                        "server": env.get("vcfOpsServer", "").strip(),
+                        "username": env.get("vcfOpsUser", "").strip(),
+                        "password_secret_ref": _generate_secret_reference_name(env_name, "vcf_ops", 1)
+                    }
+
+            # Fleet Manager
+            fm_pass = passwords.get("fmPass") or fallback_pass
+            if fm_pass:
+                endpoints["vcf_fm"] = {
+                    "server": env.get("vcfFMServer", "").strip(),
+                    "username": env.get("vcfFMUser", "").strip(),
+                    "password_secret_ref": _generate_secret_reference_name(env_name, "vcf_fm", 1)
+                }
+
+        elif env_type == "vcf5":
+            # vRSLCM (VCF 5.x only)
+            vrslcm_pass = passwords.get("vrslcmPass") or fallback_pass
+            if vrslcm_pass and env.get("vrslcmServer", "").strip():
+                endpoints["vrslcm"] = {
+                    "server": env.get("vrslcmServer", "").strip(),
+                    "username": env.get("vrslcmUser", "").strip(),
+                    "password_secret_ref": _generate_secret_reference_name(env_name, "vrslcm", 1)
+                }
+
+    # VVF 9.x endpoints
+    elif env_type == "vvf9":
+        # VCF Operations (skip for 9.1)
+        if not (env.get("vcfMinorVersion", "") == "9.1"):
+            ops_pass = passwords.get("opsPass")
+            if ops_pass:
+                endpoints["vcf_ops"] = {
+                    "server": env.get("vcfOpsServer", "").strip(),
+                    "username": env.get("vcfOpsUser", "").strip(),
+                    "password_secret_ref": _generate_secret_reference_name(env_name, "vcf_ops", 1)
+                }
+
+        # Fleet Manager
+        fm_pass = passwords.get("fmPass")
+        if fm_pass:
+            endpoints["vcf_fm"] = {
+                "server": env.get("vcfFMServer", "").strip(),
+                "username": env.get("vcfFMUser", "").strip(),
+                "password_secret_ref": _generate_secret_reference_name(env_name, "vcf_fm", 1)
+            }
+
+        # vCenter — support per-vCenter credentials (new model) or flat vcenterServer (legacy fallback).
+        vc_pass = passwords.get("vcenterPass")
+        if vc_pass:
+            vc_creds = env.get("vcenterCredentials") or []
+            if vc_creds and isinstance(vc_creds, list) and len(vc_creds) > 0:
+                # New model: per-vCenter credentials
+                for i, cred in enumerate(vc_creds, 1):
+                    fqdn = cred.get("fqdn", "").strip() if isinstance(cred, dict) else ""
+                    user = cred.get("user", "").strip() if isinstance(cred, dict) else ""
+                    if fqdn:
+                        key = f"vcenter.{i}" if i > 1 else "vcenter"
+                        endpoints[key] = {
+                            "server": fqdn,
+                            "username": user,
+                            "password_secret_ref": _generate_secret_reference_name(env_name, "vcenter", i)
+                        }
+            else:
+                # Legacy model: single shared credentials
+                vc_server = env.get("vcenterServer", "").strip()
+                vc_user = env.get("vcenterUser", "").strip()
+                if vc_server:
+                    endpoints["vcenter"] = {
+                        "server": vc_server,
+                        "username": vc_user,
+                        "password_secret_ref": _generate_secret_reference_name(env_name, "vcenter", 1)
+                    }
+
+    # vSphere 8 endpoints
+    elif env_type == "vsphere8":
+        # vCenter
+        vc_pass = passwords.get("vcenterPass")
+        if vc_pass:
+            endpoints["vcenter"] = {
+                "server": env.get("vcenterServer", "").strip(),
+                "username": env.get("vcenterUser", "").strip(),
+                "password_secret_ref": _generate_secret_reference_name(env_name, "vcenter", 1)
+            }
+
+        # NSX Manager
+        nsx_pass = passwords.get("nsxPass")
+        if nsx_pass:
+            endpoints["nsx_manager"] = {
+                "server": env.get("nsxManagerServer", "").strip(),
+                "username": env.get("nsxManagerUser", "").strip(),
+                "password_secret_ref": _generate_secret_reference_name(env_name, "nsx_manager", 1)
+            }
+
+    return config
+
+
+def _generate_environments_config_skeleton(env: dict) -> dict:
+    """Generate an environments.json skeleton from a UI env dict (no passwords required).
+
+    Includes all configured endpoints with password_secret_ref names pre-computed.
+    Endpoints whose server field is empty are omitted. Suitable for saving to disk
+    and passing to Import-EnvironmentsFromConfig for CLI use.
+    """
+    env_name = env.get("name", "").strip() or env.get("type", "")
+    env_type = env.get("type", "")
+
+    config: dict = {
+        "version": "1.0",
+        "environments": [{
+            "name":        env_name,
+            "displayName": env.get("displayName", env_name),
+            "type":        env_type,
+            "endpoints":   {}
+        }]
+    }
+
+    endpoints = config["environments"][0]["endpoints"]
+
+    _ENDPOINT_FIELDS: dict = {
+        "vcf9":     [
+            ("sddc_manager", "sddcManagerServer", "sddcManagerUser"),
+            ("vcf_ops",      "vcfOpsServer",       "vcfOpsUser"),
+            ("vcf_fm",       "vcfFMServer",         "vcfFMUser"),
+        ],
+        "vcf5":     [
+            ("sddc_manager", "sddcManagerServer", "sddcManagerUser"),
+            ("vrslcm",       "vrslcmServer",       "vrslcmUser"),
+        ],
+        "vsphere8": [
+            ("vcenter",     "vcenterServer",    "vcenterUser"),
+            ("nsx_manager", "nsxManagerServer", "nsxManagerUser"),
+        ],
+        "vvf9":     [
+            ("vcf_ops",  "vcfOpsServer",  "vcfOpsUser"),
+            ("vcf_fm",   "vcfFMServer",    "vcfFMUser"),
+            ("vcenter",  "vcenterServer",  "vcenterUser"),
+        ],
+    }
+
+    for ep_type, server_field, user_field in _ENDPOINT_FIELDS.get(env_type, []):
+        server = env.get(server_field, "").strip()
+        if not server:
+            continue
+        endpoints[ep_type] = {
+            "server":              server,
+            "username":            env.get(user_field, "").strip(),
+            "password_secret_ref": _generate_secret_reference_name(env_name, ep_type, 1),
+        }
+
+    return config
 
 
 def _is_vcf91(env: dict) -> bool:
@@ -695,16 +980,35 @@ def _run_validation_in_powershell(env: dict, passwords: dict, timeout_seconds: i
     Returns ([], "stopped") when the user requested cancellation via /scan/validate-stop.
     """
     global _validate_proc
+
+    t = env.get("type", "")
     args = [
         "pwsh", "-NoProfile", "-NonInteractive", "-File", str(SCAN_SCRIPT),
         "-ValidateCredentialsOnly",
+        "-VcfMajorVersion", t,
         "-LogLevel", "WARNING",
         "-LogDirectory", str(_resolve_logs_dir({})),
         "-ConnectionTimeoutSeconds", str(timeout_seconds),
     ]
     if env.get("name", "").strip():
         args += ["-EnvironmentDisplayName", env["name"].strip()]
-    args += _env_type_args(env)
+    for field_key, ps_flag in _ENV_TYPE_FIELDS.get(t, []):
+        v = env.get(field_key, "").strip() if isinstance(env.get(field_key), str) else ""
+        if v:
+            args += [ps_flag, v]
+    if t == "vvf9":
+        # Resolve vCenter FQDN and username from per-vCenter credentials (new model).
+        # Fall back to flat vcenterServer/vcenterUser for backward compatibility.
+        _vc_creds = env.get("vcenterCredentials") or []
+        _vc_fqdn  = (_vc_creds[0].get("fqdn", "").strip() if _vc_creds else "") or env.get("vcenterServer", "").strip()
+        _vc_user  = (_vc_creds[0].get("user", "").strip() if _vc_creds else "") or env.get("vcenterUser", "").strip()
+        if _vc_fqdn:
+            args += ["-VcenterServer", _vc_fqdn]
+        if _vc_user:
+            args += ["-VcenterUser", _vc_user]
+    vcf_minor = env.get("vcfMinorVersion", "").strip()
+    if vcf_minor:
+        args += ["-VcfMinorVersion", vcf_minor]
 
     env_vars = _build_env_vars(env, passwords)
 
@@ -735,7 +1039,6 @@ def _run_validation_in_powershell(env: dict, passwords: dict, timeout_seconds: i
 
         if proc.returncode != 0:
             if endpoint_tests:
-                # Per-endpoint data available — each test carries its own Status.
                 return endpoint_tests, None
             raw = stderr.strip() or stdout.strip()
             meaningful = next(
@@ -786,9 +1089,12 @@ def _clean_powershell_error(raw: str) -> str:
       '6/18/2026 9:43:52 PM Connect-VcfOpsServer {"type":"Error","message":"The
        provided username/password or token is not valid.","httpStatusCode":401}'
 
-    This function extracts the 'message' field and prepends context for common
-    HTTP status codes.  Falls back to stripping the leading timestamp + cmdlet
-    name when no embedded JSON is found.
+    When cmdlet connection fails with no JSON body the message is just:
+      'Discovery failed: 6/25/2026 4:33:10 PM Connect-VcfOpsServer'
+
+    This function extracts the 'message' field when JSON is present, strips
+    timestamps and cmdlet names anywhere in the string when it is not, and
+    returns a generic connection failure message when nothing meaningful remains.
     """
     if not raw:
         return raw
@@ -808,9 +1114,13 @@ def _clean_powershell_error(raw: str) -> str:
                 return msg
         except Exception:
             pass
-    # Strip leading "MM/DD/YYYY HH:MM:SS AM/PM CmdletName " pattern when no JSON found.
-    cleaned = re.sub(r'^\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+[AP]M\s+\S+\s*', '', raw).strip()
-    return cleaned or raw
+    # Strip "MM/DD/YYYY HH:MM:SS AM/PM CmdletName" patterns wherever they appear,
+    # including mid-string (e.g. "Discovery failed: 6/25/2026 4:33:10 PM Connect-VcfOpsServer").
+    _TS_CMDLET = r'\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}:\d{2}\s+[AP]M\s+[A-Za-z][\w-]+'
+    cleaned = re.sub(_TS_CMDLET, '', raw).strip(' :-')
+    if not cleaned:
+        return "Unable to connect. Verify the server address is correct and the service is reachable."
+    return cleaned
 
 
 def _discover_sddc_from_ops_via_powershell(ops_host: str, username: str, password: str, timeout_seconds: int = 30) -> "tuple[list[dict], str | None, str, list[str]]":
@@ -1019,76 +1329,114 @@ _ENDPOINT_STATUS_MAP = {
 }
 
 
-def _run_all_validation_bg(validate_list: list, timeout_seconds: int = 30) -> None:
+def _build_pending_endpoint_items(env: dict, prefix: str) -> list:
+    """Build 'checking' placeholder items for each configured endpoint in env.
+
+    Pre-populates the UI before PowerShell returns so the user sees the specific
+    endpoint names being tested instead of a generic spinner.
+    """
+    t        = env.get("type", "")
+    env_name = env.get("name", "")
+    items    = []
+    for field in _ENV_TYPE_SERVER_FIELDS.get(t, []):
+        server = env.get(field, "").strip()
+        if not server:
+            continue
+        ep_name = _SERVER_FIELD_DISPLAY_NAMES.get(field, field)
+        items.append({
+            "label":    f"{prefix}{ep_name} \"{server}\"",
+            "endpoint": ep_name,
+            "server":   server,
+            "envName":  env_name,
+            "status":   "checking",
+        })
+    return items
+
+
+def _run_all_validation_bg(validate_list: list, timeout_seconds: int = 30, generation: int = 0) -> None:
     """Run credential validation for one or more (env, passwords) pairs via PowerShell."""
     global _validate_state, _validate_stop_requested
     accumulated: list = []
     multi = len(validate_list) > 1
 
-    for env, passwords in validate_list:
-        if _validate_stop_requested:
-            break
+    try:
+        for env, passwords in validate_list:
+            if _validate_stop_requested:
+                break
 
-        env_name = env.get("name", "")
-        prefix = f"[{env_name}] " if multi else ""
+            env_name = env.get("name", "")
+            prefix = f"[{env_name}] " if multi else ""
 
-        endpoint_tests, err = _run_validation_in_powershell(env, passwords, timeout_seconds)
+            pending = _build_pending_endpoint_items(env, prefix)
+            if pending:
+                with _validate_lock:
+                    _validate_state = {"items": accumulated + pending, "done": False}
 
-        # Stopped mid-validation — emit a cancelled item and exit cleanly.
-        if err == "stopped" or _validate_stop_requested:
-            accumulated.append({
-                "label": "Validation cancelled by user.",
-                "status": "cancelled",
-            })
-            break
+            endpoint_tests, err = _run_validation_in_powershell(env, passwords, timeout_seconds)
 
-        if err:
-            # No per-endpoint data at all — fall back to a single environment-level error item.
-            accumulated.append({
-                "label": f"{prefix}{env_name} (validation failed)" if env_name else "Validation Error",
-                "status": "failed",
-                "error": _sanitize_error_message(err),
-            })
-            with _validate_lock:
-                _validate_state = {"items": accumulated, "done": False}
-        elif endpoint_tests:
-            # Emit one item per tested endpoint; skip "Skipped" / NOT_CONFIGURED entries.
-            for test in endpoint_tests:
-                ep_name   = test.get("Endpoint", "")
-                server    = test.get("Server", "")
-                ep_status = test.get("Status", "")
-                message   = _sanitize_error_message(test.get("Message", ""))
-                if ep_status == "Skipped" or server == "NOT_CONFIGURED":
-                    continue
-                ui_status = _ENDPOINT_STATUS_MAP.get(ep_status, "failed")
-                item: dict = {
-                    "label":    f"{prefix}{ep_name} \"{server}\"",
-                    "endpoint": ep_name,
-                    "server":   server,
-                    "envName":  env_name,
-                    "status":   ui_status,
-                }
-                if ui_status in ("unreachable", "failed") and message:
-                    item["error"] = message
-                elif ui_status == "auth_failed" and message:
-                    item["note"] = message
-                accumulated.append(item)
-            with _validate_lock:
-                _validate_state = {"items": accumulated, "done": False}
-        else:
-            # Fallback when JSON was not emitted (older PS script or unexpected error path).
-            accumulated.append({
-                "label": f"{prefix}{env_name} (all endpoints validated)" if env_name else "All endpoints validated",
-                "status": "success",
-            })
-            with _validate_lock:
-                _validate_state = {"items": accumulated, "done": False}
+            if err == "stopped" or _validate_stop_requested:
+                accumulated.append({
+                    "label": "Validation cancelled by user.",
+                    "status": "cancelled",
+                })
+                break
 
-    # Clear the stop flag and mark done atomically so a /scan/validate-stop call that
-    # arrives between these two writes cannot leave the flag set for a subsequent run.
-    with _validate_lock:
-        _validate_stop_requested = False
-        _validate_state = {"items": accumulated, "done": True}
+            if err:
+                logger.error(f"Credential validation failed for environment '{env_name}': {err}")
+                accumulated.append({
+                    "label": f"{prefix}{env_name} (validation failed)" if env_name else "Validation Error",
+                    "status": "failed",
+                    "error": _sanitize_error_message(err),
+                })
+                with _validate_lock:
+                    _validate_state = {"items": accumulated, "done": False}
+            elif endpoint_tests:
+                failed_count = 0
+                for test in endpoint_tests:
+                    ep_name   = test.get("Endpoint", "")
+                    server    = test.get("Server", "")
+                    ep_status = test.get("Status", "")
+                    message   = _sanitize_error_message(test.get("Message", ""))
+                    if ep_status == "Skipped" or server == "NOT_CONFIGURED":
+                        continue
+                    ui_status = _ENDPOINT_STATUS_MAP.get(ep_status, "failed")
+                    item: dict = {
+                        "label":    f"{prefix}{ep_name} \"{server}\"",
+                        "endpoint": ep_name,
+                        "server":   server,
+                        "envName":  env_name,
+                        "status":   ui_status,
+                    }
+                    if ui_status in ("unreachable", "failed"):
+                        if message:
+                            item["error"] = message
+                        failed_count += 1
+                        logger.warning(f"Endpoint validation failed: {ep_name} ({server})" + (f" — {message}" if message else ""))
+                    elif ui_status == "auth_failed":
+                        if message:
+                            item["note"] = message
+                        failed_count += 1
+                        logger.warning(f"Endpoint authentication failed: {ep_name} ({server})" + (f" — {message}" if message else ""))
+                    accumulated.append(item)
+                if failed_count > 0:
+                    logger.info(f"Validation completed for '{env_name}' with {failed_count} endpoint(s) failed")
+                with _validate_lock:
+                    _validate_state = {"items": accumulated, "done": False}
+            else:
+                accumulated.append({
+                    "label": f"{prefix}{env_name} (all endpoints validated)" if env_name else "All endpoints validated",
+                    "status": "success",
+                })
+                with _validate_lock:
+                    _validate_state = {"items": accumulated, "done": False}
+    finally:
+        # Guarantee done: True regardless of whether the loop completed, was cancelled, or threw.
+        # Only write if this thread is still the current generation — a stop+restart can
+        # increment _validate_generation before we get here.
+        with _validate_lock:
+            _validate_stop_requested = False
+            if _validate_generation == generation:
+                _validate_state = {"items": accumulated, "done": True}
 
 
 # ---------------------------------------------------------------------------
@@ -1119,10 +1467,10 @@ def _validate_env_config(env: dict) -> "str | None":
             return "VCF Operations Server is required for VVF 9."
         if not env.get("vcfOpsUser", "").strip():
             return "VCF Operations Username is required for VVF 9."
-        if not env.get("vcfFMServer", "").strip():
-            return "Fleet Manager Server is required for VVF 9."
-        if not env.get("vcenterUser", "").strip():
-            return "vCenter Username is required for VVF 9."
+        # Fleet Manager is present only in VVF 9.1+; VVF 9.0 does not include it.
+        if _is_vvf91(env) and not env.get("vcfFMServer", "").strip():
+            return "Fleet Manager Server is required for VVF 9.1."
+        # vcenterUser/vcenterCredentials are optional; usernames default at scan time.
     elif t == "vsphere8":
         if not env.get("vcenterServer", "").strip():
             return "vCenter Server is required."
@@ -1135,8 +1483,8 @@ def _validate_env_config(env: dict) -> "str | None":
     return None
 
 
-def _build_ps_args(env: dict, passwords: dict, settings: dict, retry_fqdns: "list[str] | None" = None) -> list:
-    env_name     = env.get("name", "").strip()
+def _build_ps_args(env: dict, passwords: dict, settings: dict, retry_fqdns: "list[str] | None" = None) -> "tuple[list, Path]":
+    env_name     = env.get("name", "").strip() or env.get("type", "")
     findings_dir = _resolve_env_findings_dir(settings, env_name)
     timestamp    = datetime.now().strftime("%Y%m%d_%H%M%S")
     findings_path = str(findings_dir / f"vcf-findings-{timestamp}.json")
@@ -1145,8 +1493,19 @@ def _build_ps_args(env: dict, passwords: dict, settings: dict, retry_fqdns: "lis
     build_map_path = _resolve_build_map_path()
     logs_dir       = str(_resolve_logs_dir(settings))
 
+    config = _generate_environments_config(env, passwords)
+    tmp_fd, config_path_str = tempfile.mkstemp(suffix=".json", prefix="vcf-env-")
+    try:
+        with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2)
+    except Exception:
+        os.unlink(config_path_str)
+        raise
+    config_path = Path(config_path_str)
+
     args = [
         "pwsh", "-NoProfile", "-NonInteractive", "-File", str(SCAN_SCRIPT),
+        "-ConfigFile",           str(config_path),
         "-LogLevel",             settings.get("logLevel", "INFO"),
         "-LogDirectory",         logs_dir,
         "-SecurityAdvisoryFile", advisory_path,
@@ -1165,8 +1524,7 @@ def _build_ps_args(env: dict, passwords: dict, settings: dict, retry_fqdns: "lis
     if retry_fqdns:
         args.append("-RetryFailedEndpointsOnly")
         args += ["-FailedEndpointFqdns", json.dumps(retry_fqdns)]
-    args += _env_type_args(env)
-    return args
+    return (args, config_path)
 
 
 def _base_subprocess_env() -> dict:
@@ -1187,70 +1545,136 @@ def _base_subprocess_env() -> dict:
     ev = {k: v for k, v in os.environ.items() if k.upper() in _SUBPROCESS_ENV_ALLOWLIST}
     if _MODULE_PSD1.exists():
         ev["VCFPATCHSCANNER_MODULE_PSD1"] = str(_MODULE_PSD1)
+    ev["VCFPATCHSCANNER_PYTHON_VERSION"] = sys.version.split()[0]
     return ev
 
 
 def _build_env_vars(env: dict, passwords: dict) -> dict:
-    """Build the subprocess environment for a scan or validation run.
+    """Build the subprocess environment for a validation run.
 
-    Starts from the allowlist-filtered base environment and adds only the
-    credential env vars required for this specific environment type.  Credentials
-    are always provided explicitly through the UI — never inherited from the
-    parent shell.
+    Sets the simple environment variable names read directly by Test-PatchScanConnection
+    and related validation helpers (SDDC_MANAGER_PASSWORD, VCF_OPS_PASSWORD, etc.).
+    Credentials are always provided explicitly through the UI — never inherited from
+    the parent shell.
     """
-    ev             = _base_subprocess_env()
-    t              = env.get("type", "")
-    single_pass    = env.get("useSinglePassword", False)
-    fallback_pass  = passwords.get("sddcPass") if single_pass else None
-    if t in ("vcf9", "vcf5"):
-        if passwords.get("sddcPass"):
-            ev["SDDC_MANAGER_PASSWORD"] = passwords["sddcPass"]
-        if t == "vcf9":
-            # VCF 9.1: Fleet Controller is authoritative for VCF Operations; skip its password
-            # so PowerShell never attempts the native VCF Operations API, even when
-            # useSinglePassword would otherwise supply the SDDC password as a fallback.
-            if not _is_vcf91(env):
-                ops_pass = passwords.get("opsPass") or fallback_pass
+    ev = _base_subprocess_env()
+    t = env.get("type", "")
+    single_pass = env.get("useSinglePassword", False)
+    fallback_pass = passwords.get("sddcPass") if single_pass else None
+
+    match t:
+        case "vcf9" | "vcf5":
+            sddc_pass = passwords.get("sddcPass")
+            if sddc_pass:
+                ev["SDDC_MANAGER_PASSWORD"] = sddc_pass
+            match t:
+                case "vcf9":
+                    if not _is_vcf91(env):
+                        ops_pass = passwords.get("opsPass") or fallback_pass
+                        if ops_pass:
+                            ev["VCF_OPS_PASSWORD"] = ops_pass
+                    fm_pass = passwords.get("fmPass") or fallback_pass
+                    if fm_pass:
+                        ev["VCF_FM_PASSWORD"] = fm_pass
+                case "vcf5":
+                    vrslcm_pass = passwords.get("vrslcmPass") or fallback_pass
+                    if vrslcm_pass and env.get("vrslcmServer", "").strip():
+                        ev["VRSLCM_PASSWORD"] = vrslcm_pass
+        case "vvf9":
+            if not _is_vvf91(env):
+                ops_pass = passwords.get("opsPass")
                 if ops_pass:
                     ev["VCF_OPS_PASSWORD"] = ops_pass
-            fm_pass = passwords.get("fmPass") or fallback_pass
+            fm_pass = passwords.get("fmPass")
             if fm_pass:
                 ev["VCF_FM_PASSWORD"] = fm_pass
-        if t == "vcf5":
-            # NSX_MANAGER_PASSWORD is intentionally not set for VCF 5.x. The PowerShell
-            # module retrieves the NSX admin password directly from the SDDC Manager
-            # credentials API (GET /v1/credentials?resourceType=NSXT_MANAGER) via
-            # Get-NsxAdminPasswordFromSddc — no separate user input is required.
-            vrslcm_pass = passwords.get("vrslcmPass") or fallback_pass
-            if vrslcm_pass and env.get("vrslcmServer", "").strip():
-                ev["VRSLCM_PASSWORD"] = vrslcm_pass
-    elif t == "vvf9":
-        # VVF9 9.1: Fleet Controller is authoritative for VCF Operations; skip its
-        # password so PowerShell never attempts the native VCF Operations API.
-        if not _is_vvf91(env):
-            ops_pass = passwords.get("opsPass")
-            if ops_pass:
-                ev["VCF_OPS_PASSWORD"] = ops_pass
-        fm_pass = passwords.get("fmPass")
-        if fm_pass:
-            ev["VCF_FM_PASSWORD"] = fm_pass
-        if passwords.get("vcenterPass"):
-            ev["VCENTER_PASSWORD"] = passwords["vcenterPass"]
-    # vvf9: pass stored standalone vCenter FQDNs so PowerShell can scan them
-    # without re-querying VCF Operations at scan time (required on 9.1 where the native
-    # Ops API is skipped; harmless on 9.0 where Get-VcfOpsInventory already covers it).
-    # vcf9 is intentionally excluded: VCF Operations returns vCenters that overlap with
-    # SDDC Manager-managed workload-domain vCenters and cannot be reliably filtered at
-    # discovery time; SDDC Manager scanning already covers them.
-    if t == "vvf9":
-        vc_fqdns = [str(f).strip() for f in (env.get("vcenterFqdns") or []) if str(f).strip()]
-        if vc_fqdns:
-            ev["VCENTER_FQDNS"] = json.dumps(vc_fqdns)
-    elif t == "vsphere8":
-        if passwords.get("vcenterPass"):
-            ev["VCENTER_PASSWORD"] = passwords["vcenterPass"]
-        if passwords.get("nsxPass"):
-            ev["NSX_MANAGER_PASSWORD"] = passwords["nsxPass"]
+            vc_pass = passwords.get("vcenterPass")
+            if vc_pass:
+                ev["VCENTER_PASSWORD"] = vc_pass
+            vc_fqdns = [str(f).strip() for f in (env.get("vcenterFqdns") or []) if str(f).strip()]
+            if vc_fqdns:
+                ev["VCENTER_FQDNS"] = json.dumps(vc_fqdns)
+        case "vsphere8":
+            vc_pass = passwords.get("vcenterPass")
+            if vc_pass:
+                ev["VCENTER_PASSWORD"] = vc_pass
+            nsx_pass = passwords.get("nsxPass")
+            if nsx_pass:
+                ev["NSX_MANAGER_PASSWORD"] = nsx_pass
+
+    return ev
+
+
+def _build_scan_env_vars(env: dict, passwords: dict) -> dict:
+    """Build the subprocess environment for a scan run.
+
+    Sets the new-scheme environment variable names resolved by Import-EnvironmentsFromConfig
+    from the environments.json config file (e.g. VCF5_SDDC_MANAGER_1_PASSWORD).
+    These match the password_secret_ref values written by _generate_environments_config.
+    """
+    ev = _base_subprocess_env()
+    env_name = env.get("name", "").strip() or env.get("type", "")
+    t = env.get("type", "")
+    single_pass = env.get("useSinglePassword", False)
+    fallback_pass = passwords.get("sddcPass") if single_pass else None
+
+    logger.debug(f"Credential map for environment '{env_name}' (type={t}):")
+    match t:
+        case "vcf9" | "vcf5":
+            sddc_pass = passwords.get("sddcPass")
+            if sddc_pass:
+                ref = _generate_secret_reference_name(env_name, "sddc_manager", 1)
+                ev[ref] = sddc_pass
+                logger.debug(f"  sddc_manager ({env.get('sddcManagerServer', '')}): env var '{ref}'")
+            match t:
+                case "vcf9":
+                    if not _is_vcf91(env):
+                        ops_pass = passwords.get("opsPass") or fallback_pass
+                        if ops_pass:
+                            ref = _generate_secret_reference_name(env_name, "vcf_ops", 1)
+                            ev[ref] = ops_pass
+                            logger.debug(f"  vcf_ops ({env.get('vcfOpsServer', '')}): env var '{ref}'")
+                    fm_pass = passwords.get("fmPass") or fallback_pass
+                    if fm_pass:
+                        ref = _generate_secret_reference_name(env_name, "vcf_fm", 1)
+                        ev[ref] = fm_pass
+                        logger.debug(f"  vcf_fm ({env.get('vcfFMServer', '')}): env var '{ref}'")
+                case "vcf5":
+                    vrslcm_pass = passwords.get("vrslcmPass") or fallback_pass
+                    if vrslcm_pass and env.get("vrslcmServer", "").strip():
+                        ref = _generate_secret_reference_name(env_name, "vrslcm", 1)
+                        ev[ref] = vrslcm_pass
+                        logger.debug(f"  vrslcm ({env.get('vrslcmServer', '')}): env var '{ref}'")
+        case "vvf9":
+            if not _is_vvf91(env):
+                ops_pass = passwords.get("opsPass")
+                if ops_pass:
+                    ref = _generate_secret_reference_name(env_name, "vcf_ops", 1)
+                    ev[ref] = ops_pass
+                    logger.debug(f"  vcf_ops ({env.get('vcfOpsServer', '')}): env var '{ref}'")
+            fm_pass = passwords.get("fmPass")
+            if fm_pass:
+                ref = _generate_secret_reference_name(env_name, "vcf_fm", 1)
+                ev[ref] = fm_pass
+                logger.debug(f"  vcf_fm ({env.get('vcfFMServer', '')}): env var '{ref}'")
+            vc_pass = passwords.get("vcenterPass")
+            if vc_pass:
+                ref = _generate_secret_reference_name(env_name, "vcenter", 1)
+                ev[ref] = vc_pass
+                logger.debug(f"  vcenter ({env.get('vcenterServer', '')}): env var '{ref}'")
+        case "vsphere8":
+            vc_pass = passwords.get("vcenterPass")
+            if vc_pass:
+                ref = _generate_secret_reference_name(env_name, "vcenter", 1)
+                ev[ref] = vc_pass
+                logger.debug(f"  vcenter ({env.get('vcenterServer', '')}): env var '{ref}'")
+            nsx_pass = passwords.get("nsxPass")
+            if nsx_pass:
+                ref = _generate_secret_reference_name(env_name, "nsx_manager", 1)
+                ev[ref] = nsx_pass
+                logger.debug(f"  nsx_manager ({env.get('nsxManagerServer', '')}): env var '{ref}'")
+
+    logger.debug(f"  {len([k for k in ev if k.endswith('_PASSWORD')])} credential(s) configured")
     return ev
 
 
@@ -1325,10 +1749,12 @@ def _run_scan_queue(scan_queue: list, settings: dict, retry_fqdns_map: "dict[str
             existing_files = {p.name for p in env_findings_dir.glob(_FINDINGS_GLOB)}
 
         retry_fqdns = (retry_fqdns_map or {}).get(env_name)
-        env_vars = _build_env_vars(env, passwords)
+        env_vars = _build_scan_env_vars(env, passwords)
+        config_path: "Path | None" = None
         try:
             _ensure_env_findings_dir(env_findings_dir)
-            args = _build_ps_args(env, passwords, settings, retry_fqdns)
+            args, config_path = _build_ps_args(env, passwords, settings, retry_fqdns)
+            logger.debug(f"Starting scan for environment '{env_name}' (type={env.get('type', '')})")
             proc = subprocess.Popen(
                 args,
                 env=env_vars,
@@ -1349,6 +1775,12 @@ def _run_scan_queue(scan_queue: list, settings: dict, retry_fqdns_map: "dict[str
         except Exception as e:
             exit_code = -1
             stderr = str(e)
+        finally:
+            if config_path is not None:
+                try:
+                    config_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
 
         env_duration = round(time.time() - env_start)
 
@@ -1608,6 +2040,9 @@ def _get_module_version_from_psd1() -> str:
         return "unknown"
 
 
+def _version_to_tuple(v: str) -> tuple:
+    """Convert a dotted version string to a tuple of ints for comparison."""
+    return tuple(int(x) for x in v.strip().split("."))
 def _version_is_newer(candidate: str, baseline: str) -> bool:
     """Return True when candidate version is strictly greater than baseline.
 
@@ -1616,9 +2051,7 @@ def _version_is_newer(candidate: str, baseline: str) -> bool:
     incorrectly triggers the update banner.
     """
     try:
-        def _to_tuple(v: str) -> tuple:
-            return tuple(int(x) for x in v.strip().split("."))
-        return _to_tuple(candidate) > _to_tuple(baseline)
+        return _version_to_tuple(candidate) > _version_to_tuple(baseline)
     except (ValueError, AttributeError):
         return False
 
@@ -1698,6 +2131,7 @@ def _run_module_install_background() -> None:
             cmd,
             capture_output=True, text=True,
             timeout=300,   # 5-minute ceiling for a module download
+            env=_base_subprocess_env(),
         )
         if proc.returncode == 0:
             with _module_install_lock:
@@ -2189,7 +2623,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'"
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'"
         )
 
     def _send_forbidden(self) -> None:
@@ -2699,7 +3133,7 @@ class Handler(BaseHTTPRequestHandler):
 
             settings = _load_settings()
             conn_timeout = settings.get("connectionTimeoutSeconds", 30)
-            global _validate_state, _validate_stop_requested
+            global _validate_state, _validate_stop_requested, _validate_generation
             # Guard: reject a new validation request when one is already in progress.
             # Mirrors the 409 guard on POST /scan/start to prevent concurrent threads
             # from writing _validate_state simultaneously.
@@ -2708,6 +3142,8 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({"error": "A validation is already running."}, 409)
                     return
                 _validate_stop_requested = False
+                _validate_generation += 1
+                current_gen = _validate_generation
                 _validate_state = {"items": [], "done": False}
             # Record session start so /scan/log returns validation-phase log entries even when
             # the scan never starts (e.g. auth failure). _start_scan overwrites this with the
@@ -2716,7 +3152,7 @@ class Handler(BaseHTTPRequestHandler):
             with _lock:
                 _scan_state["sessionStartTime"] = time.time()
             threading.Thread(
-                target=_run_all_validation_bg, args=(validate_list, conn_timeout), daemon=True
+                target=_run_all_validation_bg, args=(validate_list, conn_timeout, current_gen), daemon=True
             ).start()
             self._json({"ok": True})
 
@@ -2791,6 +3227,51 @@ class Handler(BaseHTTPRequestHandler):
             self._json(dict(result, checkDisabled=settings.get("checkUpdateDisabled", False),
                             promptShown=settings.get("updateCheckPromptShown", False)))
 
+        elif path == "/environments/export-config":
+            try:
+                body = json.loads(raw) if raw else {}
+            except Exception as e:
+                logger.debug(f"Bad JSON in POST /environments/export-config: {e}")
+                self._json({"error": "Invalid JSON."}, 400)
+                return
+            if not self._check_origin():
+                self._send_forbidden()
+                return
+            envs = body.get("envs")
+            if not envs:
+                env = body.get("env")
+                if isinstance(env, dict) and env.get("type"):
+                    envs = [env]
+            if not isinstance(envs, list) or not envs:
+                self._json({"error": "No environments provided."}, 400)
+                return
+            config: dict = {"version": "1.0", "environments": []}
+            for item in envs:
+                if not isinstance(item, dict) or not item.get("type"):
+                    continue
+                skeleton = _generate_environments_config_skeleton(item)
+                config["environments"].extend(skeleton.get("environments", []))
+            if not config["environments"]:
+                self._json({"error": "No valid environments to export."}, 400)
+                return
+            payload = json.dumps(config, indent=2).encode("utf-8")
+            if len(config["environments"]) == 1:
+                raw_name = config["environments"][0].get("name", "environment")
+                safe     = raw_name.replace('"', "_").replace("\\", "_").replace(" ", "-")
+                filename = f"{safe}-environments.json"
+            else:
+                filename = "environments.json"
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            self._send_security_headers()
+            self.end_headers()
+            try:
+                self.wfile.write(payload)
+            except _CLIENT_DISCONNECT_ERRORS:
+                pass
+
         elif path == "/advisory/dismiss-prompt":
             # User responded to the offline modal — record that it was shown so we never ask again.
             try:
@@ -2844,6 +3325,12 @@ class Handler(BaseHTTPRequestHandler):
             _validate_stop_requested = True
             with _validate_lock:
                 proc_to_kill = _validate_proc
+                # Mark done immediately so a subsequent /scan/validate call is not rejected with
+                # 409 while the background thread is still draining its subprocess communicate().
+                # The generation counter in _run_all_validation_bg prevents the stale thread from
+                # overwriting the new run's state once it eventually finishes.
+                if not _validate_state.get("done", True):
+                    _validate_state = {**_validate_state, "done": True}
             if proc_to_kill is not None:
                 try:
                     proc_to_kill.terminate()
@@ -3014,12 +3501,87 @@ def _initialize_logging() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Startup diagnostics
+# ---------------------------------------------------------------------------
+
+def _log_startup_diagnostics() -> None:
+    """Log environment diagnostics at server startup to aid troubleshooting.
+
+    Instant fields (server version, Python, OS, paths) are written synchronously.
+    PowerShell and PowerCLI versions are collected in a background thread so they
+    do not add latency to the server becoming ready to accept connections.
+    """
+    env_psd1 = os.environ.get("VCFPATCHSCANNER_MODULE_PSD1", "").strip()
+    env_base = os.environ.get(_ENV_VAR_BASE_DIR, "").strip()
+
+    logger.info("=== VCF Patch Scanner Server startup ===")
+    logger.info("Server version   : %s", _SERVER_VERSION)
+    logger.info("Python           : %s", sys.version.replace("\n", " "))
+    logger.info("Python executable: %s", sys.executable)
+    logger.info("OS               : %s %s", platform.system(), platform.version())
+    logger.info("Architecture     : %s", platform.machine())
+    logger.info("Module PSD1      : %s (exists: %s)", _MODULE_PSD1, _MODULE_PSD1.is_file())
+    logger.info(
+        "VCFPATCHSCANNER_MODULE_PSD1 env: %s",
+        repr(env_psd1) if env_psd1 else "(not set)",
+    )
+    logger.info("Base directory   : %s", _USER_BASE_DIR)
+    logger.info(
+        "%s env          : %s",
+        _ENV_VAR_BASE_DIR,
+        repr(env_base) if env_base else "(not set)",
+    )
+    logger.info("Script path      : %s", Path(__file__).resolve())
+
+    def _collect_ps_versions() -> None:
+        try:
+            ps_cmd = (
+                "$psVer = $PSVersionTable.PSVersion.ToString(); "
+                "$pcli = (Get-Module VCF.PowerCLI -ListAvailable"
+                " | Sort-Object Version -Descending"
+                " | Select-Object -First 1).Version; "
+                "\"PowerShell=$psVer PowerCLI=$(if($pcli){$pcli}else{'not found'})\""
+            )
+            result = subprocess.run(
+                ["pwsh", "-NoProfile", "-NonInteractive", "-Command", ps_cmd],
+                capture_output=True,
+                text=True,
+                timeout=20,
+            )
+            output = result.stdout.strip()
+            if result.returncode == 0 and output:
+                logger.info("Runtime          : %s", output)
+            else:
+                stderr_snippet = result.stderr.strip()[:200] if result.stderr else ""
+                logger.warning(
+                    "PowerShell version check failed (exit %d): %s",
+                    result.returncode,
+                    stderr_snippet or "(no stderr)",
+                )
+        except FileNotFoundError:
+            logger.warning("PowerShell (pwsh) not found in PATH — version check skipped.")
+        except subprocess.TimeoutExpired:
+            logger.warning("PowerShell version check timed out after 20s.")
+        except Exception as exc:
+            logger.warning("PowerShell version check error: %s", exc)
+        finally:
+            logger.info("=== Startup diagnostics complete ===")
+
+    threading.Thread(
+        target=_collect_ps_versions,
+        daemon=True,
+        name="startup-diagnostics",
+    ).start()
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 def main() -> None:
     global SETTINGS_FILE
 
     _initialize_logging()
+    _log_startup_diagnostics()
     port          = _DEFAULT_PORT
     no_browser    = False
     pid_file_path: "Path | None" = None
@@ -3102,7 +3664,9 @@ def main() -> None:
     startup_msg = f"VCF Patch Scan Server running at {url}, listening on {BIND_HOST}:{port}"
     print(startup_msg)
     logger.info(startup_msg)
+    print(f"Python:        {sys.version.split()[0]}")
     print(f"Settings file: {SETTINGS_FILE}")
+    logger.info("Settings file    : %s", SETTINGS_FILE)
     print(f"Module path:   {_MODULE_PSD1}")
     if not _MODULE_PSD1.is_file():
         warn = (

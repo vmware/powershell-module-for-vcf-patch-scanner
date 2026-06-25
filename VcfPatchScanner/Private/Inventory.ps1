@@ -1503,9 +1503,9 @@ function Get-VrslcmInventory {
         - All products deployed through vRSLCM (from /environments), keyed by their
           advisory component name so they can be matched against security advisories.
 
-        Products are returned under the key "Fleet Lifecycle" for the vRSLCM appliance itself,
+        Products are returned under the key "vRSLCM" for the vRSLCM appliance itself,
         and under their individual advisory names (e.g. "VCF Automation", "VCF Operations
-        for Logs") for managed products — consistent with the advisory database schema.
+        for Logs", "VCF Identity") for managed products — consistent with the advisory database schema.
 
         .PARAMETER Server
         vRSLCM appliance FQDN or IP address.
@@ -1561,8 +1561,8 @@ function Get-VrslcmInventory {
         $versionRaw   = [String]$systemDetails.version
         $versionFinal = if ([String]::IsNullOrWhiteSpace($versionRaw)) { "Unknown" } else { $versionRaw.Trim() }
 
-        $inventory["Fleet Lifecycle"] = @(
-            [PSCustomObject]@{ Fqdn = $Server; Version = $versionFinal; DomainName = "vRSLCM" }
+        $inventory["vRSLCM"] = @(
+            [PSCustomObject]@{ Fqdn = $Server; Version = $versionFinal; DomainName = $null }
         )
         Write-LogMessage -Type INFO -Message "Collected vRSLCM appliance: $Server v$versionFinal"
 
@@ -1573,6 +1573,7 @@ function Get-VrslcmInventory {
         $componentLists = @{}
 
         foreach ($env in $environments) {
+            $envDomainName = ([String]$env.name).Trim()
             foreach ($product in $env.products) {
                 $typeKey = ([String]$product.id).ToLower().Trim()
 
@@ -1582,7 +1583,7 @@ function Get-VrslcmInventory {
                     continue
                 }
 
-                $productVersion2 = if (-not [String]::IsNullOrWhiteSpace($product.version)) { [String]$product.version } else { "Unknown" }
+                $productVersion = if (-not [String]::IsNullOrWhiteSpace($product.version)) { [String]$product.version } else { "Unknown" }
 
                 $resolvedFqdn = Resolve-ProductNodeFqdn -Nodes @($product.nodes)
                 $fqdnFinal    = if ([String]::IsNullOrWhiteSpace($resolvedFqdn)) { $Server } else { $resolvedFqdn }
@@ -1592,8 +1593,8 @@ function Get-VrslcmInventory {
                 }
                 $componentLists[$advisoryName].Add([PSCustomObject]@{
                     Fqdn       = $fqdnFinal
-                    Version    = $productVersion2
-                    DomainName = "vRSLCM"
+                    Version    = $productVersion
+                    DomainName = $envDomainName
                 })
                 Write-LogMessage -Type INFO -Message "Collected vRSLCM managed product: $advisoryName ($fqdnFinal v$productVersion)"
             }

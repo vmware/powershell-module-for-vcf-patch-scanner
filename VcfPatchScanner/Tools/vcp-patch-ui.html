@@ -628,7 +628,7 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
             <div id="discoverStandaloneVcHint" style="display:none;margin-bottom:12px;padding:8px 10px;background:var(--bg2);border-radius:6px;font-size:.84rem"></div>
             <div style="display:flex;gap:8px;flex-direction:column">
               <div style="display:flex;gap:8px;align-items:center">
-                <span style="flex:1">Use <span id="discoverOpsUsernameDisplay" style="font-weight:600;font-family:monospace">admin@local</span></span>
+                <span style="flex:1">Use <span id="discoverOpsUsernameDisplay" style="font-weight:600;font-family:monospace">admin</span></span>
                 <button class="btn btn-primary btn-sm" type="button" onclick="confirmDiscoverUsername(true)">Use Same</button>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
@@ -722,7 +722,7 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
             </div>
             <div style="flex:1.2;min-width:130px">
               <label class="req">Username</label>
-              <input id="vvf9-vcfOpsUser" type="text" placeholder="admin@local" autocomplete="username" spellcheck="false" autocapitalize="none">
+              <input id="vvf9-vcfOpsUser" type="text" placeholder="admin" autocomplete="username" spellcheck="false" autocapitalize="none">
             </div>
             <div style="flex:1.2;min-width:130px">
               <label class="req">Password</label>
@@ -734,7 +734,7 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
             </div>
           </div>
           <div id="vvf9-fleetManagerSection" style="margin-top:10px">
-            <div id="vvf9-fmHint" class="step-hint" style="margin-bottom:0">After authenticating, all Fleet Manager / Fleet Lifecycle Controller endpoints will be discovered automatically.</div>
+            <div id="vvf9-fmHint" class="step-hint" style="margin-bottom:0">After authenticating, vCenter endpoints will be discovered. On VVF 9.1, Fleet Lifecycle Controller will also be discovered automatically.</div>
             <!-- Manual fallback row — hidden by default; revealed when auto-discovery fails -->
             <div id="vvf9-fmInputRow" style="display:none;margin-top:12px">
               <label class="req" id="vvf9-fmServerLabel">Fleet Manager Server</label>
@@ -752,10 +752,10 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
           <div id="vrslcmStep2Hint" class="step-hint">vRealize Suite Lifecycle Manager (vRSLCM) is optional. Enter the server manually or leave blank to skip.</div>
           <div class="row2">
             <div>
-              <label>vRSLCM Server <span style="color:var(--muted);font-weight:400;font-size:.8rem">(optional)</span></label>
+              <label>vRSLCM Server</label>
               <input id="vcf5-vrslcmServer" type="text" placeholder="vrslcm.example.com" data-type="server" spellcheck="false" autocomplete="off">
             </div>
-            <div><label>vRSLCM Username <span style="color:var(--muted);font-weight:400;font-size:.8rem">(optional)</span></label><input id="vcf5-vrslcmUser" type="text" placeholder="admin@local"></div>
+            <div><label>vRSLCM Username</label><input id="vcf5-vrslcmUser" type="text" placeholder="vcfadmin@local"></div>
           </div>
         </div>
         <!-- vsphere8: NSX (optional) -->
@@ -766,13 +766,10 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
             <div><label>NSX Manager Username</label><input id="vsphere8-nsxManagerUser" type="text" placeholder="admin"></div>
           </div>
         </div>
-        <!-- vvf9: vCenter username only — server auto-discovered; no NSX -->
+        <!-- vvf9: per-vCenter credentials — one row per discovered instance -->
         <div class="step-block" data-for="vvf9">
-          <div id="vvf9-vcenterHint" class="step-hint">vCenter servers are discovered automatically from VCF Operations. Provide the shared username used for all standalone vCenter instances.</div>
-          <div class="row2">
-            <div><label class="req">vCenter Username</label><input id="vvf9-vcenterUser" type="text" placeholder="administrator@vsphere.local"></div>
-            <div></div>
-          </div>
+          <div id="vvf9-vcenterHint" class="step-hint">Enter credentials for each discovered vCenter instance.</div>
+          <div id="vvf9-vcenterRows" style="margin-top:4px"></div>
         </div>
       </div>
 
@@ -843,6 +840,13 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
             <span><strong>Disable module update checks</strong> — enable for offline or air-gapped deployments. The scan server will not contact PowerShell Gallery at startup.</span>
           </label>
         </div>
+        <div style="margin-top:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.88rem;user-select:none">
+            <input type="checkbox" id="showExportEnvButtonCheck" style="width:16px;height:16px;cursor:pointer"
+                   onchange="_checkDirty(); _onSelectionChanged();">
+            <span><strong>Show "Export environments.json" button</strong> — downloads a pre-filled environments.json with server addresses, usernames, and secret reference names for CLI use.</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -889,6 +893,7 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
   <div class="actions">
     <button class="btn btn-primary btn-sm"   id="runBtn"      onclick="runScan()"   title="Save an environment in Settings to enable scanning" disabled>▶ Run Scan</button>
     <button class="btn btn-secondary btn-sm" id="validateBtn" onclick="doValidate()" title="Verify credentials and endpoint reachability before scanning"                  disabled>✔ Test Credentials</button>
+    <button class="btn btn-secondary btn-sm hidden" id="exportEnvConfigBtn" onclick="exportEnvConfig()" title="Download environments.json pre-filled with server addresses, usernames, and secret reference names — for CLI use">↓ Export environments.json</button>
     <button class="btn btn-secondary btn-sm hidden" id="retryBtn" onclick="runRetryFailed()" title="Re-scan only the endpoints that failed during the last scan"></button>
     <button class="btn btn-danger btn-sm auth-cancel-pulse hidden" id="stopBtn"         onclick="stopScan()">■ Stop Scan</button>
     <button class="btn btn-danger btn-sm auth-cancel-pulse hidden" id="stopValidateBtn" onclick="stopValidation()">■ Stop Validation</button>
@@ -1073,7 +1078,6 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
 </div>
 
 </div><!-- .page-grid -->
-<script src="/assets/app.js"></script>
 </body>
 <script>
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -1082,6 +1086,7 @@ const TYPE_LABELS = {vcf9:'VMware Cloud Foundation (VCF) 9', vvf9:'VMware vSpher
 // version (e.g. "VMware Cloud Foundation 9.1") when available.
 function _envTypeLabel(e) {
   if ((e.type === 'vcf9' || e.type === 'vcf5') && e.vcfMinorVersion) return 'VMware Cloud Foundation (VCF) ' + e.vcfMinorVersion;
+  if (e.type === 'vvf9' && e.vcfMinorVersion) return 'VMware vSphere Foundation (VVF) ' + e.vcfMinorVersion;
   return TYPE_LABELS[e.type] || e.type;
 }
 const _SEV_RANK   = { Critical: 0, High: 1, Medium: 2, Low: 3, NotVulnerable: 4, Unknown: 5 };
@@ -1112,11 +1117,12 @@ const TYPE_FIELDS = {
   // vcfFMUser is kept in TYPE_FIELDS for save/load but the UI derives it from version.
   vcf5:     ['sddcManagerServer','sddcManagerUser','vrslcmServer','vrslcmUser'],
   vsphere8: ['vcenterServer','vcenterUser','nsxManagerServer','nsxManagerUser'],
-  vvf9:     ['vcfOpsServer','vcfOpsUser','vcfFMServer','vcfFMUser','vcenterUser'],
+  vvf9:     ['vcfOpsServer','vcfOpsUser','vcfFMServer','vcfFMUser'],
 };
 
 // ── State ──────────────────────────────────────────────────────────────────
 let _fmPfx      = 'vcf9'; // 'vcf9' or 'vvf9' — set by openEditor(); used by all FM functions
+let _openEditorEnv = null; // env object being edited; null for new environments
 let settingsSaved   = false;
 let _savedSnapshot  = null; // JSON snapshot of last-persisted {logLevel, connectionTimeoutSeconds, environments}
 let pollTimer      = null;
@@ -1128,6 +1134,7 @@ let _lastFailedEndpoints = {};
 // Empty until an SDDC discovery completes; used to conditionally render the Fleet Manager row.
 let _opsVersion = '';
 let _vvf9DiscoveredVcenters    = []; // vCenter FQDNs discovered from VCF Operations VMWARE adapter (VVF9 only)
+let _wizardVcenterPasswords    = {}; // FQDN → password entered in the vCenter wizard step; cleared when wizard closes
 let _vcf9StandaloneVcenters   = []; // standalone vCenter FQDNs co-discovered alongside SDDC Managers (VCF9 only)
 let _discoverAbortCtrl  = null; // AbortController for the in-flight discover-sddc fetch
 let _discoverLogTimer   = null; // interval that polls /discovery/log during authentication
@@ -1287,6 +1294,8 @@ function applySettings(s) {
   if (advChk) advChk.checked = !!(s.checkUpdateDisabled);
   const muChk = document.getElementById('disableModuleUpdateRemindersCheck');
   if (muChk) muChk.checked = !!(s.disableModuleUpdateReminders);
+  const expChk = document.getElementById('showExportEnvButtonCheck');
+  if (expChk) expChk.checked = !!(s.showExportEnvButton);
   // Capture the baseline snapshot BEFORE rendering so the _checkDirty() call
   // inside renderEnvList() always sees a clean state on initial load.
   _captureSnapshot();
@@ -1333,6 +1342,7 @@ function collectGlobal() {
   const toRaw  = parseInt(v('connectionTimeoutSeconds'), 10);
   const advChk = document.getElementById('checkUpdateDisabledCheck');
   const muChk  = document.getElementById('disableModuleUpdateRemindersCheck');
+  const expChk = document.getElementById('showExportEnvButtonCheck');
   return {
     connectionTimeoutSeconds: (!isNaN(toRaw) && toRaw >= 5 && toRaw <= 900) ? toRaw : 30,
     hiddenCols: [..._hiddenCols],
@@ -1340,6 +1350,7 @@ function collectGlobal() {
     logLevel: v('logLevel'),
     checkUpdateDisabled: advChk ? advChk.checked : false,
     disableModuleUpdateReminders: muChk ? muChk.checked : false,
+    showExportEnvButton: expChk ? expChk.checked : false,
   };
 }
 
@@ -1348,12 +1359,14 @@ function _computeSettingsHash() {
   const toEl   = document.getElementById('connectionTimeoutSeconds');
   const advChk = document.getElementById('checkUpdateDisabledCheck');
   const muChk  = document.getElementById('disableModuleUpdateRemindersCheck');
+  const expChk = document.getElementById('showExportEnvButtonCheck');
   const toRaw  = parseInt(toEl ? toEl.value : '', 10);
   return JSON.stringify({
     logLevel: logEl ? logEl.value : '',
     connectionTimeoutSeconds: (!isNaN(toRaw) && toRaw >= 5 && toRaw <= 900) ? toRaw : 30,
     checkUpdateDisabled: advChk ? advChk.checked : false,
     disableModuleUpdateReminders: muChk ? muChk.checked : false,
+    showExportEnvButton: expChk ? expChk.checked : false,
     environments: curSettings.environments || []
   });
 }
@@ -1929,6 +1942,9 @@ async function _saveScanMetaToSettings() {
   if (!changed) return;
   try {
     await _postJson('/settings', curSettings);
+    // Advance the snapshot before rendering so _checkDirty() inside renderEnvList()
+    // sees a clean state — scanMeta is already persisted at this point.
+    _captureSnapshot();
     renderEnvList();
   } catch (_) {}
 }
@@ -1938,7 +1954,7 @@ let _editorStep = 0; // current step value: 0 | 1 | 2 | 'review'
 
 const _STEP_LABELS = {
   vcf9:     ['Name & Type', 'VCF Operations',  'Review'],
-  vcf5:     ['Name & Type', 'SDDC Manager',    'vRSLCM (opt.)', 'Review'],
+  vcf5:     ['Name & Type', 'SDDC Manager',    'vRSLCM', 'Review'],
   vsphere8: ['Name & Type', 'vCenter',         'NSX Manager',   'Review'],
   vvf9:     ['Name & Type', 'VCF Operations',  'vCenter', 'Review'],
 };
@@ -1955,7 +1971,7 @@ const _REQUIRED_FIELDS = {
     vcf9:     ['vcf9-sddcManagerServer', 'vcf9-sddcManagerUser'],
     vcf5:     [], // vRSLCM is optional — no required fields on this step
     vsphere8: [],
-    vvf9:     ['vvf9-vcenterUser'],
+    vvf9:     [], // per-vCenter inputs are dynamic; validated in _validateStep
   },
 };
 
@@ -2035,17 +2051,9 @@ function _showEditorPanels() {
   document.getElementById('stepNextBtn')?.classList.toggle('hidden', isLast);
   document.getElementById('stepSaveBtn')?.classList.toggle('hidden', !isLast);
   _syncNextButton();
-  // VVF9 vCenter step: update the hint with discovered vCenter FQDNs when available.
+  // VVF9 vCenter step: render per-vCenter credential rows.
   if (type === 'vvf9' && _editorStep === 2) {
-    const hint = document.getElementById('vvf9-vcenterHint');
-    if (hint) {
-      if (_vvf9DiscoveredVcenters.length > 0) {
-        const list = _vvf9DiscoveredVcenters.map(f => `<strong>${esc(f)}</strong>`).join(', ');
-        hint.innerHTML = `Discovered ${_vvf9DiscoveredVcenters.length === 1 ? '1 vCenter' : `${_vvf9DiscoveredVcenters.length} vCenters`}: ${list}. Provide the shared username used for all instances.`;
-      } else {
-        hint.textContent = 'vCenter servers are discovered automatically from VCF Operations at scan time. Provide the shared username used for all standalone vCenter instances.';
-      }
-    }
+    _renderVvf9VcenterRows();
   }
 }
 
@@ -2072,12 +2080,24 @@ function _syncNextButton() {
           authDone = !!document.getElementById('vcf9-vcfFMServer')?.value?.trim();
         }
       }
-    } else {
-      authDone = !!document.getElementById('vvf9-vcfFMServer')?.value?.trim();
+    } else { // vvf9
+      const fmFilled = !!document.getElementById('vvf9-vcfFMServer')?.value?.trim();
+      const _vvf9Minor = (_opsVersion || '').match(/(\d+\.\d+)/);
+      // VVF 9.0 has no Fleet Manager; auth is complete once the version is known (9.0).
+      // VVF 9.1 requires Fleet Manager to be discovered.
+      authDone = fmFilled || (_vvf9Minor && _vvf9Minor[1] === '9.0');
     }
   }
 
-  btn.disabled = !(allFilled && authDone);
+  // VVF9 vCenter step: all per-vCenter username inputs must be filled.
+  let vcenterUsersFilled = true;
+  if (type === 'vvf9' && _editorStep === 2 && _vvf9DiscoveredVcenters.length > 0) {
+    vcenterUsersFilled = _vvf9DiscoveredVcenters.every((_, i) =>
+      !!document.getElementById(`vvf9-vcenterUser-${i}`)?.value?.trim()
+    );
+  }
+
+  btn.disabled = !(allFilled && authDone && vcenterUsersFilled);
 }
 
 function _validateStep(step, type) {
@@ -2106,14 +2126,37 @@ function _validateStep(step, type) {
       }
     }
     if (type === 'vvf9') {
-      const fmServer = document.getElementById('vvf9-vcfFMServer')?.value?.trim();
-      if (!fmServer) {
-        const fmErrLabel = _fmLabelFromOpsVersion(_opsVersion);
-        showAlert('envEditorAlert', 'error', `Click "Authenticate" to connect to VCF Operations and auto-discover the ${fmErrLabel}.`);
+      if (!_opsVersion) {
+        showAlert('envEditorAlert', 'error', 'Click "Authenticate" to connect to VCF Operations first.');
         document.getElementById('vvf9-discoverOpsPass')?.focus();
         return false;
       }
+      const _vsMinor = _opsVersion.match(/(\d+\.\d+)/);
+      if (!(_vsMinor && _vsMinor[1] === '9.0')) {
+        // VVF 9.1+ requires Fleet Manager to have been discovered.
+        const fmServer = document.getElementById('vvf9-vcfFMServer')?.value?.trim();
+        if (!fmServer) {
+          const fmErrLabel = _fmLabelFromOpsVersion(_opsVersion);
+          showAlert('envEditorAlert', 'error', `${fmErrLabel} was not discovered. Click "Authenticate" to retry.`);
+          document.getElementById('vvf9-discoverOpsPass')?.focus();
+          return false;
+        }
+      }
     }
+  }
+
+  // VVF9 vCenter step: all per-vCenter usernames required before proceeding.
+  if (step === 2 && type === 'vvf9') {
+    for (let i = 0; i < _vvf9DiscoveredVcenters.length; i++) {
+      const userEl = document.getElementById(`vvf9-vcenterUser-${i}`);
+      if (!userEl?.value?.trim()) {
+        showAlert('envEditorAlert', 'error', `Username is required for ${esc(_vvf9DiscoveredVcenters[i])}.`);
+        userEl?.focus();
+        return false;
+      }
+    }
+    clearAlert('envEditorAlert');
+    return true;
   }
 
   const req = step === 0
@@ -2133,7 +2176,9 @@ function _validateStep(step, type) {
 function _buildReview() {
   const type = v('eType') || 'vcf9';
   const name = v('eName');
-  const reviewFields = [['Name', name], ['Type', TYPE_LABELS[type] || type]];
+  const _reviewMinorVer = _opsVersion ? (_opsVersion.match(/(\d+\.\d+)/)||[])[1] : null;
+  const _reviewTypeLabel = _envTypeLabel({type, vcfMinorVersion: _reviewMinorVer || undefined});
+  const reviewFields = [['Name', name], ['Type', _reviewTypeLabel]];
   const instanceNameVal = (document.getElementById(`${type}-sddcManagerInstanceName`)?.value || '').trim();
   (TYPE_FIELDS[type] || []).forEach(key => {
     // sddcManagerInstanceName is rendered inline with the server row, not as its own row.
@@ -2146,6 +2191,14 @@ function _buildReview() {
     }
     reviewFields.push([_FIELD_DISPLAY_LABELS[`${type}-${key}`] || key, displayVal]);
   });
+  // VVF9: add per-vCenter rows — FQDN and username as separate fields.
+  if (type === 'vvf9') {
+    _vvf9DiscoveredVcenters.forEach((fqdn, i) => {
+      const user = document.getElementById(`vvf9-vcenterUser-${i}`)?.value?.trim() || '';
+      reviewFields.push(['vCenter Server', fqdn]);
+      if (user) reviewFields.push(['vCenter Username', user]);
+    });
+  }
   const rows = reviewFields
     .filter(([, val]) => val)
     .map(([label, val]) =>
@@ -2197,12 +2250,11 @@ async function stepNext() {
         // vRSLCM registered — pre-populate step 2 fields and show a confirmation hint.
         document.getElementById('vcf5-vrslcmServer').value = d.vrslcmFqdn;
         if (!document.getElementById('vcf5-vrslcmUser').value.trim()) {
-          document.getElementById('vcf5-vrslcmUser').value = 'admin@local';
+          document.getElementById('vcf5-vrslcmUser').value = 'vcfadmin@local';
         }
-        const versionNote = d.vrslcmVersion ? ` (v${esc(d.vrslcmVersion)})` : '';
         const hintEl = document.getElementById('vrslcmStep2Hint');
         if (hintEl) {
-          hintEl.innerHTML = `vRSLCM detected: <strong>${esc(d.vrslcmFqdn)}</strong>${versionNote}. Confirm or edit below.`;
+          hintEl.innerHTML = `vRSLCM detected: <strong>${esc(d.vrslcmFqdn)}</strong>. Confirm or edit below. If vRSLCM is integrated with vIDM and mapped to your Active Directory, update the username to your AD account.`;
         }
       } catch (_e) {
         // Could not reach the local server — stay on this step rather than advancing blindly.
@@ -2281,8 +2333,18 @@ function openEditor(idx = -1) {
   // Initialize stepper at step 0 for both add and edit.
   _editorStep = 0;
   _opsVersion = '';
+  _wizardVcenterPasswords = {};
+  _openEditorEnv = null;
+  // For existing VVF 9.x environments, prime _opsVersion from the saved minor version
+  // so _syncNextButton can evaluate the auth-done state without requiring re-authentication.
+  if (idx >= 0) {
+    const _primeEnv = (curSettings.environments || [])[idx];
+    if (_primeEnv?.vcfMinorVersion && (_primeEnv.type === 'vcf9' || _primeEnv.type === 'vvf9')) {
+      _opsVersion = _primeEnv.vcfMinorVersion;
+    }
+  }
   // Restore previously discovered vCenters so the hint and save logic can use them.
-  const _openEditorEnv = idx >= 0 ? (curSettings.environments||[])[idx] : null;
+  _openEditorEnv = idx >= 0 ? (curSettings.environments||[])[idx] : null;
   _vvf9DiscoveredVcenters  = (_openEditorEnv?.type === 'vvf9' && Array.isArray(_openEditorEnv.vcenterFqdns))
     ? _openEditorEnv.vcenterFqdns.slice()
     : [];
@@ -2325,11 +2387,16 @@ function openEditor(idx = -1) {
       if (vvf9FmHint) vvf9FmHint.innerHTML = `Fleet Manager: <strong>${esc(e.vcfFMServer)}</strong>. Re-authenticate to update.`;
       if (vvf9FmRow) vvf9FmRow.style.display = 'none';
     } else {
-      if (vvf9FmHint) vvf9FmHint.textContent = 'After authenticating, Fleet Manager / Fleet Lifecycle Controller endpoints will be discovered automatically.';
+      const _savedMinorVersion = (curSettings.environments||[])[idx]?.vcfMinorVersion;
+      if (vvf9FmHint) {
+        vvf9FmHint.textContent = _savedMinorVersion === '9.0'
+          ? 'VVF 9.0 — no Fleet Lifecycle Controller. Re-authenticate to confirm VCF Operations credentials.'
+          : 'After authenticating, vCenter endpoints will be discovered. On VVF 9.1, Fleet Lifecycle Controller will also be discovered automatically.';
+      }
       if (vvf9FmRow) vvf9FmRow.style.display = 'none';
     }
   } else {
-    if (vvf9FmHint) vvf9FmHint.textContent = 'After authenticating, Fleet Manager / Fleet Lifecycle Controller endpoints will be discovered automatically.';
+    if (vvf9FmHint) vvf9FmHint.textContent = 'After authenticating, vCenter endpoints will be discovered. On VVF 9.1, Fleet Lifecycle Controller will also be discovered automatically.';
     if (vvf9FmRow) vvf9FmRow.style.display = 'none';
   }
   // vcf9: always hide the SDDC fields block on editor open — it is revealed only
@@ -2341,7 +2408,7 @@ function openEditor(idx = -1) {
     const savedSddc = idx >= 0 ? (curSettings.environments||[])[idx]?.sddcManagerServer : '';
     sddcHint.innerHTML = savedSddc
       ? `SDDC Manager: <strong>${esc(savedSddc)}</strong>. Re-authenticate to update.`
-      : 'After authenticating, all SDDC Manager(s) and Fleet Manager / Fleet Lifecycle Controller will be discovered automatically.';
+      : 'After authenticating, SDDC Manager, Fleet Manager, and vCenter endpoints will be discovered automatically. On VCF 9.1, Fleet Lifecycle Controller replaces Fleet Manager.';
   }
   // Reset discovery panels to initial state (pass panel visible, others hidden).
   ['discoverUsernamePanel', 'discoverResultPanel'].forEach(id =>
@@ -2396,7 +2463,7 @@ async function saveEnv() {
     vcf9:     ['sddcManagerServer','sddcManagerUser','vcfOpsServer','vcfOpsUser','vcfFMServer'],
     vcf5:     ['sddcManagerServer','sddcManagerUser'],
     vsphere8: ['vcenterServer','vcenterUser'],
-    vvf9:     ['vcfOpsServer','vcfOpsUser','vcfFMServer','vcenterUser'],
+    vvf9:     ['vcfOpsServer','vcfOpsUser'],
   };
   for (const f of (req[type]||[])) {
     if (!env[f]) {
@@ -2407,15 +2474,19 @@ async function saveEnv() {
   if ((type === 'vsphere8') && env.nsxManagerServer && !env.nsxManagerUser) {
     showAlert('envEditorAlert','error','NSX Manager Username is required when NSX Manager Server is set.'); return;
   }
-  // For VVF9 and VCF9, persist standalone vCenter FQDNs discovered during wizard
-  // authentication.  Re-authenticating overwrites; editing without re-authenticating
-  // preserves the last-known values.
+  // For VVF9: persist discovered vCenter FQDNs and per-vCenter credentials.
   if (type === 'vvf9') {
     if (_vvf9DiscoveredVcenters.length > 0) {
       env.vcenterFqdns = _vvf9DiscoveredVcenters.slice();
+      env.vcenterCredentials = _vvf9DiscoveredVcenters.map((fqdn, i) => ({
+        fqdn,
+        user: document.getElementById(`vvf9-vcenterUser-${i}`)?.value?.trim() || '',
+      }));
+      _wizardVcenterPasswords = {}; // passwords collected at scan time via credential panel
     } else if (idx >= 0) {
       const prev = (curSettings.environments||[])[idx];
       if (prev?.vcenterFqdns?.length) env.vcenterFqdns = prev.vcenterFqdns;
+      if (prev?.vcenterCredentials?.length) env.vcenterCredentials = prev.vcenterCredentials;
     }
   }
   if (type === 'vcf9') {
@@ -2620,7 +2691,7 @@ async function runDiscoverSddc() {
   if (!username) { showAlert('envEditorAlert','error','VCF Operations username is required.'); return; }
   if (!password) { showAlert('envEditorAlert','error','VCF Operations password is required.'); return; }
   const btn = document.getElementById('vcf9AuthBtn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">↻</span> Authenticating…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">↻</span> Authenticating &amp; Discovering…'; }
   _startDiscoveryLogPoll();
 
   // Cancel any previous in-flight request before starting a new one.
@@ -2768,7 +2839,7 @@ async function runVvf9Authenticate() {
   if (!username) { showAlert('envEditorAlert','error','VCF Operations username is required.'); return; }
   if (!password) { showAlert('envEditorAlert','error','VCF Operations password is required.'); return; }
   const btn = document.getElementById('vvf9AuthBtn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">↻</span> Authenticating…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">↻</span> Authenticating &amp; Discovering…'; }
   _startDiscoveryLogPoll();
   clearTimeout(_authCancelTimer);
   _authCancelTimer = setTimeout(() => {
@@ -2842,6 +2913,49 @@ function applyDiscoveredSddc() {
   setTimeout(() => document.getElementById('vcf9-sddcManagerUser')?.focus(), 50);
 }
 
+// ── VVF9 per-vCenter credential rows ──────────────────────────────────────────
+// Renders one credential row per discovered vCenter in the wizard vCenter step.
+// Pre-fills from _openEditorEnv.vcenterCredentials when editing an existing environment.
+function _renderVvf9VcenterRows() {
+  const container = document.getElementById('vvf9-vcenterRows');
+  const hint      = document.getElementById('vvf9-vcenterHint');
+  if (!container) return;
+
+  if (_vvf9DiscoveredVcenters.length === 0) {
+    container.innerHTML = '';
+    if (hint) hint.textContent = 'No vCenter servers were discovered. Return to the VCF Operations step and authenticate first.';
+    return;
+  }
+
+  if (hint) {
+    const n = _vvf9DiscoveredVcenters.length;
+    hint.textContent = `${n === 1 ? '1 vCenter discovered' : `${n} vCenters discovered`}. Enter credentials for each instance.`;
+  }
+
+  // Build a FQDN → user lookup from the saved env (for pre-fill on edit).
+  const savedCreds = {};
+  (_openEditorEnv?.vcenterCredentials || []).forEach(c => { if (c.fqdn) savedCreds[c.fqdn] = c.user; });
+  const savedFallback = _openEditorEnv?.vcenterUser || '';
+
+  container.innerHTML = _vvf9DiscoveredVcenters.map((fqdn, i) => {
+    const user = savedCreds[fqdn] ?? savedFallback;
+    return `
+      <div class="row2" style="margin-top:0;margin-bottom:10px;align-items:flex-end">
+        <div>
+          <label>vCenter Server</label>
+          <div style="font-family:monospace;font-size:.88rem;color:var(--muted);padding:7px 2px;line-height:1.4">${esc(fqdn)}</div>
+        </div>
+        <div>
+          <label class="req">Username</label>
+          <input id="vvf9-vcenterUser-${i}" type="text" value="${esc(user)}"
+            placeholder="administrator@vsphere.local"
+            autocomplete="username" spellcheck="false" autocapitalize="none"
+            oninput="_syncNextButton()">
+        </div>
+      </div>`;
+  }).join('');
+}
+
 // ── Fleet Manager version-aware UX ────────────────────────────────────────────
 // Adapts the Fleet Manager section based on the detected VCF Operations version.
 // Called after SDDC discovery completes or when editing an existing environment.
@@ -2867,23 +2981,31 @@ function _applyOpsVersionUx(opsVersion) {
   const versionKnown = major !== null;
   const is91Plus     = versionKnown && (major > 9 || (major === 9 && minor >= 1));
 
-  // Set the hidden username field to the well-known value for this version.
-  // 9.1 → admin@vsp.local, 9.0 / unknown → admin@local.
+  // Set the hidden username field only when this version actually has a Fleet Manager.
+  // 9.0 has no Fleet Manager — clear the field so it does not appear in Review or get saved.
   const fmUserInput = document.getElementById(_fmPfx + '-vcfFMUser');
   if (fmUserInput) {
-    fmUserInput.value = is91Plus ? 'admin@vsp.local' : 'admin@local';
+    const isVvf90 = _fmPfx === 'vvf9' && versionKnown && !is91Plus;
+    fmUserInput.value = isVvf90 ? '' : (is91Plus ? 'admin@vsp.local' : 'admin@local');
   }
 
   const compLabel = _fmLabelFromOpsVersion(_opsVersion);
   if (label) label.textContent = `${compLabel} Server`;
 
   if (versionKnown) {
-    // Known version (9.0 or 9.1+): hide the FQDN input row — auto-discovery will populate it.
-    // If auto-discovery fails, _autoDiscoverFleetManager() reveals the row as a fallback.
+    // Known version (9.0 or 9.1+): hide the FQDN input row.
     inputRow.style.display = 'none';
-    hint.innerHTML =
-      'VCF Operations <strong>' + esc(_opsVersion) + '</strong> detected. ' +
-      `${compLabel} auto-discovery in progress…`;
+    if (_fmPfx === 'vvf9' && !is91Plus) {
+      // VVF 9.0: vCenters are already discovered during auth; there is no FM to discover.
+      // Show the final message immediately — no transient "in progress" state needed.
+      hint.innerHTML =
+        '<strong>' + esc(_opsVersion) + '</strong> detected. ' +
+        'VVF 9.0 does not include Fleet Lifecycle Controller. Proceed to the next step for final vCenter configuration.';
+    } else {
+      hint.innerHTML =
+        '<strong>' + esc(_opsVersion) + '</strong> detected. ' +
+        `${compLabel} auto-discovery in progress…`;
+    }
     if (label) label.classList.remove('req');
   } else {
     // Unknown version — show server entry row and Discover button.
@@ -2913,11 +3035,54 @@ async function _autoDiscoverFleetManager(password) {
       const hint = document.getElementById(_fmPfx + '-fmHint');
       if (hint) {
         hint.innerHTML =
-          'VCF Operations <strong>' + esc(_opsVersion) + '</strong> detected. ' +
+          '<strong>' + esc(_opsVersion) + '</strong> detected. ' +
           `${compLabel} auto-discovered: <strong>` + esc(d.fleetFqdn) + '</strong>.';
       }
     } else {
-      // Discovery failed — reveal the input row so the user can enter manually.
+      const _discMinor = (_opsVersion || '').match(/(\d+\.\d+)/);
+      const _isVvf9V90 = _fmPfx === 'vvf9' && _discMinor && _discMinor[1] === '9.0';
+      if (_isVvf9V90) {
+        // VVF 9.0 has no Fleet Manager — expected, not an error. Clear any FM fields.
+        const fmServerEl = document.getElementById(_fmPfx + '-vcfFMServer');
+        const fmUserEl   = document.getElementById(_fmPfx + '-vcfFMUser');
+        if (fmServerEl) fmServerEl.value = '';
+        if (fmUserEl)   fmUserEl.value   = '';
+        const hint = document.getElementById(_fmPfx + '-fmHint');
+        if (hint) {
+          hint.innerHTML =
+            '<strong>' + esc(_opsVersion) + '</strong> detected. ' +
+            'VVF 9.0 does not include Fleet Lifecycle Controller. Proceed to the next step for final vCenter configuration.';
+        }
+      } else {
+        // VVF 9.1+ or VCF 9: discovery found nothing — let user enter manually.
+        const row   = document.getElementById(_fmPfx + '-fmInputRow');
+        const label = document.getElementById(_fmPfx + '-fmServerLabel');
+        const hint  = document.getElementById(_fmPfx + '-fmHint');
+        if (row) row.style.display = '';
+        if (label) { label.textContent = `${compLabel} Server`; label.classList.add('req'); }
+        if (hint) {
+          hint.innerHTML =
+            '<strong>' + esc(_opsVersion) + '</strong> detected. ' +
+            `${compLabel} auto-discovery failed — enter the FQDN manually. ` +
+            'Find it in the VCF Operations admin UI at ' +
+            '<code>https://&lt;vcf-ops-fqdn&gt;/admin/</code> under <strong>System Status → Fleet Management</strong>.';
+        }
+      }
+    }
+  } catch(_) {
+    const _catchMinor = (_opsVersion || '').match(/(\d+\.\d+)/);
+    const _catchIsVvf9V90 = _fmPfx === 'vvf9' && _catchMinor && _catchMinor[1] === '9.0';
+    if (_catchIsVvf9V90) {
+      const fmServerEl = document.getElementById(_fmPfx + '-vcfFMServer');
+      const fmUserEl   = document.getElementById(_fmPfx + '-vcfFMUser');
+      if (fmServerEl) fmServerEl.value = '';
+      if (fmUserEl)   fmUserEl.value   = '';
+      const hint = document.getElementById(_fmPfx + '-fmHint');
+      if (hint) {
+        hint.textContent = 'VVF 9.0 does not include Fleet Lifecycle Controller. Proceed to the next step for final vCenter configuration.';
+      }
+    } else {
+      // Network error — reveal manual entry as a fallback.
       const row   = document.getElementById(_fmPfx + '-fmInputRow');
       const label = document.getElementById(_fmPfx + '-fmServerLabel');
       const hint  = document.getElementById(_fmPfx + '-fmHint');
@@ -2925,24 +3090,10 @@ async function _autoDiscoverFleetManager(password) {
       if (label) { label.textContent = `${compLabel} Server`; label.classList.add('req'); }
       if (hint) {
         hint.innerHTML =
-          'VCF Operations <strong>' + esc(_opsVersion) + '</strong> detected. ' +
           `${compLabel} auto-discovery failed — enter the FQDN manually. ` +
           'Find it in the VCF Operations admin UI at ' +
           '<code>https://&lt;vcf-ops-fqdn&gt;/admin/</code> under <strong>System Status → Fleet Management</strong>.';
       }
-    }
-  } catch(_) {
-    // Network error — reveal manual entry as a fallback.
-    const row   = document.getElementById(_fmPfx + '-fmInputRow');
-    const label = document.getElementById(_fmPfx + '-fmServerLabel');
-    const hint  = document.getElementById(_fmPfx + '-fmHint');
-    if (row) row.style.display = '';
-    if (label) { label.textContent = `${compLabel} Server`; label.classList.add('req'); }
-    if (hint) {
-      hint.innerHTML =
-        `${compLabel} auto-discovery failed — enter the FQDN manually. ` +
-        'Find it in the VCF Operations admin UI at ' +
-        '<code>https://&lt;vcf-ops-fqdn&gt;/admin/</code> under <strong>System Status → Fleet Management</strong>.';
     }
   } finally {
     // Capture the Fleet Manager discovery result in the unified Live Log.
@@ -3152,6 +3303,9 @@ function _onSelectionChanged() {
   const selected = [...selectedEnvs].map(i => envs[i]).filter(Boolean);
   renderPassFields(selected);
   _updateValidateButtonState();
+  const exportBtn  = document.getElementById('exportEnvConfigBtn');
+  const exportEnabled = !!(document.getElementById('showExportEnvButtonCheck')?.checked);
+  if (exportBtn) exportBtn.classList.toggle('hidden', !exportEnabled || envs.length === 0);
 }
 
 // null = unknown (check still running), true = file ok, false = file missing/unreadable.
@@ -3208,7 +3362,8 @@ function _updateValidateButtonState() {
     ready = v('sddcPass')?.length > 0 && (!needsOps || v('opsPass')?.length > 0) && v('fmPass')?.length > 0;
   } else if (t === 'vvf9') {
     const skipOpsVvf9 = _isVvf91(env);
-    ready = (!skipOpsVvf9 ? v('opsPass')?.length > 0 : true) && v('fmPass')?.length > 0 && v('vcenterPass')?.length > 0;
+    const noFmVvf9    = _isVvf90(env);
+    ready = (!skipOpsVvf9 ? v('opsPass')?.length > 0 : true) && (noFmVvf9 || v('fmPass')?.length > 0) && v('vcenterPass')?.length > 0;
   } else if (t === 'vcf5') {
     ready = v('sddcPass')?.length > 0 && (!env.vrslcmServer || v('vrslcmPass')?.length > 0);
   } else {
@@ -3261,7 +3416,10 @@ function _buildEnvPassGroup(env, envIdx) {
     const skipOps = _isVvf91(env);
     const fmLbl2 = _fmLabel(env);
     const fmCtx2 = _credHint(env.vcfFMUser, env.vcfFMServer);
-    const vcCtx  = _credHint(env.vcenterUser);
+    const _vcCred0f = env.vcenterCredentials?.[0];
+    const _vcUserF  = _vcCred0f?.user ?? env.vcenterUser ?? '';
+    const _vcFqdnF  = _vcCred0f?.fqdn ?? env.vcenterServer ?? '';
+    const vcCtx     = _credHint(_vcUserF, _vcFqdnF);
     if (skipOps) {
       // VVF9 9.1: Fleet Lifecycle Manager covers VCF Operations — ops credential not needed.
       fields += `${_pf('fmPass', `${fmLbl2} Password ${fmCtx2}`)}<div></div></div><div class="row2" style="margin-top:4px">`;
@@ -3360,7 +3518,7 @@ function _isMultiEnvPassFilled(env, envIdx) {
   const t       = env.type;
   const skipOps = _isVcf91(env);
   if (t === 'vcf9') return vp('sddcPass') && (skipOps || vp('opsPass')) && vp('fmPass');
-  if (t === 'vvf9') { const skipOps = _isVvf91(env); return (!skipOps ? vp('opsPass') : true) && vp('fmPass') && vp('vcenterPass'); }
+  if (t === 'vvf9') { const skipOps91 = _isVvf91(env); const noFm90 = _isVvf90(env); return (!skipOps91 ? vp('opsPass') : true) && (noFm90 || vp('fmPass')) && vp('vcenterPass'); }
   if (t === 'vcf5') return vp('sddcPass') && (!env.vrslcmServer || vp('vrslcmPass'));
   return vp('vcenterPass') && (!env.nsxManagerServer || vp('nsxPass'));
 }
@@ -3422,15 +3580,18 @@ function renderPassInputs() {
     const skipOps = _isVvf91(env);
     const fmLbl  = _fmLabel(env);
     const fmCtx  = _credHint(env.vcfFMUser, env.vcfFMServer);
-    const vcCtx  = _credHint(env.vcenterUser);
+    const _vcCred0 = env.vcenterCredentials?.[0];
+    const _vcUser  = _vcCred0?.user ?? env.vcenterUser ?? '';
+    const _vcFqdn  = _vcCred0?.fqdn ?? env.vcenterServer ?? '';
+    const vcCtx    = _credHint(_vcUser, _vcFqdn);
     if (skipOps) {
       // VVF9 9.1: Fleet Lifecycle Manager covers VCF Operations — ops credential not needed.
       html += `${_pf('fmPass', `${fmLbl} Password ${fmCtx}`)}<div></div></div><div class="row2" style="margin-top:0">`;
       html += `${_pf('vcenterPass', `vCenter Password ${vcCtx}`)}<div></div>`;
     } else {
-      // VVF9 9.0 (or not yet identified): VCF Operations + Fleet Manager + vCenter all required.
+      // VVF9 9.0: VCF Operations + vCenter only (no Fleet Manager).
       const opsCtx = _credHint(env.vcfOpsUser, env.vcfOpsServer);
-      html += `${_pf('opsPass', `VCF Operations Password ${opsCtx}`)}${_pf('fmPass', `${fmLbl} Password ${fmCtx}`)}</div><div class="row2" style="margin-top:0">`;
+      html += `${_pf('opsPass', `VCF Operations Password ${opsCtx}`)}<div></div></div><div class="row2" style="margin-top:0">`;
       html += `${_pf('vcenterPass', `vCenter Password ${vcCtx}`)}<div></div>`;
     }
   } else {
@@ -3462,9 +3623,10 @@ function _envPasswordsFromFields(env, prefix) {
   const vp        = id => v(prefix + id);
   if (t === 'vcf9') return _vcf9Passwords(vp('sddcPass'), vp('opsPass'), vp('fmPass'), skipCvcf9);
   if (t === 'vvf9') {
-    return skipVvf9
-      ? {fmPass: vp('fmPass'), vcenterPass: vp('vcenterPass')}
-      : {opsPass: vp('opsPass'), fmPass: vp('fmPass'), vcenterPass: vp('vcenterPass')};
+    const noFm90 = _isVvf90(env);
+    if (skipVvf9) return {fmPass: vp('fmPass'), vcenterPass: vp('vcenterPass')};
+    if (noFm90)   return {opsPass: vp('opsPass'), vcenterPass: vp('vcenterPass')};
+    return {opsPass: vp('opsPass'), fmPass: vp('fmPass'), vcenterPass: vp('vcenterPass')};
   }
   if (t === 'vcf5') return {sddcPass: vp('sddcPass'), vrslcmPass: vp('vrslcmPass') || ''};
   return {vcenterPass: vp('vcenterPass'), nsxPass: vp('nsxPass') || ''};
@@ -3475,9 +3637,12 @@ function _envPasswords(env, sharedPass) {
   const skipVvf9  = _isVvf91(env);
   if (sharedPass != null) {
     if (t === 'vcf9') return _vcf9Passwords(sharedPass, sharedPass, sharedPass, skipCvcf9);
-    if (t === 'vvf9') return skipVvf9
-      ? {fmPass: sharedPass, vcenterPass: sharedPass}
-      : {opsPass: sharedPass, fmPass: sharedPass, vcenterPass: sharedPass};
+    if (t === 'vvf9') {
+      const noFm90s = _isVvf90(env);
+      if (skipVvf9) return {fmPass: sharedPass, vcenterPass: sharedPass};
+      if (noFm90s)  return {opsPass: sharedPass, vcenterPass: sharedPass};
+      return {opsPass: sharedPass, fmPass: sharedPass, vcenterPass: sharedPass};
+    }
     if (t === 'vcf5') return {sddcPass: sharedPass, vrslcmPass: env.vrslcmServer ? sharedPass : ''};
     return {vcenterPass: sharedPass, nsxPass: sharedPass};
   }
@@ -3485,9 +3650,12 @@ function _envPasswords(env, sharedPass) {
   if (single) {
     const p = v('singlePass');
     if (t === 'vcf9') return _vcf9Passwords(p, p, p, skipCvcf9);
-    if (t === 'vvf9') return skipVvf9
-      ? {fmPass: p, vcenterPass: p}
-      : {opsPass: p, fmPass: p, vcenterPass: p};
+    if (t === 'vvf9') {
+      const noFm90p = _isVvf90(env);
+      if (skipVvf9)  return {fmPass: p, vcenterPass: p};
+      if (noFm90p)   return {opsPass: p, vcenterPass: p};
+      return {opsPass: p, fmPass: p, vcenterPass: p};
+    }
     if (t === 'vcf5') return {sddcPass: p, vrslcmPass: env.vrslcmServer ? p : ''};
     return {vcenterPass: p, nsxPass: env.nsxManagerServer ? p : ''};
   }
@@ -3500,6 +3668,8 @@ function _isVcf91(env) { return !!(env && env.type === 'vcf9' && env.vcfMinorVer
 // Returns true when the environment is a known VVF 9.1 (VSP Fleet-LCM path).
 // VCF Operations credentials are not needed for scan — Fleet Manager is authoritative.
 function _isVvf91(env) { return !!(env && env.type === 'vvf9' && env.vcfMinorVersion === '9.1'); }
+// Returns true when the environment is a known VVF 9.0 (no Fleet Manager or Fleet Lifecycle Controller).
+function _isVvf90(env) { return !!(env && env.type === 'vvf9' && env.vcfMinorVersion === '9.0'); }
 // Returns the correct display name for the Fleet Manager component based on an env object.
 // 9.1+ uses "Fleet Lifecycle Manager"; 9.0 (and unknown) uses "Fleet Manager".
 function _fmLabel(env) { return (_isVcf91(env) || _isVvf91(env)) ? 'Fleet Lifecycle Manager' : 'Fleet Manager'; }
@@ -3594,9 +3764,10 @@ async function _startValidation(queue, mode) {
   document.getElementById('scanProgressItems').innerHTML = '';
   document.getElementById('validationPanel').classList.remove('hidden');
   // In preScan mode stopBtn (already visible from runScan()) serves as the cancel.
-  // Only show the standalone stopValidateBtn in manual validation mode.
+  // In manual mode show stopValidateBtn and hide any stopBtn left over from a prior preScan.
   if (mode !== 'preScan') {
     document.getElementById('stopValidateBtn').classList.remove('hidden');
+    document.getElementById('stopBtn').classList.add('hidden');
   }
   _startValidationTimer();
 
@@ -3625,15 +3796,25 @@ async function _startValidation(queue, mode) {
     if (d.error) {
       _stopValidationTimer();
       document.getElementById('stopValidateBtn').classList.add('hidden');
+      if (mode !== 'preScan') document.getElementById('stopBtn').classList.add('hidden');
+      // Show the error inside the credential check panel where the user is already looking,
+      // rather than the top-level alert banner above the environment list.
+      const phaseTagEl = document.getElementById('validationPhaseTag');
+      const itemsEl    = document.getElementById('validationItems');
+      if (phaseTagEl) phaseTagEl.textContent = '';
+      if (itemsEl) itemsEl.innerHTML =
+        `<div class="progress-item pi-auth-failed">` +
+        `<span class="pi-icon">✗</span>` +
+        `<span class="pi-label">${esc(d.error)}</span></div>`;
       setStatus('idle');
       _updateValidateButtonState();
-      showAlert('scanAlert','error',d.error);
       return;
     }
     _pollValidation();
   } catch(e) {
     _stopValidationTimer();
     document.getElementById('stopValidateBtn').classList.add('hidden');
+    if (mode !== 'preScan') document.getElementById('stopBtn').classList.add('hidden');
     if (_isConnectionError(e)) { _showServerDown(); return; }
     setStatus('idle');
     _updateValidateButtonState();
@@ -3650,24 +3831,69 @@ async function doValidate() {
   await _startValidation(queue, 'manual');
 }
 
+// Export selected environments as environments.json for CLI use.
+// No passwords required — the file contains only server addresses, usernames, and
+// pre-computed password_secret_ref names (e.g. PROD_SDDC_MANAGER_1_PASSWORD).
+async function exportEnvConfig() {
+  clearAlert('scanAlert');
+  const allEnvs  = curSettings.environments || [];
+  const selIdxs  = [...selectedEnvs].sort((a, b) => a - b);
+  const selEnvs  = selIdxs.map(i => allEnvs[i]).filter(Boolean);
+  const envs     = selEnvs.length ? selEnvs : allEnvs;
+  if (!envs.length) {
+    showAlert('scanAlert', 'error', 'No environments configured. Add one in Settings first.');
+    return;
+  }
+  try {
+    const r = await fetch('/environments/export-config', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({envs}),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      showAlert('scanAlert', 'error', 'Export failed: ' + (err.error || r.status));
+      return;
+    }
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = envs.length === 1
+      ? (envs[0].name || 'environment').replace(/[^\w.-]/g, '-') + '-environments.json'
+      : 'environments.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    showAlert('scanAlert', 'error', 'Export failed: ' + e.message);
+  }
+}
+
 function _startValidationTimer() {
   // Stop any previous timer before setting new state so _stopValidationTimer()
   // cannot clear _vStartTime after we set it.
   _stopValidationTimer();
   _vStartTime = Date.now();
   const badge = document.getElementById('validationElapsedBadge');
-  if (badge) { badge.textContent = '⏱ 0s'; badge.style.display = ''; }
+  if (badge) { badge.textContent = '⏱ Testing credentials…'; badge.style.display = ''; }
   _vElapsedTimer = setInterval(() => {
     if (!_vStartTime) return;
     const b = document.getElementById('validationElapsedBadge');
-    if (b) b.textContent = '⏱ ' + _fmtDuration(Math.floor((Date.now() - _vStartTime) / 1000));
+    if (b) b.textContent = '⏱ ' + _fmtDuration(Math.floor((Date.now() - _vStartTime) / 1000)) + ' elapsed';
   }, 1000);
 }
 function _stopValidationTimer() {
   if (_vElapsedTimer) { clearInterval(_vElapsedTimer); _vElapsedTimer = null; }
+  const elapsed = _vStartTime ? Math.floor((Date.now() - _vStartTime) / 1000) : null;
   _vStartTime = null;
   const badge = document.getElementById('validationElapsedBadge');
-  if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+  if (badge) {
+    badge.textContent = (elapsed != null && elapsed > 0)
+      ? '⏱ ' + _fmtDuration(elapsed) + ' elapsed'
+      : '⏱ Done';
+  }
 }
 async function stopValidation() {
   try { await _postJson('/scan/validate-stop', {}); } catch(e) {}
@@ -3689,6 +3915,7 @@ function _pollValidation() {
       const d = await r.json();
       _vPollFailures = 0;
       _renderValidation(d.items||[], d.done);
+      _fetchAndRenderLog();
       if (d.done) {
         clearInterval(_vTimer); _vTimer = null;
         _stopValidationTimer();
@@ -3701,6 +3928,7 @@ function _pollValidation() {
           // Manual credential check complete — populate the live log then restore buttons.
           _fetchAndRenderLog();
           _updateValidateButtonState();
+          document.getElementById('stopBtn').classList.add('hidden');
         }
       }
     } catch(e) {
@@ -3924,6 +4152,7 @@ async function runScan() {
   // Clear the log and expose a cancel button before any async work so the user
   // is never left in a state where they cannot abort.
   document.getElementById('logBox').innerHTML = 'Pre-scan check running…';
+  document.getElementById('resultsCard').classList.add('hidden');
   const stopBtn = document.getElementById('stopBtn');
   if (stopBtn) { stopBtn.textContent = '✕ Cancel'; stopBtn.classList.remove('hidden'); }
   document.getElementById('runBtn').disabled = true;
@@ -3975,6 +4204,7 @@ async function runRetryFailed() {
   document.getElementById('scanProgressPanel').classList.add('hidden');
   document.getElementById('scanProgressItems').innerHTML = '';
   document.getElementById('validationPanel').classList.add('hidden');
+  document.getElementById('resultsCard').classList.add('hidden');
   try {
     const r = await _postJson('/scan/start', {queue, retryFailedOnly: true});
     const d = await r.json();
@@ -5072,6 +5302,7 @@ function str(x) { return x == null ? '' : String(x); }
 function envAllFqdns(e) {
   const fields = [
     ['sddcManagerServer', 'SDDC Manager'],
+    ['vrslcmServer',      'vRSLCM'],
     ['vcfOpsServer',      'VCF Operations'],
     ['vcfFMServer',       'Fleet Manager'],
     ['vcenterServer',     'vCenter'],

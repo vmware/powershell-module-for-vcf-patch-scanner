@@ -28,7 +28,7 @@
 
 @{
     RootModule           = 'VcfPatchScanner.psm1'
-    ModuleVersion        = '1.0.0.1003'
+    ModuleVersion        = '1.0.0.1004'
     GUID                 = '1f2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d'
     Author               = 'Broadcom'
     CompanyName          = 'Broadcom'
@@ -70,6 +70,10 @@
         'Get-VCFPatchScannerServerStatus'
         'Restart-VCFPatchScannerServer'
         'Get-VcfPatchScannerToolsPath'
+        'New-SecretReferenceName'
+        'Resolve-SecretReference'
+        'Import-EnvironmentsFromConfig'
+        'ConvertTo-ScanParameters'
     )
 
     CmdletsToExport      = @()
@@ -79,10 +83,11 @@
     FileList             = @(
         'VcfPatchScanner.psm1'
         'VcfPatchScanner.psd1'
-        'Private\Mapping.ps1'
         'Private\Logging.ps1'
+        'Private\Mapping.ps1'
         'Private\Settings.ps1'
         'Private\Advisory.ps1'
+        'Private\CredentialManagement.ps1'
         'Private\Discovery.ps1'
         'Private\Inventory.ps1'
         'Private\Scanning.ps1'

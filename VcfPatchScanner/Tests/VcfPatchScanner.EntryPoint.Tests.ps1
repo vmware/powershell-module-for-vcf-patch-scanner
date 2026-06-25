@@ -464,6 +464,34 @@ Describe "VcfPatchScanner.EntryPoint" {
             }
         }
 
+        It "Suppresses Safe row when finding uses an advisory alias name for the same inventory key" {
+            InModuleScope VcfPatchScanner {
+                # vRSLCM reports vrops as "VCF Operations" (inventory key).
+                # Advisories list the same product as "VMware Aria Operations" (advisory name).
+                # The finding's component field uses the advisory name; the inventory key is the
+                # canonical alias target. Without alias resolution in the dedup set, both a
+                # "VMware Aria Operations" vulnerability finding AND a "VCF Operations" Safe row
+                # would appear for the same server — a contradictory result.
+                $inventory = @{
+                    'VCF Operations' = @(
+                        [PSCustomObject]@{ Fqdn = 'ops01.example.com'; Version = '8.18.0' }
+                    )
+                }
+                $findings = @(
+                    [PSCustomObject]@{
+                        component   = 'VMware Aria Operations'
+                        serverFqdn  = 'ops01.example.com'
+                        vmsaId      = 'VMSA-2026-0004'
+                        severity    = 'Critical'
+                        cves        = @('CVE-2026-0001')
+                    }
+                )
+
+                $status = ConvertTo-InventoryStatus -Inventory $inventory -Findings $findings
+
+                $status.Count | Should -Be 0 -Because "ops01.example.com already has a vulnerability finding via its advisory alias name; emitting a Safe row for the same server under its inventory key is a false negative"
+            }
+        }
         It "Produces one row per component even when multiple Fleet components share the same FQDN" {
             InModuleScope VcfPatchScanner {
                 Mock Write-LogMessage
