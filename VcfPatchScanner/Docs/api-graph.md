@@ -1,6 +1,6 @@
 # API graph - VcfPatchScanner.psm1
 
-Generated on **2026-06-24 12:28:25 -04:00**.
+Generated on **2026-06-26 08:53:13 -04:00**.
 
 Sources analyzed:
 
@@ -8,10 +8,11 @@ Sources analyzed:
 
 Auto-discovered via dot-source:
 
-- `Private/Mapping.ps1`
 - `Private/Logging.ps1`
+- `Private/Mapping.ps1`
 - `Private/Settings.ps1`
 - `Private/Advisory.ps1`
+- `Private/CredentialManagement.ps1`
 - `Private/Discovery.ps1`
 - `Private/Inventory.ps1`
 - `Private/Scanning.ps1`
@@ -32,15 +33,15 @@ Auto-discovered via dot-source:
 
 | Metric | Count |
 |---|---:|
-| Call sites analyzed | 67 |
-| Call sites mapped to an endpoint | 44 |
-| Distinct endpoints | 28 |
+| Call sites analyzed | 69 |
+| Call sites mapped to an endpoint | 45 |
+| Distinct endpoints | 29 |
 | VCF-version-gated endpoints (max release set) | 2 |
 | SDK cmdlet calls | 17 |
-| REST calls | 27 |
+| REST calls | 28 |
 | Public-endpoint calls | 19 |
 | Internal-endpoint calls | 25 |
-| Local (no HTTP) cmdlet calls | 23 |
+| Local (no HTTP) cmdlet calls | 24 |
 
 ### By target system
 
@@ -49,6 +50,7 @@ Auto-discovered via dot-source:
 | Fleet Manager | 12 | 7 |
 | GitHub | 2 | 2 |
 | NSX-T | 4 | 3 |
+| Other | 1 | 1 |
 | SDDC Manager | 11 | 9 |
 | vCenter | 1 | 1 |
 | VCF Operations | 14 | 6 |
@@ -76,9 +78,9 @@ flowchart LR
     ts1 --> ep7
     ts2[("GitHub")]
     sc1 --> ts2
-    ep8(["GET /vmware/powershell-module-for-vcf-patch-scanner/main/data/securityAdvisory.json<br/>Internal . via REST"])
+    ep8(["GET /vmware/powershell-module-for-vcf-patch-scanner/main/VcfPatchScanner/Data/securityAdvisory.json<br/>Internal . via REST"])
     ts2 --> ep8
-    ep9(["HEAD /vmware/powershell-module-for-vcf-patch-scanner/main/data/securityAdvisory.json<br/>Internal . via REST"])
+    ep9(["HEAD /vmware/powershell-module-for-vcf-patch-scanner/main/VcfPatchScanner/Data/securityAdvisory.json<br/>Internal . via REST"])
     ts2 --> ep9
     ts3[("NSX-T")]
     sc1 --> ts3
@@ -88,44 +90,48 @@ flowchart LR
     ts3 --> ep11
     ep12(["GET /api/v1/transport-nodes/$nodeId/status<br/>Public . via REST"])
     ts3 --> ep12
-    ts4[("SDDC Manager")]
+    ts4[("Other")]
     sc1 --> ts4
-    ep13(["GET /v1/clusters<br/>Public . via SDK"])
+    ep13(["GET /lcm/lcops/api/v2/settings/system-details<br/>Unknown . via REST"])
     ts4 --> ep13
-    ep14(["GET /v1/credentials<br/>Public . via SDK"])
-    ts4 --> ep14
-    ep15(["GET /v1/domains<br/>Public . via SDK"])
-    ts4 --> ep15
-    ep16(["GET /v1/hosts<br/>Public . via SDK"])
-    ts4 --> ep16
-    ep17(["GET /v1/nsx-clusters<br/>Public . via SDK"])
-    ts4 --> ep17
-    ep18(["GET /v1/sddc-managers<br/>Public . via SDK"])
-    ts4 --> ep18
-    ep19(["GET /v1/vcenters<br/>Public . via SDK"])
-    ts4 --> ep19
-    ep20(["GET /v1/vrslcms<br/>Internal . via REST"])
-    ts4 --> ep20
-    ep21(["POST /v1/tokens<br/>Internal . via REST"])
-    ts4 --> ep21
-    ts5[("vCenter")]
+    ts5[("SDDC Manager")]
     sc1 --> ts5
-    ep22(["POST /api/session<br/>Internal . via REST"])
+    ep14(["GET /v1/clusters<br/>Public . via SDK"])
+    ts5 --> ep14
+    ep15(["GET /v1/credentials<br/>Public . via SDK"])
+    ts5 --> ep15
+    ep16(["GET /v1/domains<br/>Public . via SDK"])
+    ts5 --> ep16
+    ep17(["GET /v1/hosts<br/>Public . via SDK"])
+    ts5 --> ep17
+    ep18(["GET /v1/nsx-clusters<br/>Public . via SDK"])
+    ts5 --> ep18
+    ep19(["GET /v1/sddc-managers<br/>Public . via SDK"])
+    ts5 --> ep19
+    ep20(["GET /v1/vcenters<br/>Public . via SDK"])
+    ts5 --> ep20
+    ep21(["GET /v1/vrslcms<br/>Internal . via REST"])
+    ts5 --> ep21
+    ep22(["POST /v1/tokens<br/>Internal . via REST"])
     ts5 --> ep22
-    ts6[("VCF Operations")]
+    ts6[("vCenter")]
     sc1 --> ts6
-    ep23(["GET /casa/capabilities<br/>Internal . via REST"])
+    ep23(["POST /api/session<br/>Internal . via REST"])
     ts6 --> ep23
-    ep24(["GET /suite-api/api/adapters<br/>Public . via SDK"])
-    ts6 --> ep24
-    ep25(["GET /suite-api/api/credentials<br/>Internal . via REST"])
-    ts6 --> ep25
-    ep26(["GET /suite-api/api/versions/current<br/>Public . via SDK"])
-    ts6 --> ep26
-    ep27(["GET /suite-api/internal/components?componentType=VSP<br/>Internal . via REST"])
-    ts6 --> ep27
-    ep28(["POST /suite-api/api/auth/token/acquire<br/>Internal . via REST"])
-    ts6 --> ep28
+    ts7[("VCF Operations")]
+    sc1 --> ts7
+    ep24(["GET /casa/capabilities<br/>Internal . via REST"])
+    ts7 --> ep24
+    ep25(["GET /suite-api/api/adapters<br/>Public . via SDK"])
+    ts7 --> ep25
+    ep26(["GET /suite-api/api/credentials<br/>Internal . via REST"])
+    ts7 --> ep26
+    ep27(["GET /suite-api/api/versions/current<br/>Public . via SDK"])
+    ts7 --> ep27
+    ep28(["GET /suite-api/internal/components?componentType=VSP<br/>Internal . via REST"])
+    ts7 --> ep28
+    ep29(["POST /suite-api/api/auth/token/acquire<br/>Internal . via REST"])
+    ts7 --> ep29
 ```
 
 ## Per target system
@@ -164,8 +170,8 @@ flowchart TB
 flowchart TB
     subgraph GitHubSub ["GitHub"]
       direction TB
-      ep1(["GET /vmware/powershell-module-for-vcf-patch-scanner/main/data/securityAdvisory.json<br/>Internal . via REST"])
-      ep2(["HEAD /vmware/powershell-module-for-vcf-patch-scanner/main/data/securityAdvisory.json<br/>Internal . via REST"])
+      ep1(["GET /vmware/powershell-module-for-vcf-patch-scanner/main/VcfPatchScanner/Data/securityAdvisory.json<br/>Internal . via REST"])
+      ep2(["HEAD /vmware/powershell-module-for-vcf-patch-scanner/main/VcfPatchScanner/Data/securityAdvisory.json<br/>Internal . via REST"])
       fn1("Invoke-AdvisoryDownloadIfChanged") -->|"Invoke-WebRequest"| ep2
       fn1("Invoke-AdvisoryDownloadIfChanged") -->|"Invoke-WebRequest"| ep1
     end
@@ -184,6 +190,17 @@ flowchart TB
       fn2("Get-StandaloneNsxManagerInventory") -->|"Invoke-RestMethod"| ep1
       fn3("Get-NsxEdgeInventory") -->|"Invoke-RestMethod"| ep2
       fn3("Get-NsxEdgeInventory") -->|"Invoke-RestMethod"| ep3
+    end
+```
+
+### Other
+
+```mermaid
+flowchart TB
+    subgraph OtherSub ["Other"]
+      direction TB
+      ep1(["GET /lcm/lcops/api/v2/settings/system-details<br/>Unknown . via REST"])
+      fn1("Test-VrslcmAuthentication") -->|"Invoke-RestMethod"| ep1
     end
 ```
 
@@ -266,11 +283,12 @@ flowchart TB
 | Fleet Manager | GET | `/lcm/lcops/api/v2/environments` | Internal | via REST | - | `Invoke-RestMethod` | 2 |
 | Fleet Manager | GET | `/lcm/lcops/api/v2/settings/system-details` | Internal | via REST | - | `Invoke-RestMethod` | 3 |
 | Fleet Manager | POST | `/lcm/locker/api/v2/passwords/$vmid/decrypted` | Internal | via REST | VCF up to 9.0.x | `Invoke-RestMethod` | 1 |
-| GitHub | GET | `/vmware/powershell-module-for-vcf-patch-scanner/main/data/securityAdvisory.json` | Internal | via REST | - | `Invoke-WebRequest` | 1 |
-| GitHub | HEAD | `/vmware/powershell-module-for-vcf-patch-scanner/main/data/securityAdvisory.json` | Internal | via REST | - | `Invoke-WebRequest` | 1 |
+| GitHub | GET | `/vmware/powershell-module-for-vcf-patch-scanner/main/VcfPatchScanner/Data/securityAdvisory.json` | Internal | via REST | - | `Invoke-WebRequest` | 1 |
+| GitHub | HEAD | `/vmware/powershell-module-for-vcf-patch-scanner/main/VcfPatchScanner/Data/securityAdvisory.json` | Internal | via REST | - | `Invoke-WebRequest` | 1 |
 | NSX-T | GET | `/api/v1/node` | Internal | via REST | - | `Test-NsxManagerAuthentication, Invoke-RestMethod` | 2 |
 | NSX-T | GET | `/api/v1/transport-nodes?node_types=EdgeNode&page_size=100` | Public | via REST | - | `Invoke-RestMethod` | 1 |
 | NSX-T | GET | `/api/v1/transport-nodes/$nodeId/status` | Public | via REST | - | `Invoke-RestMethod` | 1 |
+| Other | GET | `/lcm/lcops/api/v2/settings/system-details` | Unknown | via REST | - | `Invoke-RestMethod` | 1 |
 | SDDC Manager | GET | `/v1/clusters` | Public | via SDK | VCF 9.0+ | `Invoke-VcfGetClusters` | 1 |
 | SDDC Manager | GET | `/v1/credentials` | Public | via SDK | VCF 9.0+ | `Invoke-VcfGetCredentials` | 1 |
 | SDDC Manager | GET | `/v1/domains` | Public | via SDK | VCF 9.0+ | `Invoke-VcfGetDomains` | 1 |

@@ -212,7 +212,7 @@ function Test-EndpointTcpConnection {
             Server    = $Server
             Status    = "Unauthenticated"
             Connected = $true
-            Message   = "Credentials not configured — set $PasswordEnvVar"
+            Message   = "Password not configured"
             Password  = $null
         }
     }
