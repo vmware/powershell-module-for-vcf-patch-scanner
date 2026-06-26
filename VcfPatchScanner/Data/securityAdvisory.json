@@ -1,0 +1,2469 @@
+{
+  "schemaVersion": "2.0",
+  "updatedAt": "2026-06-26T18:39:38Z",
+  "advisories": [
+    {
+      "vmsaId": "VMSA-2026-0004",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/37513",
+      "publishedDate": "2026-06-08",
+      "updatedDate": "2026-06-08T07:26:38Z",
+      "severity": "High",
+      "cvssRange": "8.0",
+      "title": "VMSA-2026-0004: VMware Cloud Foundation Operations updates address multiple vulnerabilities (CVE-2026-41722, CVE-2026-41723 and CVE-2026-41724)",
+      "description": "Multiple vulnerabilities in VMware Cloud Foundation Operations were privately reported to Broadcom. Patches and updates are available to remediate these vulnerabilities in affected Broadcom products.",
+      "impactedComponents": [
+        {
+          "component": "VCF Operations",
+          "cves": [
+            "CVE-2026-41722",
+            "CVE-2026-41723"
+          ],
+          "cvssRange": "8.0",
+          "minimumVersions": [
+            "9.0.0.0"
+          ],
+          "fixedVersions": [
+            "9.0.2.0200"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/release-notes/patch-releases-9-0-0-x.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2026-41722",
+            "CVE-2026-41723"
+          ],
+          "cvssRange": "8.0",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.6"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8186-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2026-41722",
+            "CVE-2026-41723",
+            "CVE-2026-41724"
+          ],
+          "cvssRange": "8.0",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.7"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8187-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2026-0001",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/36947",
+      "publishedDate": "2026-02-24",
+      "updatedDate": "2026-03-11T07:07:22Z",
+      "severity": "High",
+      "cvssRange": "6.2 - 8.1",
+      "title": "VMSA-2026-0001: VMware Aria Operations updates address multiple vulnerabilities (CVE-2026-22719, CVE-2026-22720 and CVE-2026-22721)",
+      "description": "Multiple vulnerabilities in VMware Aria Operations were privately reported to Broadcom. Patches and workarounds are available to remediate or workaround this vulnerability in affected Broadcom products.",
+      "impactedComponents": [
+        {
+          "component": "VCF Operations",
+          "cves": [
+            "CVE-2026-22719",
+            "CVE-2026-22720",
+            "CVE-2026-22721"
+          ],
+          "cvssRange": "6.2 - 8.1",
+          "minimumVersions": [
+            "9.0.0.0"
+          ],
+          "fixedVersions": [
+            "9.0.2.0"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/release-notes/vmware-cloud-foundation-9-0-2-release-notes.html",
+          "severity": "High",
+          "workaround": "KB430349 (CVE-2026-22719)",
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2026-22719",
+            "CVE-2026-22720",
+            "CVE-2026-22721"
+          ],
+          "cvssRange": "6.2 - 8.1",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.6"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8186-release-notes.html",
+          "severity": "High",
+          "workaround": "KB430349 (CVE-2026-22719)",
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0016",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/36150",
+      "publishedDate": "2025-09-29",
+      "updatedDate": "2025-09-29T17:29:06Z",
+      "severity": "High",
+      "cvssRange": "7.5 - 8.5",
+      "title": "VMSA-2025-0016: VMware vCenter and NSX updates address multiple vulnerabilities (CVE-2025-41250, CVE-2025-41251, CVE-2025-41252)",
+      "description": "Multiple vulnerabilities in VMware vCenter and NSX were privately reported to Broadcom. Updates are available to remediate these vulnerabilities in affected Broadcom products.",
+      "impactedComponents": [
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-41251",
+            "CVE-2025-41252"
+          ],
+          "cvssRange": "7.5 - 8.1",
+          "minimumVersions": [
+            "9.0.0.0"
+          ],
+          "fixedVersions": [
+            "9.0.1.0"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/release-notes/vmware-cloud-foundation-9-0-1-release-notes/nsx-9-0-1-0000.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-41251",
+            "CVE-2025-41252"
+          ],
+          "cvssRange": "7.5 - 8.1",
+          "minimumVersions": [
+            "4.2.0"
+          ],
+          "fixedVersions": [
+            "4.2.2.2",
+            "4.2.3.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX&displayGroup=VMware%20NSX&release=4.2.2.2&os=&servicePk=&language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-41251",
+            "CVE-2025-41252"
+          ],
+          "cvssRange": "7.5 - 8.1",
+          "minimumVersions": [
+            "4.0.0",
+            "4.1.0"
+          ],
+          "fixedVersions": [
+            "4.1.2.7"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX&displayGroup=VMware%20NSX&release=4.1.2.7&os=&servicePk=&language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-41251",
+            "CVE-2025-41252"
+          ],
+          "cvssRange": "7.5 - 8.1",
+          "minimumVersions": [
+            "3.0"
+          ],
+          "fixedVersions": [
+            "3.2.4.3"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX-T%20Data%20Center&displayGroup=VMware%20NSX-T%20Data%20Center&release=3.2.4.3&os=&servicePk=&language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2025-41250"
+          ],
+          "cvssRange": "8.5",
+          "minimumVersions": [
+            "9.0.0.0"
+          ],
+          "fixedVersions": [
+            "9.0.1.0"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/release-notes/vmware-cloud-foundation-9-0-1-release-notes/vcenter-9-0-1-0000.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2025-41250"
+          ],
+          "cvssRange": "8.5",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24853646"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/vcenter-server-update-and-patch-release-notes/vsphere-vcenter-server-80u3g-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2025-41250"
+          ],
+          "cvssRange": "8.5",
+          "minimumVersions": [
+            "7.0"
+          ],
+          "fixedVersions": [
+            "7.0.3.24927011"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/vcenter-server-update-and-patch-releases/vsphere-vcenter-server-70u3w-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0015",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/36149",
+      "publishedDate": "2025-09-29",
+      "updatedDate": "2025-10-30T17:19:24Z",
+      "severity": "High",
+      "cvssRange": "4.9 - 7.8",
+      "title": "VMSA-2025-0015: VMware Aria Operations and VMware Tools updates address multiple vulnerabilities (CVE-2025-41244,CVE-2025-41245, CVE-2025-41246)",
+      "description": "A malicious actor with non-administrative privileges in Aria Operations may exploit this vulnerability to disclose credentials of other users of Aria Operations.",
+      "impactedComponents": [
+        {
+          "component": "VCF Operations",
+          "cves": [
+            "CVE-2025-41244"
+          ],
+          "cvssRange": "7.8",
+          "minimumVersions": [
+            "9.0.0.0"
+          ],
+          "fixedVersions": [
+            "9.0.1.0"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/release-notes/vmware-cloud-foundation-9-0-1-release-notes/vcf-operations-9-0-1-0000.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2025-41244",
+            "CVE-2025-41245"
+          ],
+          "cvssRange": "4.9 - 7.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.5"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/vmware-aria-operations-8185-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0014",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/35964",
+      "publishedDate": "2025-07-29",
+      "updatedDate": "2025-07-30T12:28:39Z",
+      "severity": "Medium",
+      "cvssRange": "4.4",
+      "title": "VMSA-2025-0014: VMware vCenter updates address a denial-of-service vulnerability (CVE-2025-41241)",
+      "description": "A denial-of-service vulnerability in VMware vCenter was privately reported to Broadcom. Updates are available to remediate this vulnerability in affected Broadcom products.",
+      "impactedComponents": [
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2025-41241"
+          ],
+          "cvssRange": "4.4",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24853646"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/vcenter-server-update-and-patch-release-notes/vsphere-vcenter-server-80u3g-release-notes.html",
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2025-41241"
+          ],
+          "cvssRange": "4.4",
+          "minimumVersions": [
+            "7.0"
+          ],
+          "fixedVersions": [
+            "7.0.3.24730281"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/vcenter-server-update-and-patch-releases/vsphere-vcenter-server-70u3v-release-notes.html",
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0013",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/35877",
+      "publishedDate": "2025-07-15",
+      "updatedDate": "2025-07-15T15:55:43Z",
+      "severity": "Critical",
+      "cvssRange": "7.1 - 9.3",
+      "title": "VMSA-2025-0013: VMware ESXi, Workstation, Fusion, and Tools updates address multiple vulnerabilities (CVE-2025-41236, CVE-2025-41237, CVE-2025-41238, CVE-2025-41239)",
+      "description": "Multiple vulnerabilities in VMware ESXi, Workstation, Fusion, and Tools were privately reported to Broadcom. Updates are available to remediate these vulnerabilities in affected Broadcom products.",
+      "impactedComponents": [
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-41237"
+          ],
+          "cvssRange": "8.4",
+          "minimumVersions": [
+            "9.0.0.0"
+          ],
+          "fixedVersions": [
+            "9.0.0.24813472"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/release-notes/maintenance-releases/esx-update-and-patch-release-notes/esx-9-0-0-0100.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "Additional guidance for updating VMware Tools asynchronously is available in the FAQ ."
+        },
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-41236",
+            "CVE-2025-41237",
+            "CVE-2025-41238",
+            "CVE-2025-41239"
+          ],
+          "cvssRange": "7.1 - 9.3",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24784735"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u3f-release-notes.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "Additional guidance for updating VMware Tools asynchronously is available in the FAQ ."
+        },
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-41236",
+            "CVE-2025-41237",
+            "CVE-2025-41238",
+            "CVE-2025-41239"
+          ],
+          "cvssRange": "7.1 - 9.3",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.2.24789317"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u2e-release-notes.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "Additional guidance for updating VMware Tools asynchronously is available in the FAQ ."
+        },
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-41236",
+            "CVE-2025-41237",
+            "CVE-2025-41238",
+            "CVE-2025-41239"
+          ],
+          "cvssRange": "7.1 - 9.3",
+          "minimumVersions": [
+            "7.0"
+          ],
+          "fixedVersions": [
+            "7.0.3.24784741"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-70u3w-release-notes.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "Additional guidance for updating VMware Tools asynchronously is available in the FAQ ."
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0012",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25738",
+      "publishedDate": "2025-06-04",
+      "updatedDate": "2025-07-18T15:21:00Z",
+      "severity": "High",
+      "cvssRange": "5.9 - 7.5",
+      "title": "VMSA-2025-0012: VMware NSX updates address multiple vulnerabilities (CVE-2025-22243, CVE-2025-22244, CVE-2025-22245)",
+      "description": "",
+      "impactedComponents": [
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-22243",
+            "CVE-2025-22244",
+            "CVE-2025-22245"
+          ],
+          "cvssRange": "5.9 - 7.5",
+          "minimumVersions": [
+            "4.2.0"
+          ],
+          "fixedVersions": [
+            "4.2.2.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX&amp;displayGroup=VMware%20NSX&amp;release=4.2.2.1&amp;os=&amp;servicePk=&amp;language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-22243",
+            "CVE-2025-22244",
+            "CVE-2025-22245"
+          ],
+          "cvssRange": "5.9 - 7.5",
+          "minimumVersions": [
+            "4.2.1.0"
+          ],
+          "fixedVersions": [
+            "4.2.1.4"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX&amp;displayGroup=VMware%20NSX&amp;release=4.2.1.4&amp;os=&amp;servicePk=&amp;language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-22243",
+            "CVE-2025-22244",
+            "CVE-2025-22245"
+          ],
+          "cvssRange": "5.9 - 7.5",
+          "minimumVersions": [
+            "4.0.0",
+            "4.1.0"
+          ],
+          "fixedVersions": [
+            "4.1.2.6"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX&amp;displayGroup=VMware%20NSX&amp;release=4.1.2.6&amp;os=&amp;servicePk=&amp;language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2025-22243",
+            "CVE-2025-22244",
+            "CVE-2025-22245"
+          ],
+          "cvssRange": "5.9 - 7.5",
+          "minimumVersions": [
+            "3.2.0"
+          ],
+          "fixedVersions": [
+            "3.2.4.2"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20NSX-T%20Data%20Center&amp;displayGroup=VMware%20NSX-T%20Data%20Center&amp;release=3.2.4.2&amp;os=&amp;servicePk=&amp;language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0010",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25717",
+      "publishedDate": "2025-05-20",
+      "updatedDate": "2025-05-20T14:51:13Z",
+      "severity": "High",
+      "cvssRange": "4.3 - 8.8",
+      "title": "VMSA-2025-0010 : VMware ESXi, vCenter Server, Workstation, and Fusion updates address multiple vulnerabilities (CVE-2025-41225, CVE-2025-41226, CVE-2025-41227, CVE-2025-41228)",
+      "description": "Multiple vulnerabilities in ESXi, vCenter Server, and Workstation were privately reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-41226",
+            "CVE-2025-41227",
+            "CVE-2025-41228"
+          ],
+          "cvssRange": "4.3 - 6.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24659227"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u3e-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-41226",
+            "CVE-2025-41227",
+            "CVE-2025-41228"
+          ],
+          "cvssRange": "4.3 - 6.8",
+          "minimumVersions": [
+            "7.0"
+          ],
+          "fixedVersions": [
+            "7.0.3.24723868"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-70u3v-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2025-41225",
+            "CVE-2025-41228"
+          ],
+          "cvssRange": "4.3 - 8.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24674346"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/vcenter-server-update-and-patch-release-notes/vsphere-vcenter-server-80u3e-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2025-41225"
+          ],
+          "cvssRange": "8.8",
+          "minimumVersions": [
+            "7.0"
+          ],
+          "fixedVersions": [
+            "7.0.3.24730281"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/vcenter-server-update-and-patch-releases/vsphere-vcenter-server-70u3v-release-notes.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0008",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25711",
+      "publishedDate": "2025-05-12",
+      "updatedDate": "2025-05-12T11:03:33Z",
+      "severity": "High",
+      "cvssRange": "8.2",
+      "title": "VMSA-2025-0008: VMware Aria automation updates address a DOM based Cross-site scripting vulnerability (CVE-2025-22249)",
+      "description": "A DOM based Cross-Site Scripting (XSS) vulnerability in VMware Aria Automation was privately reported to VMware. Patches are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Automation",
+          "cves": [
+            "CVE-2025-22249"
+          ],
+          "cvssRange": "8.2",
+          "minimumVersions": [
+            "8.18.0"
+          ],
+          "fixedVersions": [
+            "8.18.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/web/ecx/solutiondetails?patchId=5850",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0006",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25541",
+      "publishedDate": "2025-04-01",
+      "updatedDate": "2025-04-04T06:31:35Z",
+      "severity": "High",
+      "cvssRange": "7.8",
+      "title": "VMSA-2025-0006: VMware Aria Operations updates address a local privilege escalation vulnerability (CVE-2025-22231)",
+      "description": "A local privilege escalation vulnerability in VMware Aria Operations was responsibly reported to VMware. Patches are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2025-22231"
+          ],
+          "cvssRange": "7.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/web/ecx/solutiondetails?patchId=5817",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0004",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25390",
+      "publishedDate": "2025-03-04",
+      "updatedDate": "2025-03-04T11:06:08Z",
+      "severity": "Critical",
+      "cvssRange": "7.1 - 9.3",
+      "title": "VMSA-2025-0004: VMware ESXi, Workstation, and Fusion updates address multiple vulnerabilities (CVE-2025-22224, CVE-2025-22225, CVE-2025-22226)",
+      "description": "Multiple vulnerabilities in VMware ESXi, Workstation, and Fusion were privately reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-22224",
+            "CVE-2025-22225",
+            "CVE-2025-22226"
+          ],
+          "cvssRange": "7.1 - 9.3",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24585383"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u3d-release-notes.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-22224",
+            "CVE-2025-22225",
+            "CVE-2025-22226"
+          ],
+          "cvssRange": "7.1 - 9.3",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.2.24585300"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/8-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-80u2d-release-notes.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2025-22224",
+            "CVE-2025-22225",
+            "CVE-2025-22226"
+          ],
+          "cvssRange": "7.1 - 9.3",
+          "minimumVersions": [
+            "7.0"
+          ],
+          "fixedVersions": [
+            "7.0.3.24585291"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/7-0/release-notes/esxi-update-and-patch-release-notes/vsphere-esxi-70u3s-release-notes.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0003",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25329",
+      "publishedDate": "2025-01-30",
+      "updatedDate": "2025-02-14T09:27:13Z",
+      "severity": "High",
+      "cvssRange": "4.3 - 8.5",
+      "title": "VMSA-2025-0003: VMware Aria Operations for Logs and VMware Aria Operations updates address multiple vulnerabilities (CVE-2025-22218, CVE-2025-22219, CVE-2025-22220, CVE-2025-22221 and CVE-2025-22222)",
+      "description": "Multiple vulnerabilities in VMware Aria Operations for logs and VMware Aria Operations were privately reported to VMware. Patches are available to remediate these vulnerabilities in the affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2025-22222"
+          ],
+          "cvssRange": "7.7",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.3"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Aria%20Operations&amp;displayGroup=VMware%20Aria%20Operations&amp;release=8.18.3&amp;os=&amp;servicePk=527515&amp;language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2025-22218",
+            "CVE-2025-22219",
+            "CVE-2025-22220",
+            "CVE-2025-22221"
+          ],
+          "cvssRange": "4.3 - 8.5",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.3"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?subFamily=VMware%20Aria%20Operations%20for%20Logs&amp;displayGroup=VMware%20Aria%20Operations%20for%20Logs&amp;release=8.18.3&amp;os=&amp;servicePk=527517&amp;language=EN",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2025-0001",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25312",
+      "publishedDate": "2025-01-07",
+      "updatedDate": "2025-02-14T09:34:15Z",
+      "severity": "Medium",
+      "cvssRange": "4.3",
+      "title": "VMSA-2025-0001: VMware Aria automation update addresses a server side request forgery vulnerability (CVE-2025-22215)",
+      "description": "A server-side request forgery (SSRF) vulnerability in VMware Aria Automation was responsibly reported to VMware. Patches are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Automation",
+          "cves": [
+            "CVE-2025-22215"
+          ],
+          "cvssRange": "4.3",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/web/ecx/solutiondetails?patchId=5747",
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0022",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25199",
+      "publishedDate": "2024-11-26",
+      "updatedDate": "2024-11-26T11:04:26Z",
+      "severity": "High",
+      "cvssRange": "6.5 - 7.8",
+      "title": "VMSA-2024-0022: VMware Aria Operations updates address multiple vulnerabilities(CVE-2024-38830, CVE-2024-38831, CVE-2024-38832, CVE-2024-38833, CVE-2024-38834)",
+      "description": "Multiple vulnerabilities in VMware Aria Operations were responsibly reported to VMware. Updates are available to remediate these vulnerabilities in the affected VMware product.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2024-38830",
+            "CVE-2024-38831",
+            "CVE-2024-38832",
+            "CVE-2024-38833",
+            "CVE-2024-38834"
+          ],
+          "cvssRange": "6.5 - 7.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.18.2"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://techdocs.broadcom.com/us/en/vmware-cis/aria/aria-operations/8-18/Chunk2029420434.html#Chunk2029420434",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0020",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/25047",
+      "publishedDate": "2024-10-09",
+      "updatedDate": "2024-10-10T13:15:12Z",
+      "severity": "Medium",
+      "cvssRange": "6.7",
+      "title": "VMSA-2024-0020:VMware NSX updates address multiple vulnerabilities (CVE-2024-38818, CVE-2024-38817, CVE-2024-38815)",
+      "description": "",
+      "impactedComponents": [
+        {
+          "component": "NSX",
+          "cves": [
+            "CVE-2024-38817"
+          ],
+          "cvssRange": "6.7",
+          "minimumVersions": [
+            "4.0"
+          ],
+          "fixedVersions": [
+            "4.2.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://support.broadcom.com/group/ecx/productfiles?displayGroup=VMware%20NSX%20-%20VMware%20NSX%20Standard&amp;release=4.x&amp;os=&amp;servicePk=202438&amp;language=EN&amp;groupId=204034",
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0019",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24968",
+      "publishedDate": "2024-09-17",
+      "updatedDate": "2024-11-18T17:31:49Z",
+      "severity": "Critical",
+      "cvssRange": "7.5 - 9.8",
+      "title": "VMSA-2024-0019:VMware vCenter Server updates address heap-overflow and privilege escalation vulnerabilities (CVE-2024-38812, CVE-2024-38813)",
+      "description": "A heap-overflow vulnerability and a privilege escalation vulnerability in vCenter Server were responsibly reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2024-38812",
+            "CVE-2024-38813"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24322831"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-80u3d-release-notes/index.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2024-38812",
+            "CVE-2024-38813"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.2.24321653"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-80u2e-release-notes/index.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0017",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24598",
+      "publishedDate": "2024-07-10",
+      "updatedDate": "2025-02-14T09:36:07Z",
+      "severity": "High",
+      "cvssRange": "8.5",
+      "title": "VMSA-2024-0017: VMware Aria Automation updates address SQL-injection vulnerability (CVE-2024-22280)",
+      "description": "An SQL-injection vulnerability in VMware Aria Automation was privately reported to VMware. Patches and workarounds are available to remediate or workaround this vulnerability in the affected VMware product.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Automation",
+          "cves": [
+            "CVE-2024-22280"
+          ],
+          "cvssRange": "8.5",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.17.0"
+          ],
+          "kbArticles": "KB325790",
+          "fixedVersionUrl": null,
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0013",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24505",
+      "publishedDate": "2024-06-25",
+      "updatedDate": "2024-08-12T15:57:58Z",
+      "severity": "Medium",
+      "cvssRange": "5.3 - 6.8",
+      "title": "VMSA-2024-0013:VMware ESXi and vCenter Server updates address multiple security vulnerabilities (CVE-2024-37085, CVE-2024-37086, CVE-2024-37087)",
+      "description": "",
+      "impactedComponents": [
+        {
+          "component": "ESXi",
+          "cves": [],
+          "cvssRange": "6.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24022510"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-esxi-803-release-notes/index.html",
+          "severity": "Medium",
+          "workaround": "KB369707",
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [],
+          "cvssRange": "5.3",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.3.24022515"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-803-release-notes/index.html",
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0012",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24453",
+      "publishedDate": "2024-06-18",
+      "updatedDate": "2026-01-24T05:14:24Z",
+      "severity": "Critical",
+      "cvssRange": "7.8 - 9.8",
+      "title": "VMSA-2024-0012:VMware vCenter Server updates address heap-overflow and privilege escalation vulnerabilities (CVE-2024-37079, CVE-2024-37080, CVE-2024-37081)",
+      "description": "Multiple heap-overflow and privilege escalation vulnerabilities in vCenter Server were responsibly reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2024-37079",
+            "CVE-2024-37080",
+            "CVE-2024-37081"
+          ],
+          "cvssRange": "7.8 - 9.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.2.00400"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-80u2d-release-notes/index.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2024-37079",
+            "CVE-2024-37080"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.1.24005165"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-80u1e-release-notes/index.html",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0011",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24308",
+      "publishedDate": "2024-05-21",
+      "updatedDate": "2024-05-23T14:24:36Z",
+      "severity": "High",
+      "cvssRange": "4.9 - 7.4",
+      "title": "VMSA-2024-0011:VMware ESXi, Workstation, Fusion and vCenter Server updates address multiple security vulnerabilities (CVE-2024-22273, CVE-2024-22274, CVE-2024-22275)",
+      "description": "Multiple vulnerabilities in VMware ESXi, Workstation, Fusion, and vCenter Server were privately reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2024-22273"
+          ],
+          "cvssRange": "7.4",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.2.23305545"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-esxi-80u2b-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2024-22274",
+            "CVE-2024-22275"
+          ],
+          "cvssRange": "4.9 - 7.2",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.2.23319993"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-80u2b-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0004",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24264",
+      "publishedDate": "2024-05-08",
+      "updatedDate": "2024-07-11T04:48:11Z",
+      "severity": "Medium",
+      "cvssRange": "6.7",
+      "title": "VMSA-2024-0004:VMware Aria Operations updates address local privilege escalation vulnerability (CVE-2024-22235)",
+      "description": "A local privilege escalation vulnerability affecting Aria Operations was responsibly reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations",
+          "cves": [
+            "CVE-2024-22235"
+          ],
+          "cvssRange": "6.7",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.16"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Aria-Operations/8.16/rn/vmware-aria-operations-816-release-notes/index.html",
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0002",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23681",
+      "publishedDate": "2024-02-04",
+      "updatedDate": "2024-02-04T18:38:50Z",
+      "severity": "High",
+      "cvssRange": "4.3 - 7.8",
+      "title": "VMSA-2024-0002:VMware Aria Operations for Networks (Formerly vRealize Network Insight) updates address multiple vulnerabilities",
+      "description": "VMware Aria Operations for Networks (formerly vRealize Network Insight)",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations for Networks",
+          "cves": [
+            "CVE-2024-22237",
+            "CVE-2024-22238",
+            "CVE-2024-22239",
+            "CVE-2024-22240",
+            "CVE-2024-22241"
+          ],
+          "cvssRange": "4.3 - 7.8",
+          "minimumVersions": [
+            "6.0"
+          ],
+          "fixedVersions": [
+            "6.12"
+          ],
+          "kbArticles": "KB96450",
+          "fixedVersionUrl": null,
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2024-0001",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23680",
+      "publishedDate": "2024-01-14",
+      "updatedDate": "2024-01-14T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "9.9",
+      "title": "VMSA-2024-0001:VMware Aria Automation (formerly vRealize Automation) updates address a Missing Access Control vulnerability",
+      "description": "A Missing Access Control vulnerability in Aria Automation was privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Automation",
+          "cves": [
+            "CVE-2023-34063"
+          ],
+          "cvssRange": "9.9",
+          "minimumVersions": [
+            "8.14.0"
+          ],
+          "fixedVersions": [
+            "8.14.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Aria Automation",
+          "cves": [
+            "CVE-2023-34063"
+          ],
+          "cvssRange": "9.9",
+          "minimumVersions": [
+            "8.13.0"
+          ],
+          "fixedVersions": [
+            "8.13.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Aria Automation",
+          "cves": [
+            "CVE-2023-34063"
+          ],
+          "cvssRange": "9.9",
+          "minimumVersions": [
+            "8.12.0"
+          ],
+          "fixedVersions": [
+            "8.12.2"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Aria Automation",
+          "cves": [
+            "CVE-2023-34063"
+          ],
+          "cvssRange": "9.9",
+          "minimumVersions": [
+            "8.11.0"
+          ],
+          "fixedVersions": [
+            "8.11.2"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0023",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23677",
+      "publishedDate": "2023-10-23",
+      "updatedDate": "2024-01-15T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "4.3 - 9.8",
+      "title": "VMSA-2023-0023:VMware vCenter Server updates address out-of-bounds write and information disclosure vulnerabilities",
+      "description": "An out-of-bounds write (CVE-2023-34048) and a partial information disclosure (CVE-2023-34056) in vCenter Server were responsibly reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2023-34048",
+            "CVE-2023-34056"
+          ],
+          "cvssRange": "4.3 - 9.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.2.22385739"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/downloads/details?downloadGroup=VC80U2&amp;productId=1345&amp;rPId=110105",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2023-34048"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.1.22368047"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/downloads/details?downloadGroup=VC80U1D&amp;productId=1345&amp;rPId=112378",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0021",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23666",
+      "publishedDate": "2023-10-17",
+      "updatedDate": "2023-10-21T18:38:50Z",
+      "severity": "High",
+      "cvssRange": "8.1",
+      "title": "VMSA-2023-0021:VMware Aria Operations for Logs updates address multiple vulnerabilities.",
+      "description": "Multiple vulnerabilities in VMware Aria Operations for Logs were privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-34051"
+          ],
+          "cvssRange": "8.1",
+          "minimumVersions": [
+            "8.12"
+          ],
+          "fixedVersions": [
+            "8.14"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Aria-Operations-for-Logs/8.14/rn/vmware-aria-operations-for-logs-814-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-34051"
+          ],
+          "cvssRange": "8.1",
+          "minimumVersions": [
+            "8.10.2"
+          ],
+          "fixedVersions": [
+            "8.14"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Aria-Operations-for-Logs/8.14/rn/vmware-aria-operations-for-logs-814-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-34051"
+          ],
+          "cvssRange": "8.1",
+          "minimumVersions": [
+            "8.10"
+          ],
+          "fixedVersions": [
+            "8.14"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Aria-Operations-for-Logs/8.14/rn/vmware-aria-operations-for-logs-814-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-34051"
+          ],
+          "cvssRange": "8.1",
+          "minimumVersions": [
+            "8.8.0"
+          ],
+          "fixedVersions": [
+            "8.14"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Aria-Operations-for-Logs/8.14/rn/vmware-aria-operations-for-logs-814-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-34051"
+          ],
+          "cvssRange": "8.1",
+          "minimumVersions": [
+            "8.6.0"
+          ],
+          "fixedVersions": [
+            "8.14"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Aria-Operations-for-Logs/8.14/rn/vmware-aria-operations-for-logs-814-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-34051",
+            "CVE-2023-34052"
+          ],
+          "cvssRange": "8.1",
+          "minimumVersions": [
+            "4.0",
+            "5.0"
+          ],
+          "fixedVersions": [
+            "8.14"
+          ],
+          "kbArticles": "KB95212",
+          "fixedVersionUrl": null,
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0018",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23663",
+      "publishedDate": "2023-08-28",
+      "updatedDate": "2023-08-29T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "7.2 - 9.8",
+      "title": "VMSA-2023-0018:VMware Aria Operations for Networks updates address multiple vulnerabilities.",
+      "description": "Multiple vulnerabilities in Aria Operations for Networks were responsibly reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations for Networks",
+          "cves": [
+            "CVE-2023-20890",
+            "CVE-2023-34039"
+          ],
+          "cvssRange": "7.2 - 9.8",
+          "minimumVersions": [
+            "6.0"
+          ],
+          "fixedVersions": [
+            "6.11"
+          ],
+          "kbArticles": "KB94152",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0014",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23660",
+      "publishedDate": "2023-06-20",
+      "updatedDate": "2023-06-20T18:38:50Z",
+      "severity": "High",
+      "cvssRange": "8.1",
+      "title": "VMSA-2023-0014:VMware vCenter Server updates address multiple memory corruption vulnerabilities",
+      "description": "Multiple memory corruption vulnerabilities in VMware vCenter Server were privately reported to VMware. Updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "vCenter",
+          "cves": [
+            "CVE-2023-20892",
+            "CVE-2023-20893",
+            "CVE-2023-20894",
+            "CVE-2023-20895"
+          ],
+          "cvssRange": "8.1",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.1.21860503"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-vcenter-server-80u1b-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0012",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23674",
+      "publishedDate": "2023-06-04",
+      "updatedDate": "2023-06-18T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "8.8 - 9.8",
+      "title": "VMSA-2023-0012:VMware Aria Operations for Networks updates address multiple vulnerabilities.",
+      "description": "Aria Operations for Networks (Formerly vRealize Network Insight)",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations for Networks",
+          "cves": [
+            "CVE-2023-20887",
+            "CVE-2023-20888",
+            "CVE-2023-20889"
+          ],
+          "cvssRange": "8.8 - 9.8",
+          "minimumVersions": [
+            "6.0"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB92684",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0011",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23673",
+      "publishedDate": "2023-05-28",
+      "updatedDate": "2023-05-28T18:38:50Z",
+      "severity": "Medium",
+      "cvssRange": "6.1",
+      "title": "VMSA-2023-0011:VMware Workspace ONE Access and Identity Manager update addresses an Insecure Redirect Vulnerability.",
+      "description": "An insecure redirect vulnerability in Workspace ONE Access and Identity Manager was privately reported to VMware. Updates are available to address this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Identity Manager",
+          "cves": [
+            "CVE-2023-20884"
+          ],
+          "cvssRange": "6.1",
+          "minimumVersions": [
+            "3.3.7"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB92512",
+          "fixedVersionUrl": null,
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Identity Manager",
+          "cves": [
+            "CVE-2023-20884"
+          ],
+          "cvssRange": "6.1",
+          "minimumVersions": [
+            "3.3.6"
+          ],
+          "fixedVersions": [
+            "3.3.7"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2023-20884"
+          ],
+          "cvssRange": "6.1",
+          "minimumVersions": [
+            "22.09.1.0"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB92512",
+          "fixedVersionUrl": null,
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2023-20884"
+          ],
+          "cvssRange": "6.1",
+          "minimumVersions": [
+            "22.09.0.0"
+          ],
+          "fixedVersions": [
+            "22.09.1.0"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2023-20884"
+          ],
+          "cvssRange": "6.1",
+          "minimumVersions": [
+            "21.08.0"
+          ],
+          "fixedVersions": [
+            "22.09.1.0"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0007",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23669",
+      "publishedDate": "2023-04-18",
+      "updatedDate": "2023-07-08T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "7.2 - 9.8",
+      "title": "VMSA-2023-0007:VMware Aria Operations for Logs (Operations for Logs) update addresses multiple vulnerabilities.",
+      "description": "VMware Aria Operations for Logs (formerly vRealize Log Insight)",
+      "impactedComponents": [
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-20864",
+            "CVE-2023-20865"
+          ],
+          "cvssRange": "7.2 - 9.8",
+          "minimumVersions": [
+            "8.10.2"
+          ],
+          "fixedVersions": [
+            "8.12"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/en/downloads/info/slug/infrastructure_operations_management/vmware_aria_operations_for_logs/8_12",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "KB91831"
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-20865"
+          ],
+          "cvssRange": "7.2",
+          "minimumVersions": [
+            "8.10"
+          ],
+          "fixedVersions": [
+            "8.12"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/en/downloads/info/slug/infrastructure_operations_management/vmware_aria_operations_for_logs/8_12",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "KB91831"
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-20865"
+          ],
+          "cvssRange": "7.2",
+          "minimumVersions": [
+            "8.8.0"
+          ],
+          "fixedVersions": [
+            "8.12"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/en/downloads/info/slug/infrastructure_operations_management/vmware_aria_operations_for_logs/8_12",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "KB91831"
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-20865"
+          ],
+          "cvssRange": "7.2",
+          "minimumVersions": [
+            "8.6.0"
+          ],
+          "fixedVersions": [
+            "8.12"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/en/downloads/info/slug/infrastructure_operations_management/vmware_aria_operations_for_logs/8_12",
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "KB91831"
+        },
+        {
+          "component": "VMware Aria Operations for Logs",
+          "cves": [
+            "CVE-2023-20864",
+            "CVE-2023-20865"
+          ],
+          "cvssRange": "7.2 - 9.8",
+          "minimumVersions": [
+            "4.0"
+          ],
+          "fixedVersions": [
+            "8.6.0"
+          ],
+          "kbArticles": "KB91865",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": "KB91865",
+          "additionalDocs": "KB91831"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0005",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23668",
+      "publishedDate": "2023-02-19",
+      "updatedDate": "2023-02-19T18:38:50Z",
+      "severity": "High",
+      "cvssRange": "8.8",
+      "title": "VMSA-2023-0005:VMware vRealize Orchestrator update addresses an XML External Entity (XXE) vulnerability",
+      "description": "An XML External Entity (XXE) vulnerability affecting VMware vRealize Orchestrator was privately reported to VMware. Updates are available to address this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Automation",
+          "cves": [
+            "CVE-2023-20855"
+          ],
+          "cvssRange": "8.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.11.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/vRealize-Automation/services/rn/vrealize-automation-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware vRealize Orchestrator",
+          "cves": [
+            "CVE-2023-20855"
+          ],
+          "cvssRange": "8.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.11.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/vRealize-Orchestrator/8.11.1/rn/vmware-vrealize-orchestrator-8111-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0002",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23658",
+      "publishedDate": "2023-01-29",
+      "updatedDate": "2023-01-29T18:38:50Z",
+      "severity": "Medium",
+      "cvssRange": "6.5",
+      "title": "VMSA-2023-0002:VMware vRealize Operations (vROps) update addresses a CSRF bypass vulnerability",
+      "description": "A vulnerability in VMware vRealize Operations (vROps) was privately reported to VMware. A patch is available to address this vulnerability in the affected VMware product.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Operations",
+          "cves": [
+            "CVE-2023-20856"
+          ],
+          "cvssRange": "6.5",
+          "minimumVersions": [
+            "8.6.0"
+          ],
+          "fixedVersions": [
+            "8.10"
+          ],
+          "kbArticles": "KB90672",
+          "fixedVersionUrl": null,
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": "NA"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2023-0001",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23657",
+      "publishedDate": "2023-01-22",
+      "updatedDate": "2023-01-29T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "5.3 - 9.8",
+      "title": "VMSA-2023-0001:VMware vRealize Log Insight latest updates address multiple security vulnerabilities",
+      "description": "Multiple vulnerabilities in VMware vRealize Log Insight were privately reported to VMware. Updates and workarounds are available to address these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Log Insight",
+          "cves": [
+            "CVE-2022-31704",
+            "CVE-2022-31706",
+            "CVE-2022-31710",
+            "CVE-2022-31711"
+          ],
+          "cvssRange": "5.3 - 9.8",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.10.2"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/downloads/details?downloadGroup=VRLI-8102&amp;productId=1351",
+          "severity": "Critical",
+          "workaround": "KB90635",
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware vRealize Log Insight",
+          "cves": [
+            "CVE-2022-31704",
+            "CVE-2022-31706",
+            "CVE-2022-31710",
+            "CVE-2022-31711"
+          ],
+          "cvssRange": "5.3 - 9.8",
+          "minimumVersions": [
+            "3.0",
+            "4.0"
+          ],
+          "fixedVersions": [
+            "8.10.2"
+          ],
+          "kbArticles": "KB90668",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": "KB90635",
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0034",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23656",
+      "publishedDate": "2022-12-13",
+      "updatedDate": "2022-12-13T18:38:50Z",
+      "severity": "High",
+      "cvssRange": "4.4 - 7.2",
+      "title": "VMSA-2022-0034:VMware vRealize Operations (vROps) updates address privilege escalation vulnerabilities",
+      "description": "Multiple vulnerabilities in VMware vRealize Operations (vROps) were privately reported to VMware. Patches and updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Operations",
+          "cves": [
+            "CVE-2022-31707",
+            "CVE-2022-31708"
+          ],
+          "cvssRange": "4.4 - 7.2",
+          "minimumVersions": [
+            "8.10"
+          ],
+          "fixedVersions": [
+            "8.10.1"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/vRealize-Operations/8.10.1/rn/vrealize-operations-8101-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware vRealize Operations",
+          "cves": [
+            "CVE-2022-31707",
+            "CVE-2022-31708"
+          ],
+          "cvssRange": "4.4 - 7.2",
+          "minimumVersions": [
+            "8.6.0"
+          ],
+          "fixedVersions": [
+            "8.10.1"
+          ],
+          "kbArticles": "KB90232",
+          "fixedVersionUrl": null,
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0033",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23653",
+      "publishedDate": "2022-12-11",
+      "updatedDate": "2022-12-11T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "5.9",
+      "title": "VMSA-2022-0033:VMware ESXi, Workstation, and Fusion updates address a heap out-of-bounds write vulnerability",
+      "description": "A heap out-of-bounds write vulnerability in VMware ESXi, Workstation, and Fusion was privately reported to VMware. Updates and workarounds are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "ESXi",
+          "cves": [
+            "CVE-2022-31705"
+          ],
+          "cvssRange": "5.9",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.0.0.20842819"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-vSphere/8.0/rn/vsphere-esxi-80a-release-notes/index.html",
+          "severity": "Critical",
+          "workaround": "KB87617",
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0032",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23652",
+      "publishedDate": "2022-12-11",
+      "updatedDate": "2022-12-11T18:38:50Z",
+      "severity": "High",
+      "cvssRange": "5.3 - 7.2",
+      "title": "VMSA-2022-0032:VMware Workspace ONE Access and Identity Manager updates address multiple vulnerabilities",
+      "description": "Multiple vulnerabilities were privately reported to VMware. Updates are available to address this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Identity Manager",
+          "cves": [
+            "CVE-2022-31700"
+          ],
+          "cvssRange": "7.2",
+          "minimumVersions": [
+            "3.3.6"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB90399",
+          "fixedVersionUrl": null,
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2022-31700"
+          ],
+          "cvssRange": "7.2",
+          "minimumVersions": [
+            "21.08.0.0",
+            "21.08.0.1"
+          ],
+          "fixedVersions": [
+            "22.9.1.0"
+          ],
+          "kbArticles": "KB90399",
+          "fixedVersionUrl": null,
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2022-31701"
+          ],
+          "cvssRange": "5.3",
+          "minimumVersions": [
+            "22.09.0.0"
+          ],
+          "fixedVersions": [
+            "22.09.1.0"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://docs.vmware.com/en/VMware-Workspace-ONE-Access/22.09.1.0/rn/vmware-workspace-one-access-220910-release-notes/index.html",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0031",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23649",
+      "publishedDate": "2022-12-11",
+      "updatedDate": "2022-12-11T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "7.5 - 9.8",
+      "title": "VMSA-2022-0031:VMware vRealize Network Insight (vRNI) updates address command injection and directory traversal security vulnerabilities",
+      "description": "Multiple vulnerabilities in VMware vRealize Network Insight (vRNI)were privately reported to VMware. Patches and updates are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Network Insight",
+          "cves": [
+            "CVE-2022-31702",
+            "CVE-2022-31703"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "6.7"
+          ],
+          "fixedVersions": [
+            "6.7 HF"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "NA"
+        },
+        {
+          "component": "VMware vRealize Network Insight",
+          "cves": [
+            "CVE-2022-31702",
+            "CVE-2022-31703"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "6.6"
+          ],
+          "fixedVersions": [
+            "6.6 HF"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "NA"
+        },
+        {
+          "component": "VMware vRealize Network Insight",
+          "cves": [
+            "CVE-2022-31702",
+            "CVE-2022-31703"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "6.5.0"
+          ],
+          "fixedVersions": [
+            "6.5.0 HF"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "NA"
+        },
+        {
+          "component": "VMware vRealize Network Insight",
+          "cves": [
+            "CVE-2022-31702",
+            "CVE-2022-31703"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "6.4"
+          ],
+          "fixedVersions": [
+            "6.4 HF"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "NA"
+        },
+        {
+          "component": "VMware vRealize Network Insight",
+          "cves": [
+            "CVE-2022-31702",
+            "CVE-2022-31703"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "6.3"
+          ],
+          "fixedVersions": [
+            "6.3 HF"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "NA"
+        },
+        {
+          "component": "VMware vRealize Network Insight",
+          "cves": [
+            "CVE-2022-31702",
+            "CVE-2022-31703"
+          ],
+          "cvssRange": "7.5 - 9.8",
+          "minimumVersions": [
+            "6.2"
+          ],
+          "fixedVersions": [
+            "6.2 HF"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "NA"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0026",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23645",
+      "publishedDate": "2022-10-09",
+      "updatedDate": "2022-10-09T18:38:50Z",
+      "severity": "Medium",
+      "cvssRange": "4.9",
+      "title": "VMSA-2022-0026:VMware vRealize Operations patches address an arbitrary file read vulnerability",
+      "description": "An arbitrary file read vulnerability in vRealize Operations was privately reported to VMware. Updates are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Operations",
+          "cves": [
+            "CVE-2022-31682"
+          ],
+          "cvssRange": "4.9",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.10"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/downloads/info/slug/infrastructure_operations_management/vmware_vrealize_operations/8_10",
+          "severity": "Medium",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0022",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23650",
+      "publishedDate": "2022-08-07",
+      "updatedDate": "2022-08-07T18:38:50Z",
+      "severity": "High",
+      "cvssRange": "5.6 - 7.2",
+      "title": "VMSA-2022-0022:VMware vRealize Operations contains multiple vulnerabilities",
+      "description": "Multiple vulnerabilities in vRealize Operations were privately reported to VMware. Patches are available to remediate this vulnerability in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Operations",
+          "cves": [
+            "CVE-2022-31672",
+            "CVE-2022-31673",
+            "CVE-2022-31674",
+            "CVE-2022-31675"
+          ],
+          "cvssRange": "5.6 - 7.2",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.6.4"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/en/downloads/info/slug/infrastructure_operations_management/vmware_vrealize_operations/8_6",
+          "severity": "High",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0021",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23637",
+      "publishedDate": "2022-07-31",
+      "updatedDate": "2022-08-07T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "5.3 - 9.8",
+      "title": "VMSA-2022-0021:VMware Workspace ONE Access, Access Connector, Identity Manager, Identity Manager Connector and vRealize Automation updates address multiple vulnerabilities",
+      "description": "Multiple vulnerabilities were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Identity Manager",
+          "cves": [
+            "CVE-2022-31656"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "3.3.4",
+            "3.3.5",
+            "3.3.6"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB89096",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": "KB89084",
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Identity Manager Connector",
+          "cves": [
+            "CVE-2022-31662"
+          ],
+          "cvssRange": "5.3",
+          "minimumVersions": [
+            "3.3.4",
+            "3.3.5",
+            "3.3.6"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB89096",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Identity Manager Connector",
+          "cves": [
+            "CVE-2022-31662"
+          ],
+          "cvssRange": "5.3",
+          "minimumVersions": [
+            "19.03.0.1"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB89096",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": null,
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2022-31656"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "21.08.0.0",
+            "21.08.0.1"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB89096",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": "KB89084",
+          "additionalDocs": "FAQ"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0019",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23635",
+      "publishedDate": "2022-07-10",
+      "updatedDate": "2022-07-10T18:38:50Z",
+      "severity": "Low",
+      "cvssRange": "3.9",
+      "title": "VMSA-2022-0019:VMware vRealize Log Insight contains multiple stored cross-site scripting vulnerabilities",
+      "description": "Multiple cross-site scripting vulnerabilities in vRealize Log Insight were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware vRealize Log Insight",
+          "cves": [
+            "CVE-2022-31654",
+            "CVE-2022-31655"
+          ],
+          "cvssRange": "3.9",
+          "minimumVersions": [
+            "8.0"
+          ],
+          "fixedVersions": [
+            "8.8.2"
+          ],
+          "kbArticles": null,
+          "fixedVersionUrl": "https://customerconnect.vmware.com/downloads/info/slug/infrastructure_operations_management/vmware_vrealize_log_insight/8_8",
+          "severity": "Low",
+          "workaround": null,
+          "additionalDocs": null
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0014",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23630",
+      "publishedDate": "2022-05-16",
+      "updatedDate": "2022-05-25T18:38:50Z",
+      "severity": "Critical",
+      "cvssRange": "9.8",
+      "title": "VMSA-2022-0014:VMware Workspace ONE Access, Identity Manager and vRealize Automation updates address multiple vulnerabilities",
+      "description": "Multiple vulnerabilities were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Identity Manager",
+          "cves": [
+            "CVE-2022-22972"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "3.3.3",
+            "3.3.4",
+            "3.3.5",
+            "3.3.6"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB88438",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": "KB88433",
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2022-22972"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "20.10.0.0",
+            "20.10.0.1"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB88438",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": "KB88433",
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2022-22972"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "21.08.0.0",
+            "21.08.0.1"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB88438",
+          "fixedVersionUrl": null,
+          "severity": "Critical",
+          "workaround": "KB88433",
+          "additionalDocs": "FAQ"
+        }
+      ]
+    },
+    {
+      "vmsaId": "VMSA-2022-0011",
+      "advisoryUrl": "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/23639",
+      "publishedDate": "2022-04-04",
+      "updatedDate": "2024-09-05T18:09:12Z",
+      "severity": "Critical",
+      "cvssRange": "9.8",
+      "title": "VMSA-2022-0011:VMware Workspace ONE Access, Identity Manager and vRealize Automation updates address multiple vulnerabilities",
+      "description": "Multiple vulnerabilities were privately reported to VMware. Patches are available to remediate these vulnerabilities in affected VMware products.",
+      "impactedComponents": [
+        {
+          "component": "VMware Identity Manager",
+          "cves": [
+            "CVE-2022-22954"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "3.3.3",
+            "3.3.4",
+            "3.3.5",
+            "3.3.6"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB88099",
+          "fixedVersionUrl": "https://kb.omnissa.com/s/article/88099",
+          "severity": "Critical",
+          "workaround": "KB88098",
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2022-22954"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "20.10.0.0",
+            "20.10.0.1"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB88099",
+          "fixedVersionUrl": "https://kb.omnissa.com/s/article/88099",
+          "severity": "Critical",
+          "workaround": "KB88098",
+          "additionalDocs": "FAQ"
+        },
+        {
+          "component": "VMware Workspace ONE Access",
+          "cves": [
+            "CVE-2022-22954"
+          ],
+          "cvssRange": "9.8",
+          "minimumVersions": [
+            "21.08.0.0",
+            "21.08.0.1"
+          ],
+          "fixedVersions": [],
+          "kbArticles": "KB88099",
+          "fixedVersionUrl": "https://kb.omnissa.com/s/article/88099",
+          "severity": "Critical",
+          "workaround": "KB88098",
+          "additionalDocs": "FAQ"
+        }
+      ]
+    }
+  ]
+}
