@@ -3,7 +3,7 @@ name: Bug Report
 description: Is something not working as expected? Submit a bug.
 title: 'Please add a short description.'
 labels: ["bug", "needs-triage"]
-projects: ["vmware/22"]
+projects: ["vmware/powershell-module-for-vcf-patch-scanner"]
 body:
   - type: markdown
     attributes:
@@ -63,7 +63,7 @@ body:
       description: >-
         Please provide the PowerShell module version.
 
-        Results of: `Get-InstalledModule SimpleSupervisorDeploymentAtScale`
+        Results of: `Get-InstalledModule VcfPatchScanner`
       placeholder: x.y.z
     validations:
       required: true
@@ -112,21 +112,21 @@ body:
         This should be a description of how the functionality you tried to use
         is supposed to work.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: actual-behavior
     attributes:
       label: Actual Behavior
       description: What actually happened that's different from the expected behavior?
     validations:
-      required: true
+      required: false
   - type: textarea
     id: steps-to-reproduce
     attributes:
       label: Steps to Reproduce
       description: Please provide the steps to reproduce the issue.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: logs
     attributes:
