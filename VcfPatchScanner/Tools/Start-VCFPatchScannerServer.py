@@ -2607,21 +2607,30 @@ class Handler(BaseHTTPRequestHandler):
             return False
 
     def _get_safe_cors_origin(self) -> str:
-        """Return the CORS origin header value, safely validated.
+        """Return a safe CORS origin header value.
 
-        Only returns the actual Origin if it's in ALLOWED_ORIGIN_HOSTS (to prevent
-        HTTP response splitting attacks via CRLF injection). Returns "*" for
-        non-browser clients (no Origin header).
+        For trusted browser origins, return a canonicalized ``scheme://host[:port]``
+        value rather than echoing the raw Origin header. This avoids writing
+        user-controlled bytes directly into response headers.
+        Returns "*" for non-browser clients (no Origin header) or any untrusted/
+        malformed origin.
         """
         origin = self.headers.get("Origin", "")
-        if not origin:
-            return "*"
-        if origin == "null":
+        if not origin or origin == "null":
             return "*"
         try:
-            host = (urlparse(origin).hostname or "").lower()
-            if host in ALLOWED_ORIGIN_HOSTS:
-                return origin
+            parsed = urlparse(origin)
+            scheme = (parsed.scheme or "").lower()
+            if scheme not in ("http", "https"):
+                return "*"
+            host = (parsed.hostname or "").lower()
+            if host not in ALLOWED_ORIGIN_HOSTS:
+                return "*"
+            # Accessing parsed.port validates/normalizes the port and raises on invalid.
+            port = parsed.port
+            if port is not None and not (1 <= port <= 65535):
+                return "*"
+            return f"{scheme}://{host}" + (f":{port}" if port is not None else "")
         except Exception:
             pass
         return "*"
