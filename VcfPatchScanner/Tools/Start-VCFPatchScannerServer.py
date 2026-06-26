@@ -70,7 +70,7 @@ try:
 except ImportError:
     _UPSTREAM_SSL_CTX = ssl.create_default_context()
 
-_SERVER_VERSION             = "1.0.0.1004"
+_SERVER_VERSION             = "1.0.0.1005"
 _DEFAULT_ADVISORY_FILE      = "securityAdvisory.json"
 _VCENTER_BUILD_MAP_FILE     = "vcenterBuildMap.json"
 _DEFAULT_FINDINGS_DIR       = "Findings"
@@ -1618,14 +1618,12 @@ def _build_scan_env_vars(env: dict, passwords: dict) -> dict:
     single_pass = env.get("useSinglePassword", False)
     fallback_pass = passwords.get("sddcPass") if single_pass else None
 
-    logger.debug(f"Credential map for environment '{env_name}' (type={t}):")
     match t:
         case "vcf9" | "vcf5":
             sddc_pass = passwords.get("sddcPass")
             if sddc_pass:
                 ref = _generate_secret_reference_name(env_name, "sddc_manager", 1)
                 ev[ref] = sddc_pass
-                logger.debug(f"  sddc_manager ({env.get('sddcManagerServer', '')}): env var '{ref}'")
             match t:
                 case "vcf9":
                     if not _is_vcf91(env):
@@ -1633,48 +1631,40 @@ def _build_scan_env_vars(env: dict, passwords: dict) -> dict:
                         if ops_pass:
                             ref = _generate_secret_reference_name(env_name, "vcf_ops", 1)
                             ev[ref] = ops_pass
-                            logger.debug(f"  vcf_ops ({env.get('vcfOpsServer', '')}): env var '{ref}'")
                     fm_pass = passwords.get("fmPass") or fallback_pass
                     if fm_pass:
                         ref = _generate_secret_reference_name(env_name, "vcf_fm", 1)
                         ev[ref] = fm_pass
-                        logger.debug(f"  vcf_fm ({env.get('vcfFMServer', '')}): env var '{ref}'")
                 case "vcf5":
                     vrslcm_pass = passwords.get("vrslcmPass") or fallback_pass
                     if vrslcm_pass and env.get("vrslcmServer", "").strip():
                         ref = _generate_secret_reference_name(env_name, "vrslcm", 1)
                         ev[ref] = vrslcm_pass
-                        logger.debug(f"  vrslcm ({env.get('vrslcmServer', '')}): env var '{ref}'")
         case "vvf9":
             if not _is_vvf91(env):
                 ops_pass = passwords.get("opsPass")
                 if ops_pass:
                     ref = _generate_secret_reference_name(env_name, "vcf_ops", 1)
                     ev[ref] = ops_pass
-                    logger.debug(f"  vcf_ops ({env.get('vcfOpsServer', '')}): env var '{ref}'")
             fm_pass = passwords.get("fmPass")
             if fm_pass:
                 ref = _generate_secret_reference_name(env_name, "vcf_fm", 1)
                 ev[ref] = fm_pass
-                logger.debug(f"  vcf_fm ({env.get('vcfFMServer', '')}): env var '{ref}'")
             vc_pass = passwords.get("vcenterPass")
             if vc_pass:
                 ref = _generate_secret_reference_name(env_name, "vcenter", 1)
                 ev[ref] = vc_pass
-                logger.debug(f"  vcenter ({env.get('vcenterServer', '')}): env var '{ref}'")
         case "vsphere8":
             vc_pass = passwords.get("vcenterPass")
             if vc_pass:
                 ref = _generate_secret_reference_name(env_name, "vcenter", 1)
                 ev[ref] = vc_pass
-                logger.debug(f"  vcenter ({env.get('vcenterServer', '')}): env var '{ref}'")
             nsx_pass = passwords.get("nsxPass")
             if nsx_pass:
                 ref = _generate_secret_reference_name(env_name, "nsx_manager", 1)
                 ev[ref] = nsx_pass
-                logger.debug(f"  nsx_manager ({env.get('nsxManagerServer', '')}): env var '{ref}'")
 
-    logger.debug(f"  {len([k for k in ev if k.endswith('_PASSWORD')])} credential(s) configured")
+    logger.debug(f"Credentials configured for '{env_name}': {len([k for k in ev if k.endswith('_PASSWORD')])} endpoint(s)")
     return ev
 
 
@@ -2589,7 +2579,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin", "*"))
+        self.send_header("Access-Control-Allow-Origin", self._get_safe_cors_origin())
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Max-Age", "3600")
@@ -2615,6 +2605,26 @@ class Handler(BaseHTTPRequestHandler):
             return host in ALLOWED_ORIGIN_HOSTS
         except Exception:
             return False
+
+    def _get_safe_cors_origin(self) -> str:
+        """Return the CORS origin header value, safely validated.
+
+        Only returns the actual Origin if it's in ALLOWED_ORIGIN_HOSTS (to prevent
+        HTTP response splitting attacks via CRLF injection). Returns "*" for
+        non-browser clients (no Origin header).
+        """
+        origin = self.headers.get("Origin", "")
+        if not origin:
+            return "*"
+        if origin == "null":
+            return "*"
+        try:
+            host = (urlparse(origin).hostname or "").lower()
+            if host in ALLOWED_ORIGIN_HOSTS:
+                return origin
+        except Exception:
+            pass
+        return "*"
 
     def _send_security_headers(self):
         """Sends common security headers on every response."""
@@ -2647,7 +2657,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", self.headers.get("Origin", "*"))
+        self.send_header("Access-Control-Allow-Origin", self._get_safe_cors_origin())
         self._send_security_headers()
         try:
             self.end_headers()
