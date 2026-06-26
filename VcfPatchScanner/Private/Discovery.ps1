@@ -64,7 +64,7 @@ function Get-InventoryPassword {
 
     $password = [System.Environment]::GetEnvironmentVariable($EnvVarName)
     if ([String]::IsNullOrWhiteSpace($password)) {
-        Write-LogMessage -Type WARNING -Message "$ComponentName password not configured (env var: $EnvVarName)"
+        Write-LogMessage -Type WARNING -Message "$ComponentName password not configured"
         return $null
     }
     return $password

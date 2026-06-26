@@ -70,7 +70,7 @@ try:
 except ImportError:
     _UPSTREAM_SSL_CTX = ssl.create_default_context()
 
-_SERVER_VERSION             = "1.0.0.1005"
+_SERVER_VERSION             = "1.0.0.1006"
 _DEFAULT_ADVISORY_FILE      = "securityAdvisory.json"
 _VCENTER_BUILD_MAP_FILE     = "vcenterBuildMap.json"
 _DEFAULT_FINDINGS_DIR       = "Findings"
@@ -241,7 +241,7 @@ _MODULE_PSD1 = _locate_module_psd1()
 # Upstream advisory database — raw GitHub content URL for the published securityAdvisory.json.
 _UPSTREAM_ADVISORY_URL = (
     "https://raw.githubusercontent.com/vmware/powershell-module-for-vcf-patch-scanner"
-    "/main/data/securityAdvisory.json"
+    "/main/VcfPatchScanner/Data/securityAdvisory.json"
 )
 _UPSTREAM_CHECK_TIMEOUT_SECONDS  = 10   # HEAD requests and small companion file fetches (sha256sum)
 _UPSTREAM_DOWNLOAD_TIMEOUT_SECONDS = 60  # full advisory JSON download (~156 KB)

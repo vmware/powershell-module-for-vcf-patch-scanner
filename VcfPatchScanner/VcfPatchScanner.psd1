@@ -28,7 +28,7 @@
 
 @{
     RootModule           = 'VcfPatchScanner.psm1'
-    ModuleVersion        = '1.0.0.1005'
+    ModuleVersion        = '1.0.0.1006'
     GUID                 = '1f2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d'
     Author               = 'Broadcom'
     CompanyName          = 'Broadcom'
