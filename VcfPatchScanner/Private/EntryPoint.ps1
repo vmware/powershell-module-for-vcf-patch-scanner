@@ -236,7 +236,7 @@ function ConvertTo-ScanInventory {
         [PSCustomObject] Object with Inventory ([Hashtable]) and FailedEndpoints ([Object[]]).
 
         .NOTES
-        Reads component credentials from environment variables via Get-InventoryPassword. Sets $Script:_retryFailedFqdns when IncludeOnlyFqdns is non-empty.
+        Reads component credentials from environment variables via Get-InventoryPassword.
     #>
 
     [CmdletBinding()]
@@ -255,8 +255,30 @@ function ConvertTo-ScanInventory {
     $vcfMinorVersion = ''
     $failedEndpoints = [System.Collections.Generic.List[Object]]::new()
 
+    $bridgedEnvVarNames = [System.Collections.Generic.List[String]]::new()
+
     if ($UseLiveInventory) {
+        try {
         Write-LogMessage -Type INFO -Message "Attempting to collect live inventory from APIs (timeout: $($TimeoutSeconds)s)"
+
+        # When EnvironmentConfig comes from Import-EnvironmentsFromConfig (ConfigFile path), passwords
+        # are resolved and stored in endpoints.*.password but the inventory functions read the simple
+        # env var names (SDDC_MANAGER_PASSWORD etc.). Bridge them here before the first API call.
+        if ($null -ne $EnvironmentConfig.endpoints) {
+            $epSddc   = $EnvironmentConfig.endpoints.sddc_manager
+            $epVc     = $EnvironmentConfig.endpoints.vcenter
+            $epNsx    = $EnvironmentConfig.endpoints.nsx_manager
+            $epVcfFm  = $EnvironmentConfig.endpoints.vcf_fm
+            $epVcfOps = $EnvironmentConfig.endpoints.vcf_ops
+            $epVrslcm = $EnvironmentConfig.endpoints.vrslcm
+
+            if ($null -ne $epSddc   -and -not [String]::IsNullOrEmpty($epSddc.password))   { [System.Environment]::SetEnvironmentVariable('SDDC_MANAGER_PASSWORD', $epSddc.password);   [Void]$bridgedEnvVarNames.Add('SDDC_MANAGER_PASSWORD') }
+            if ($null -ne $epVc     -and -not [String]::IsNullOrEmpty($epVc.password))     { [System.Environment]::SetEnvironmentVariable('VCENTER_PASSWORD',      $epVc.password);     [Void]$bridgedEnvVarNames.Add('VCENTER_PASSWORD') }
+            if ($null -ne $epNsx    -and -not [String]::IsNullOrEmpty($epNsx.password))    { [System.Environment]::SetEnvironmentVariable('NSX_MANAGER_PASSWORD',  $epNsx.password);    [Void]$bridgedEnvVarNames.Add('NSX_MANAGER_PASSWORD') }
+            if ($null -ne $epVcfFm  -and -not [String]::IsNullOrEmpty($epVcfFm.password))  { [System.Environment]::SetEnvironmentVariable('VCF_FM_PASSWORD',       $epVcfFm.password);  [Void]$bridgedEnvVarNames.Add('VCF_FM_PASSWORD') }
+            if ($null -ne $epVcfOps -and -not [String]::IsNullOrEmpty($epVcfOps.password)) { [System.Environment]::SetEnvironmentVariable('VCF_OPS_PASSWORD',      $epVcfOps.password); [Void]$bridgedEnvVarNames.Add('VCF_OPS_PASSWORD') }
+            if ($null -ne $epVrslcm -and -not [String]::IsNullOrEmpty($epVrslcm.password)) { [System.Environment]::SetEnvironmentVariable('VRSLCM_PASSWORD',       $epVrslcm.password); [Void]$bridgedEnvVarNames.Add('VRSLCM_PASSWORD') }
+        }
 
         if (-not [String]::IsNullOrWhiteSpace($VcenterBuildMapFile)) {
             $vcenterBuildMaps = Get-VcenterBuildMap -BuildMapPath $VcenterBuildMapFile
@@ -269,10 +291,19 @@ function ConvertTo-ScanInventory {
             if ($fqdn -and $EnvironmentConfig.sddcManagerUser -and
                 ($IncludeOnlyFqdns.Count -eq 0 -or $fqdn -in $IncludeOnlyFqdns)) {
                 try {
+                    $sw = [System.Diagnostics.Stopwatch]::StartNew()
                     $sddcInventory = Get-SddcManagerInventory -Server $fqdn `
                         -User $EnvironmentConfig.sddcManagerUser -TimeoutSeconds $TimeoutSeconds `
                         -VcenterBuildMaps $vcenterBuildMaps
-                    $inventory += $sddcInventory
+                    $sw.Stop()
+                    foreach ($mergeKey in $sddcInventory.Keys) {
+                        if ($inventory.ContainsKey($mergeKey)) {
+                            $inventory[$mergeKey] = @($inventory[$mergeKey]) + @($sddcInventory[$mergeKey])
+                        } else {
+                            $inventory[$mergeKey] = $sddcInventory[$mergeKey]
+                        }
+                    }
+                    Write-LogMessage -Type INFO -Message "SDDC Manager inventory collected in $($sw.Elapsed.TotalSeconds)s"
 
                     # Extract the two-part VCF minor version (e.g. "5.2") from the SDDC Manager
                     # version string (e.g. "5.2.0.0-24108943") so the UI label reads
@@ -297,10 +328,19 @@ function ConvertTo-ScanInventory {
             if ($fqdn -and $EnvironmentConfig.vcenterUser -and
                 ($IncludeOnlyFqdns.Count -eq 0 -or $fqdn -in $IncludeOnlyFqdns)) {
                 try {
+                    $sw = [System.Diagnostics.Stopwatch]::StartNew()
                     $vcenterInventory = Get-VcenterInventory -Server $fqdn `
                         -User $EnvironmentConfig.vcenterUser -TimeoutSeconds $TimeoutSeconds `
                         -VcenterBuildMaps $vcenterBuildMaps
-                    $inventory += $vcenterInventory
+                    $sw.Stop()
+                    foreach ($mergeKey in $vcenterInventory.Keys) {
+                        if ($inventory.ContainsKey($mergeKey)) {
+                            $inventory[$mergeKey] = @($inventory[$mergeKey]) + @($vcenterInventory[$mergeKey])
+                        } else {
+                            $inventory[$mergeKey] = $vcenterInventory[$mergeKey]
+                        }
+                    }
+                    Write-LogMessage -Type INFO -Message "vCenter inventory collected in $($sw.Elapsed.TotalSeconds)s"
                 }
                 catch {
                     Write-LogMessage -Type WARNING -Message "vCenter inventory failed for '$fqdn': $($_.Exception.Message) — skipping endpoint."
@@ -319,7 +359,13 @@ function ConvertTo-ScanInventory {
                 try {
                     $nsxInventory = Get-StandaloneNsxManagerInventory `
                         -NsxManagerFqdn $fqdn -TimeoutSeconds $TimeoutSeconds
-                    $inventory += $nsxInventory
+                    foreach ($mergeKey in $nsxInventory.Keys) {
+                        if ($inventory.ContainsKey($mergeKey)) {
+                            $inventory[$mergeKey] = @($inventory[$mergeKey]) + @($nsxInventory[$mergeKey])
+                        } else {
+                            $inventory[$mergeKey] = $nsxInventory[$mergeKey]
+                        }
+                    }
                 }
                 catch {
                     Write-LogMessage -Type WARNING -Message "NSX Manager inventory failed for '$fqdn': $($_.Exception.Message) — skipping endpoint."
@@ -347,9 +393,11 @@ function ConvertTo-ScanInventory {
             if ($fqdn -and $EnvironmentConfig.vcfFMUser -and
                 ($IncludeOnlyFqdns.Count -eq 0 -or $fqdn -in $IncludeOnlyFqdns)) {
                 try {
+                    $sw = [System.Diagnostics.Stopwatch]::StartNew()
                     $fleetInventory = Get-FleetManagerInventory -Server $fqdn `
                         -User $EnvironmentConfig.vcfFMUser -TimeoutSeconds $TimeoutSeconds `
                         -AllowVspUserFallback:($EnvironmentType -eq 'vvf9')
+                    $sw.Stop()
 
                     $opsFromFleet = $fleetInventory['_OpsVersionFromFleet']
                     $fleetApiPath = [String]$fleetInventory['_FleetApiPath']
@@ -362,7 +410,14 @@ function ConvertTo-ScanInventory {
                         default { '' }
                     }
 
-                    $inventory += $fleetInventory
+                    foreach ($mergeKey in $fleetInventory.Keys) {
+                        if ($inventory.ContainsKey($mergeKey)) {
+                            $inventory[$mergeKey] = @($inventory[$mergeKey]) + @($fleetInventory[$mergeKey])
+                        } else {
+                            $inventory[$mergeKey] = $fleetInventory[$mergeKey]
+                        }
+                    }
+                    Write-LogMessage -Type INFO -Message "Fleet Manager inventory collected in $($sw.Elapsed.TotalSeconds)s"
                 }
                 catch {
                     Write-LogMessage -Type WARNING -Message "Fleet Manager inventory failed for '$fqdn': $($_.Exception.Message) — skipping endpoint."
@@ -389,8 +444,10 @@ function ConvertTo-ScanInventory {
                     }
                 } else {
                     try {
+                        $sw = [System.Diagnostics.Stopwatch]::StartNew()
                         $opsInventory = Get-VcfOpsInventory -Server $fqdn `
                             -User $EnvironmentConfig.vcfOpsUser -TimeoutSeconds $TimeoutSeconds
+                        $sw.Stop()
                         # VVF9 only: standalone vCenters are genuinely standalone (no SDDC Manager).
                         # VCF9 is excluded because VCF Operations returns vCenters that also appear
                         # in SDDC Manager workload domains; scanning them separately would produce
@@ -402,7 +459,14 @@ function ConvertTo-ScanInventory {
                             }
                         }
                         [Void]$opsInventory.Remove('_StandaloneVcenterFqdns')
-                        $inventory += $opsInventory
+                        foreach ($mergeKey in $opsInventory.Keys) {
+                            if ($inventory.ContainsKey($mergeKey)) {
+                                $inventory[$mergeKey] = @($inventory[$mergeKey]) + @($opsInventory[$mergeKey])
+                            } else {
+                                $inventory[$mergeKey] = $opsInventory[$mergeKey]
+                            }
+                        }
+                        Write-LogMessage -Type INFO -Message "VCF Operations inventory collected in $($sw.Elapsed.TotalSeconds)s"
                     }
                     catch {
                         Write-LogMessage -Type WARNING -Message "VCF Operations inventory failed for '$fqdn': $($_.Exception.Message) — skipping endpoint."
@@ -456,13 +520,35 @@ function ConvertTo-ScanInventory {
         }
 
         foreach ($vcFqdn in $standaloneVcFqdns) {
-            if ([String]::IsNullOrWhiteSpace($EnvironmentConfig.vcenterUser)) { continue }
             if ($IncludeOnlyFqdns.Count -gt 0 -and $vcFqdn -notin $IncludeOnlyFqdns) { continue }
+            # Prefer per-vCenter credential (vcenterCredentials[].user); fall back to shared vcenterUser.
+            $vcUser = ''
+            $credEntry = @($EnvironmentConfig.vcenterCredentials) |
+                Where-Object { -not [String]::IsNullOrWhiteSpace($_.fqdn) -and $_.fqdn -ieq $vcFqdn } |
+                Select-Object -First 1
+            if ($null -ne $credEntry -and -not [String]::IsNullOrWhiteSpace($credEntry.user)) {
+                $vcUser = $credEntry.user
+            } elseif (-not [String]::IsNullOrWhiteSpace($EnvironmentConfig.vcenterUser)) {
+                $vcUser = $EnvironmentConfig.vcenterUser
+            }
+            if ([String]::IsNullOrWhiteSpace($vcUser)) {
+                Write-LogMessage -Type WARNING -Message "No vCenter username configured for '$vcFqdn' — skipping endpoint."
+                continue
+            }
             try {
+                $sw = [System.Diagnostics.Stopwatch]::StartNew()
                 $vcInventory = Get-VcenterInventory -Server $vcFqdn `
-                    -User $EnvironmentConfig.vcenterUser -TimeoutSeconds $TimeoutSeconds `
+                    -User $vcUser -TimeoutSeconds $TimeoutSeconds `
                     -VcenterBuildMaps $vcenterBuildMaps
-                $inventory += $vcInventory
+                $sw.Stop()
+                foreach ($mergeKey in $vcInventory.Keys) {
+                    if ($inventory.ContainsKey($mergeKey)) {
+                        $inventory[$mergeKey] = @($inventory[$mergeKey]) + @($vcInventory[$mergeKey])
+                    } else {
+                        $inventory[$mergeKey] = $vcInventory[$mergeKey]
+                    }
+                }
+                Write-LogMessage -Type INFO -Message "Standalone vCenter inventory collected in $($sw.Elapsed.TotalSeconds)s for: $vcFqdn"
             }
             catch {
                 Write-LogMessage -Type WARNING -Message "Standalone vCenter inventory failed for '$vcFqdn': $($_.Exception.Message) — skipping endpoint."
@@ -505,7 +591,13 @@ function ConvertTo-ScanInventory {
                 try {
                     $vrslcmInventory = Get-VrslcmInventory -Server $fqdn `
                         -User $vrslcmUser -Password $vrslcmPass -TimeoutSeconds $TimeoutSeconds
-                    $inventory += $vrslcmInventory
+                    foreach ($mergeKey in $vrslcmInventory.Keys) {
+                        if ($inventory.ContainsKey($mergeKey)) {
+                            $inventory[$mergeKey] = @($inventory[$mergeKey]) + @($vrslcmInventory[$mergeKey])
+                        } else {
+                            $inventory[$mergeKey] = $vrslcmInventory[$mergeKey]
+                        }
+                    }
                 }
                 catch {
                     Write-LogMessage -Type WARNING -Message "vRSLCM inventory failed for '$fqdn': $($_.Exception.Message) — skipping endpoint."
@@ -547,9 +639,16 @@ function ConvertTo-ScanInventory {
         else {
             Write-LogMessage -Type INFO -Message "Live inventory collection returned no data; falling back to mock inventory from configuration"
         }
+        } finally {
+            foreach ($varName in $bridgedEnvVarNames) {
+                [System.Environment]::SetEnvironmentVariable($varName, $null)
+            }
+        }
     }
 
     Write-LogMessage -Type INFO -Message "Using mock inventory from environment configuration"
+
+    $mockInstanceName = ''
 
     switch ($EnvironmentType) {
         'vcf5' {
@@ -668,10 +767,18 @@ function ConvertTo-InventoryStatus {
     $endpointStatus = [System.Collections.Generic.List[PSCustomObject]]::new()
 
     # Build a set of "component|fqdn" pairs that already have vulnerability findings so we
-    # do not emit a duplicate "Not Vulnerable" row alongside a real finding for the same pair.
+    # do not emit a duplicate "Safe" row alongside a real finding for the same pair.
+    # Findings store the raw advisory component name (e.g. "VMware Aria Operations") but the
+    # inventory is keyed by the canonical name (e.g. "VCF Operations"). Resolve through the
+    # alias table so both keys suppress the same inventory row.
     $endpointsWithFindings = [System.Collections.Generic.HashSet[String]]::new([System.StringComparer]::OrdinalIgnoreCase)
     foreach ($f in @($Findings)) {
-        [Void]$endpointsWithFindings.Add("$($f.component)|$($f.serverFqdn)")
+        $resolvedComponent = if ($Script:ADVISORY_COMPONENT_ALIASES.ContainsKey([String]$f.component)) {
+            $Script:ADVISORY_COMPONENT_ALIASES[[String]$f.component]
+        } else {
+            [String]$f.component
+        }
+        [Void]$endpointsWithFindings.Add("$resolvedComponent|$($f.serverFqdn)")
     }
 
     # Deduplicate by component+fqdn so co-located Fleet services (Salt Master, Salt RaaS, etc.

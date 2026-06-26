@@ -217,16 +217,20 @@ Get-VCFPatchScannerServerStatus
 # ProcessId : 84312
 # Url       : http://localhost:8765
 
-# Stop the background server gracefully
+# Stop the server (works for both background and foreground servers)
 Stop-VCFPatchScannerServer
 
 # Restart (stop + start background server in one call)
 Restart-VCFPatchScannerServer
+
+# If the port is already in use by a previous server, kill it and restart
+Start-VCFPatchScannerServer -Force
+Start-VCFPatchScannerServer -Background -Force
 ```
 
-On macOS and Linux the background process is detached via `setsid`; on Windows it uses `DETACHED_PROCESS`. The server writes its PID to `Logs/vcfpatch-server.pid` after binding the socket — `Stop-VCFPatchScannerServer` reads that file and sends SIGTERM on macOS/Linux (triggering a clean shutdown) or terminates the process on Windows. Background server startup output is appended to `Logs/VcfPatchScannerServer-daemon.log`.
+On macOS and Linux the background process is detached via `setsid`; on Windows it uses `DETACHED_PROCESS`. The server writes its PID to `Logs/vcfpatch-server.pid` after binding the socket. `Stop-VCFPatchScannerServer` kills any process holding the port — whether it was started with `-Background` or as a foreground server — and waits for the port to be released before returning. Background server startup output is appended to `Logs/VcfPatchScannerServer-daemon.log`.
 
-> **Note:** `Stop-VCFPatchScannerServer` and `Get-VCFPatchScannerServerStatus` only work for servers started with `-Background`. A foreground server (started without `-Background`) is stopped with Ctrl+C as before.
+> **Tip:** If `Start-VCFPatchScannerServer` reports that the port is already in use, run `Stop-VCFPatchScannerServer` to release it, or use `-Force` to kill the existing process and restart in one step.
 
 ### Advisory database status
 
@@ -452,6 +456,307 @@ $advisories = Get-SecurityAdvisory `
 - Advisory database downloads are verified against a SHA-256 checksum before the local file is replaced.
 - The advisory JSON and settings file are validated before use; oversized files are rejected.
 - All endpoint connections use HTTPS with configurable certificate handling.
+
+## Credentials and Secrets Management
+
+### Overview
+
+VCF Patch Scanner supports three credential management approaches:
+
+| Approach | Setup Required | Use Case | Security |
+|----------|---|---|---|
+| **Interactive Prompts** | None | Local one-time scans | Passwords in memory only (not written to disk) |
+| **Environment Variables** | Minimal | CI/CD pipelines, automation | Secrets managed by CI/CD system (GitHub Secrets, Jenkins, etc.) |
+| **SecretStore (optional)** | One-time installation | Local recurring scans | Encrypted local credential store (optionally password-protected) |
+
+### Three Paths to Running Scans
+
+#### Path 1: Interactive Prompts (Zero Setup)
+
+No configuration needed. Run a scan and enter passwords when prompted:
+
+```powershell
+# Copy the example config and fill in your server details
+Copy-Item VcfPatchScanner/Tools/environments.example.json ./my-environment.json
+# Edit my-environment.json — set server FQDNs and usernames; keep password_secret_ref values as-is
+
+# Run the scan and enter passwords at prompts
+pwsh -File VcfPatchScanner/Tools/Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+```
+
+When a credential is not found in SecretStore or environment variables, the script prompts:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Credential Required
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Environment: PROD_US_WEST — sddc_manager
+Not found in: SecretStore, environment variables
+Required for: Authenticating to endpoint
+
+Enter password (or Ctrl+C to cancel): ••••••••
+✓ Credential accepted
+```
+
+#### Path 2: Environment Variables (CI/CD Pipelines)
+
+Set environment variables before running the scan:
+
+```powershell
+# Set credentials from your CI/CD system's secret management
+$env:PROD_US_WEST_SDDC_MANAGER_1_PASSWORD = 'my-password'
+$env:PROD_US_WEST_VCF_OPS_1_PASSWORD = 'my-password'
+# ... etc for each credential
+
+# Run the scan — credentials come from env vars, no prompts occur
+# -NonInteractive is a pwsh host flag (not a script parameter); include it in CI/CD
+# to fail fast if a credential is missing rather than hanging for user input
+pwsh -NonInteractive -File Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+```
+
+**GitHub Actions Example:**
+
+```yaml
+- name: Run VCF Patch Scan
+  env:
+    PROD_US_WEST_SDDC_MANAGER_1_PASSWORD: ${{ secrets.PROD_US_WEST_SDDC_MANAGER_PASSWORD }}
+    PROD_US_WEST_VCF_OPS_1_PASSWORD: ${{ secrets.PROD_US_WEST_VCF_OPS_PASSWORD }}
+  run: |
+    pwsh -NonInteractive -File ${{ github.workspace }}/Invoke-VCFPatchScanner.ps1 `
+      -ConfigFile ${{ github.workspace }}/my-environment.json
+```
+
+#### Path 3: Microsoft.PowerShell.SecretStore (Local Recurring Scans)
+
+Install SecretStore once and save credentials. Future scans use the credential store automatically.
+
+**One-time setup (run once per machine):**
+
+```powershell
+# Step 1: Install both required modules
+#   SecretManagement is the front-end API; SecretStore is the encrypted backend vault
+Install-Module -Name Microsoft.PowerShell.SecretManagement -Force
+Install-Module -Name Microsoft.PowerShell.SecretStore -Force
+
+# Step 2: Register SecretStore as your default vault
+Register-SecretVault -Name SecretStore -ModuleName Microsoft.PowerShell.SecretStore -DefaultVault
+
+# Step 3: Configure vault security
+#   -Authentication Password: vault re-locks after -PasswordTimeout seconds (recommended for shared machines)
+#   -Authentication None:     vault never prompts (recommended for scheduled tasks / single-user machines)
+Set-SecretStoreConfiguration -Scope CurrentUser -Authentication None
+# -- OR, for password-protected vaults --
+Set-SecretStoreConfiguration -Scope CurrentUser -Authentication Password -PasswordTimeout 28800
+```
+
+**One-time per credential (save each password):**
+
+```powershell
+Set-Secret -Name 'PROD_US_WEST_SDDC_MANAGER_1_PASSWORD' -Secret (Read-Host -AsSecureString 'SDDC Manager password')
+Set-Secret -Name 'PROD_US_WEST_VCF_OPS_1_PASSWORD'      -Secret (Read-Host -AsSecureString 'VCF Operations password')
+# ... one Set-Secret call per endpoint in your environments.json
+```
+
+**Future scans (no prompts, no typing passwords):**
+
+```powershell
+pwsh -File Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+```
+
+> **Password-protected vaults:** If you configured `-Authentication Password`, the vault re-locks after the timeout. Before running a scan you must unlock it:
+> ```powershell
+> Unlock-SecretStore -Password (Read-Host -AsSecureString 'Vault password')
+> ```
+> For fully automated scans (cron, scheduled tasks) use `-Authentication None` instead.
+
+**Day-2: Rotating a password** (run `Set-Secret` again with the same name — it overwrites):
+
+```powershell
+Set-Secret -Name 'PROD_US_WEST_SDDC_MANAGER_1_PASSWORD' -Secret (Read-Host -AsSecureString 'New SDDC Manager password')
+```
+
+**Listing stored credentials** (useful for verifying all secrets are saved before a scan):
+
+```powershell
+Get-SecretInfo | Where-Object Name -like '*_PASSWORD' | Select-Object Name, VaultName
+```
+
+**Why SecretStore?**
+- Credentials encrypted at rest on your machine
+- No plain-text files on disk
+- No typing passwords repeatedly for recurring scans
+- Optional installation — your choice
+
+**When to use SecretStore:**
+- You scan the same environments regularly from your laptop
+- You want credentials encrypted locally
+
+**When NOT to use SecretStore:**
+- You're running in a CI/CD pipeline (use env vars instead — Path 2)
+- You prefer ephemeral credential entry (use interactive prompts — Path 1)
+
+### Configuration File Format
+
+Paths 1 and 2 (interactive prompts and environment variables) use `environments.json` when invoking the CLI directly. The web UI generates this file internally — you do not create or edit it when using the browser interface.
+
+```json
+{
+  "version": "1.0",
+  "environments": [
+    {
+      "name": "prod-us-west",
+      "displayName": "Production US-West SDDC",
+      "type": "vcf9",
+      "endpoints": {
+        "sddc_manager": {
+          "server": "sddc-prod-uw.corp.local",
+          "username": "administrator@vsphere.local",
+          "password_secret_ref": "PROD_US_WEST_SDDC_MANAGER_1_PASSWORD"
+        },
+        "vcf_ops": {
+          "server": "ops-prod-uw.corp.local",
+          "username": "admin",
+          "password_secret_ref": "PROD_US_WEST_VCF_OPS_1_PASSWORD"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Key rules:**
+- Credentials are **never** stored in the config file
+- `password_secret_ref` names follow the pattern: `{ENVIRONMENT}_{ENDPOINT}_{INSTANCE}_PASSWORD` (uppercase, underscores)
+- You can define multiple environments in one config file
+- Server FQDNs and usernames come from your infrastructure; only passwords are secrets
+
+### Adding a New Environment (Day-2 Operations)
+
+**Scenario:** Your organization deployed a new SDDC in us-east. Add it to scans without re-entering known credentials.
+
+1. **Add the new environment to `environments.json`** (inside the existing `environments` array):
+
+```json
+{
+  "version": "1.0",
+  "environments": [
+    {
+      "name": "prod-us-west",
+      "...": "existing environment — unchanged"
+    },
+    {
+      "name": "prod-us-east",
+      "displayName": "Production US-East SDDC",
+      "type": "vcf9",
+      "endpoints": {
+        "sddc_manager": {
+          "server": "sddc-prod-ue.corp.local",
+          "username": "administrator@vsphere.local",
+          "password_secret_ref": "PROD_US_EAST_SDDC_MANAGER_1_PASSWORD"
+        }
+      }
+    }
+  ]
+}
+```
+
+2. **Save the credential (one-time per new environment):**
+
+```powershell
+# SecretStore (recommended for recurring use)
+Set-Secret -Name 'PROD_US_EAST_SDDC_MANAGER_1_PASSWORD' -Secret (Read-Host -AsSecureString 'SDDC Manager password')
+
+# OR — environment variable (CI/CD or one-time use)
+$env:PROD_US_EAST_SDDC_MANAGER_1_PASSWORD = 'password-here'
+```
+
+3. **Scan both environments together:**
+
+```powershell
+# Both environments are scanned sequentially
+pwsh -File Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+```
+
+### Batch Scanning Multiple Environments
+
+Run all configured environments in a single scan:
+
+```powershell
+# Scan prod-us-west, prod-us-east, lab-vcf5, etc. — all in one invocation
+pwsh Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+
+# Findings for each environment are written to:
+#   Findings/prod-us-west-findings.json
+#   Findings/prod-us-east-findings.json
+#   Findings/lab-vcf5-findings.json
+```
+
+### Secret Reference Name Format
+
+Secret references are auto-generated from your config values. You don't need to calculate them, but understanding the format helps with troubleshooting:
+
+```
+{ENVIRONMENT}_{ENDPOINT_TYPE}_{INSTANCE_NUMBER}_PASSWORD
+
+Examples:
+  PROD_US_WEST_SDDC_MANAGER_1_PASSWORD    (environment "prod-us-west", endpoint type "sddc_manager", instance 1)
+  PROD_US_WEST_VCF_OPS_1_PASSWORD         (environment "prod-us-west", endpoint type "vcf_ops", instance 1)
+  LAB_VCF5_VRSLCM_1_PASSWORD              (environment "lab-vcf5", endpoint type "vrslcm", instance 1)
+```
+
+Transformation rules:
+- Environment names: hyphens converted to underscores, forced uppercase
+- Endpoint types: underscores preserved, forced uppercase
+- Instance numbers: start at 1 for the first instance of each type
+
+### Troubleshooting Credentials
+
+**Error: "Credential reference 'PROD_US_WEST_SDDC_MANAGER_1_PASSWORD' not found"**
+
+This means the credential lookup failed. The script tried these three places in order:
+
+1. **Microsoft.PowerShell.SecretStore** — if installed, tried `Get-Secret`
+2. **Environment variable** — tried `$env:PROD_US_WEST_SDDC_MANAGER_1_PASSWORD`
+3. **Interactive prompt** — would have prompted if running in a terminal (blocked by `-NonInteractive` or no terminal)
+
+**Fix it:** Choose ONE of:
+
+```powershell
+# Option A: Set the environment variable
+$env:PROD_US_WEST_SDDC_MANAGER_1_PASSWORD = 'password-here'
+pwsh -File Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+
+# Option B: Save to SecretStore
+Set-Secret -Name 'PROD_US_WEST_SDDC_MANAGER_1_PASSWORD' -Secret (Read-Host -AsSecureString 'SDDC Manager password')
+pwsh -File Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+
+# Option C: Run interactively and enter the password when prompted
+pwsh -File Invoke-VCFPatchScanner.ps1 -ConfigFile my-environment.json
+```
+
+**Error: "running non-interactively"**
+
+You're running `pwsh -NonInteractive` (or via a scheduled task) but no credentials were found in SecretStore or env vars. Note: `-NonInteractive` is a **`pwsh` host flag**, not a script parameter — the correct syntax is `pwsh -NonInteractive -File Invoke-VCFPatchScanner.ps1 ...`, not `pwsh -File Invoke-VCFPatchScanner.ps1 ... -NonInteractive`.
+
+**Fix:** Set credentials as environment variables or save them to SecretStore first, then re-run.
+
+### Web UI and Credentials
+
+When using the browser UI (`Start-VCFPatchScannerServer`), the credential flow is entirely password-based:
+
+- Passwords entered in the UI are passed directly to the PowerShell scanner as environment variables
+- **Passwords are never stored to disk** — they live in memory for the duration of the scan subprocess and are discarded afterward
+- The Python server has no awareness of SecretStore; it always uses env-var delivery
+
+**SecretStore takes priority over UI passwords.** If you have SecretStore installed and a secret stored under the expected reference name (e.g. `VCF5_SDDC_MANAGER_1_PASSWORD`), the PowerShell resolver will use the SecretStore value and ignore the password entered in the UI. This is intentional for operators who have already set up SecretStore — they can leave the UI password fields empty.
+
+**To save UI credentials to SecretStore for future scans:**
+1. Determine the secret reference names the scanner generated for your environment (check the engine log at `DEBUG` level — look for lines like `sddc_manager (sddc.example.com): env var 'VCF5_SDDC_MANAGER_1_PASSWORD'`)
+2. Save each credential once:
+   ```powershell
+   Set-Secret -Name 'VCF5_SDDC_MANAGER_1_PASSWORD' -Secret (Read-Host -AsSecureString 'SDDC Manager password')
+   ```
+3. Future scans will resolve credentials from SecretStore automatically; the UI password fields become optional
 
 ## SOFTWARE LICENSE AGREEMENT
 

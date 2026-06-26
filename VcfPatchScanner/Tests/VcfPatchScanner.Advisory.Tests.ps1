@@ -247,6 +247,77 @@ Describe "VcfPatchScanner.Advisory" {
             }
         }
 
+        It "Returns VCF 5 applicable advisories for vRealize/Aria era Operations (managed by vRSLCM)" {
+            InModuleScope VcfPatchScanner {
+                $ariaOpsNames = @(
+                    'VMware Aria Operations',
+                    'VMware vRealize Operations',
+                    'VMware vRealize Operations Manager',
+                    'VCF Operations'
+                )
+                foreach ($componentName in $ariaOpsNames) {
+                    $advisories = @(
+                        [PSCustomObject]@{
+                            vmsaId = "VMSA-2026-TEST"
+                            severity = "Critical"
+                            impactedComponents = @(
+                                [PSCustomObject]@{ component = $componentName; minimumVersions = "8.0"; fixedVersions = @("8.18.6") }
+                            )
+                        }
+                    )
+                    $filtered = Select-AdvisoryByEnvironmentType -Advisories $advisories -EnvironmentType vcf5
+                    $filtered.Count | Should -Be 1 -Because "advisory with component '$componentName' must be applicable to vcf5 (vRSLCM manages vrops instances in VCF 5.x environments)"
+                }
+            }
+        }
+        It "Returns VCF 5 applicable advisories for vRealize/Aria era Automation (managed by vRSLCM)" {
+            InModuleScope VcfPatchScanner {
+                $ariaAutoNames = @(
+                    'VMware Aria Automation',
+                    'VMware vRealize Automation',
+                    'VMware vRealize Orchestrator',
+                    'VCF Automation'
+                )
+                foreach ($componentName in $ariaAutoNames) {
+                    $advisories = @(
+                        [PSCustomObject]@{
+                            vmsaId = "VMSA-2026-TEST"
+                            severity = "High"
+                            impactedComponents = @(
+                                [PSCustomObject]@{ component = $componentName; minimumVersions = "8.0"; fixedVersions = @("8.18.1") }
+                            )
+                        }
+                    )
+                    $filtered = Select-AdvisoryByEnvironmentType -Advisories $advisories -EnvironmentType vcf5
+                    $filtered.Count | Should -Be 1 -Because "advisory with component '$componentName' must be applicable to vcf5 (vRSLCM manages vra instances in VCF 5.x environments)"
+                }
+            }
+        }
+        It "Returns VCF 5 applicable advisories for vRealize/Aria era Logs and Networks (managed by vRSLCM)" {
+            InModuleScope VcfPatchScanner {
+                $logAndNetNames = @(
+                    'VMware Aria Operations for Logs',
+                    'VMware vRealize Log Insight',
+                    'VCF Operations for Logs',
+                    'VMware Aria Operations for Networks',
+                    'VMware vRealize Network Insight',
+                    'VCF Operations for Networks'
+                )
+                foreach ($componentName in $logAndNetNames) {
+                    $advisories = @(
+                        [PSCustomObject]@{
+                            vmsaId = "VMSA-2026-TEST"
+                            severity = "High"
+                            impactedComponents = @(
+                                [PSCustomObject]@{ component = $componentName; minimumVersions = "8.0"; fixedVersions = @("8.14") }
+                            )
+                        }
+                    )
+                    $filtered = Select-AdvisoryByEnvironmentType -Advisories $advisories -EnvironmentType vcf5
+                    $filtered.Count | Should -Be 1 -Because "advisory with component '$componentName' must be applicable to vcf5 (vRSLCM manages vrli/vrni instances in VCF 5.x environments)"
+                }
+            }
+        }
         It "Filters return empty when no applicable components" {
             InModuleScope VcfPatchScanner {
                 $advisories = @(

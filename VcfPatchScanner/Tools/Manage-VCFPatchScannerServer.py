@@ -43,6 +43,7 @@
 
 import os
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -162,6 +163,22 @@ def cmd_start(port: int, no_browser: bool) -> None:
             return
         # Stale PID file from a previous crash — remove it and start fresh.
         pid_file.unlink(missing_ok=True)
+
+    # Orphan guard: detect a server process that is still bound to the port but
+    # has no PID file (e.g. started manually or crashed without cleanup).  Without
+    # this check the new server would silently fail to bind and exit, leaving the
+    # old instance running and the user with no clear error message.
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _probe:
+        _probe.settimeout(0.5)
+        if _probe.connect_ex(("127.0.0.1", port)) == 0:
+            print(
+                f"[WARNING] Port {port} is already in use by another process.\n"
+                "  A previous server instance may be running without a PID file.\n"
+                "  Run 'Stop-VCFPatchScannerServer' to stop it, or locate and kill\n"
+                "  the process manually, then try again.",
+                file=sys.stderr,
+            )
+            return
 
     proc = _start_background(port, no_browser, pid_file)
 

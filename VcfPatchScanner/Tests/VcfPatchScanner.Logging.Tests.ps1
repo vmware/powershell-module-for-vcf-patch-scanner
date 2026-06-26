@@ -255,8 +255,8 @@ Describe "VcfPatchScanner.Logging" {
 
     Context "Copy-PatchScanAdvisoryDataFromModule" {
 
-        # Tests use the real module Data/ directory as the source (the bundled advisory stub has
-        # updatedAt "2026-06-01T00:00:00Z").  Only the destination directory is a temp path.
+        # Tests use the real module Data/ directory as the source. Only the destination directory
+        # is a temp path — the real Data/securityAdvisory.json is never modified by these tests.
 
         BeforeEach {
             $script:_dstDir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "VcfPatchScannerTest_$(New-Guid)"
@@ -277,7 +277,7 @@ Describe "VcfPatchScanner.Logging" {
         }
 
         It "Returns true and keeps existing file when it has a newer updatedAt than the bundled copy" {
-            # Write a far-future date — always newer than the bundled stub (2026-06-01).
+            # Write a far-future date — always newer than any bundled copy.
             $dstFile = Join-Path -Path $script:_dstDir -ChildPath 'securityAdvisory.json'
             @{ schemaVersion = "2.0"; advisories = @(); updatedAt = "2099-01-01T00:00:00Z" } |
                 ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $dstFile -Encoding UTF8

@@ -127,6 +127,7 @@
 
 [CmdletBinding()]
 Param (
+    [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$ConfigFile,
     [Parameter(Mandatory = $false)] [ValidateRange(1, 900)] [Int]$ConnectionTimeoutSeconds = 30,
     [Parameter(Mandatory = $false)] [Switch]$DiscoverFleetManager,
     [Parameter(Mandatory = $false)] [Switch]$DiscoverSddcManagers,
@@ -208,16 +209,112 @@ $requiredDiscoveryFunctions = @(
     'Get-FleetManagerFromVcfOps'
     'Get-SddcCredentialFromFleetManager'
     'Initialize-PatchScanLogging'
+    'Import-EnvironmentsFromConfig'
+    'ConvertTo-ScanParameters'
 )
 $missingFunctions = $requiredDiscoveryFunctions | Where-Object { -not (Get-Command -Name $_ -ErrorAction SilentlyContinue) }
 if ($missingFunctions) {
     $missingList = $missingFunctions -join ', '
     $outOfDateMsg = "The server installation is outdated. Please run Initialize-VcfPatchScanner to update, then restart the server."
-    if ($ValidateCredentialsOnly -or $DiscoverSddcManagers -or $DiscoverFleetManager -or $DiscoverVrslcm -or $FetchSddcCredential) {
+    if ($ValidateCredentialsOnly -or $DiscoverSddcManagers -or $DiscoverFleetManager -or $DiscoverVrslcm -or $FetchSddcCredential -or $ConfigFile) {
         @{ instances = @(); opsVersion = ""; vcenterFqdns = @(); error = $outOfDateMsg } | ConvertTo-Json -Compress
         exit 1
     }
     throw [System.InvalidOperationException]::new($outOfDateMsg)
+}
+
+function Write-ScanRuntimeInfo {
+
+    <#
+        .SYNOPSIS
+            Logs PowerShell, PowerCLI, and module version information to the scan log.
+        .DESCRIPTION
+            Writes a single INFO log line with PowerShell version, VMware PowerCLI version,
+            VcfPatchScanner module version, and OS. Called once per scan or validation run
+            immediately after Initialize-PatchScanLogging.
+        .EXAMPLE
+            Initialize-PatchScanLogging -LogLevel INFO -LogDirectory $LogDirectory | Out-Null
+            Write-ScanRuntimeInfo
+    #>
+
+    [CmdletBinding()]
+    Param ()
+
+    $pcliMod = Get-Module -Name 'VCF.PowerCLI' -ListAvailable -ErrorAction SilentlyContinue |
+        Sort-Object { [Version]$_.Version } -Descending | Select-Object -First 1
+    $scanMod = Get-Module -Name 'VcfPatchScanner' -ErrorAction SilentlyContinue
+    $pcliVer = if ($pcliMod) { $pcliMod.Version.ToString() } else { 'not loaded' }
+    $scanVer = if ($scanMod) { $scanMod.Version.ToString() } else { 'unknown' }
+    $pyVer   = if ($env:VCFPATCHSCANNER_PYTHON_VERSION) { $env:VCFPATCHSCANNER_PYTHON_VERSION } else { 'unknown' }
+    Write-LogMessage -Type INFO -Message "Runtime: PowerShell=$($PSVersionTable.PSVersion) | VCF.PowerCLI=$pcliVer | VcfPatchScanner=v$scanVer | Python=$pyVer | OS=$($PSVersionTable.OS)"
+}
+
+# Multi-environment mode: load config file and scan each environment sequentially.
+if (-not [String]::IsNullOrWhiteSpace($ConfigFile)) {
+    Initialize-PatchScanLogging -LogLevel $LogLevel -LogDirectory $LogDirectory | Out-Null
+    Write-ScanRuntimeInfo
+    try {
+        $config = Import-EnvironmentsFromConfig -ConfigPath $ConfigFile -AllowInteractivePrompt
+
+        $successCount = 0
+        $failureCount = 0
+
+        foreach ($env in $config.environments) {
+            Write-LogMessage -Type INFO -Message "Scanning environment: $($env.name)"
+
+            try {
+                $scanParams = ConvertTo-ScanParameters -Environment $env
+                $scanParams.AdvisoryPath = $SecurityAdvisoryFile
+                $scanParams.TimeoutSeconds = $ConnectionTimeoutSeconds
+                $scanParams.UseLiveInventory = $true
+
+                if (-not [String]::IsNullOrWhiteSpace($VcenterBuildMapFile)) {
+                    $scanParams.VcenterBuildMapFile = $VcenterBuildMapFile
+                }
+
+                $envFindingsPath = if (-not [String]::IsNullOrWhiteSpace($FindingsOutputPath)) {
+                    $envTs = Get-Date -Format 'yyyyMMdd-HHmmss'
+                    Join-Path (Split-Path -Path $FindingsOutputPath) "vcf-findings-$($env.name)-$envTs.json"
+                } else {
+                    ""
+                }
+
+                if ($envFindingsPath) {
+                    $scanParams.FindingsOutputPath = $envFindingsPath
+                }
+
+                $result = Invoke-VCFPatchScanner @scanParams
+
+                if ($result.Status -eq 'Success') {
+                    $successCount++
+                    Write-LogMessage -Type INFO -Message "Scan completed for environment: $($env.name) — $($result.FindingsCount) vulnerabilities found in $($result.DurationSeconds)s"
+                    if ($result.FailedEndpoints -and $result.FailedEndpoints.Count -gt 0) {
+                        Write-LogMessage -Type WARNING -Message "Environment '$($env.name)' had $($result.FailedEndpoints.Count) endpoint(s) that could not be reached"
+                    }
+                } else {
+                    $failureCount++
+                    $failureMsg = "Scan failed for environment '$($env.name)': Status=$($result.Status), ExitCode=$($result.ExitCode)"
+                    if ($result.FailedEndpoints -and $result.FailedEndpoints.Count -gt 0) {
+                        $failureMsg += ", Failed endpoints: $($result.FailedEndpoints.Count)"
+                    }
+                    Write-LogMessage -Type ERROR -Message $failureMsg
+                }
+            }
+            catch {
+                $failureCount++
+                Write-LogMessage -Type ERROR -Message "Scan exception for environment '$($env.name)': $($_.Exception.Message)"
+                Write-LogMessage -Type DEBUG -Message "$($_.Exception.StackTrace)"
+            }
+        }
+
+        Write-LogMessage -Type INFO -Message "Scan complete: $successCount succeeded, $failureCount failed"
+        exit ([Int]($failureCount -gt 0))
+    }
+    catch {
+        Write-LogMessage -Type ERROR -Message "Multi-environment scan failed: $($_.Exception.Message)"
+        Write-LogMessage -Type DEBUG -Message "$($_.Exception.StackTrace)"
+        exit 1
+    }
 }
 
 # Strip ANSI CSI sequences, OSC sequences, null bytes, carriage returns, and JSON-unsafe
@@ -366,25 +463,74 @@ if ($DiscoverVrslcm) {
 if ($ValidateCredentialsOnly) {
     $InformationPreference = 'SilentlyContinue'
     Initialize-PatchScanLogging -LogLevel $LogLevel -LogDirectory $LogDirectory | Out-Null
-    Write-LogMessage -Type INFO -Message "Running in validation-only mode"
+    Write-ScanRuntimeInfo
     try {
-        $connParams = @{ EnvironmentType = $VcfMajorVersion; TimeoutSeconds = $ConnectionTimeoutSeconds }
-        if ($SddcManagerServer) { $connParams['SddcManagerServer'] = $SddcManagerServer }
-        if ($SddcManagerUser)   { $connParams['SddcManagerUser']   = $SddcManagerUser }
-        if ($VrslcmServer)      { $connParams['VrslcmServer']      = $VrslcmServer }
-        if ($VrslcmUser)        { $connParams['VrslcmUser']        = $VrslcmUser }
-        if ($VcfOpsServer)      { $connParams['VcfOpsServer']      = $VcfOpsServer }
-        if ($VcfOpsUser)        { $connParams['VcfOpsUser']        = $VcfOpsUser }
-        if ($VcfFMServer)       { $connParams['VcfFMServer']       = $VcfFMServer }
-        if ($VcfFMUser)         { $connParams['VcfFMUser']         = $VcfFMUser }
-        if ($VcfMinorVersion)   { $connParams['VcfMinorVersion']   = $VcfMinorVersion }
-        if ($VcenterServer)     { $connParams['VcenterServer']     = $VcenterServer }
-        if ($VcenterUser)       { $connParams['VcenterUser']       = $VcenterUser }
-        if ($NsxManagerServer)  { $connParams['NsxManagerServer']  = $NsxManagerServer }
-        if ($NsxManagerUser)    { $connParams['NsxManagerUser']    = $NsxManagerUser }
-        $connResult = Test-PatchScanConnection @connParams
-        $connResult | ConvertTo-Json -Depth 3 -Compress
-        exit ([Int](-not $connResult.Success))
+        $endpointTests = [System.Collections.Generic.List[PSCustomObject]]::new()
+
+        if ($ConfigFile) {
+            Write-LogMessage -Type INFO -Message "Loading credential configuration from: '$ConfigFile'"
+            $config = Import-EnvironmentsFromConfig -ConfigPath $ConfigFile -AllowInteractivePrompt
+            if (-not $config -or -not $config.environments) {
+                Write-LogMessage -Type ERROR -Message "Configuration file empty or invalid"
+                $errorResult = @{ EndpointTests = @( @{ Status = 'Failed'; Message = 'Configuration file empty or invalid' } ) }
+                $errorResult | ConvertTo-Json -Depth 3 -Compress
+                exit 1
+            }
+            foreach ($envConfig in $config.environments) {
+                $eps        = $envConfig.endpoints
+                $connParams = @{ EnvironmentType = $envConfig.type; TimeoutSeconds = $ConnectionTimeoutSeconds }
+                if ($envConfig.vcfMinorVersion) { $connParams['VcfMinorVersion'] = $envConfig.vcfMinorVersion }
+                if ($eps.sddc_manager) {
+                    $connParams['SddcManagerServer'] = $eps.sddc_manager.server
+                    $connParams['SddcManagerUser']   = $eps.sddc_manager.username
+                }
+                if ($eps.vcf_ops) {
+                    $connParams['VcfOpsServer'] = $eps.vcf_ops.server
+                    $connParams['VcfOpsUser']   = $eps.vcf_ops.username
+                }
+                if ($eps.vcf_fm) {
+                    $connParams['VcfFMServer'] = $eps.vcf_fm.server
+                    $connParams['VcfFMUser']   = $eps.vcf_fm.username
+                }
+                if ($eps.vrslcm) {
+                    $connParams['VrslcmServer'] = $eps.vrslcm.server
+                    $connParams['VrslcmUser']   = $eps.vrslcm.username
+                }
+                if ($eps.vcenter) {
+                    $connParams['VcenterServer'] = $eps.vcenter.server
+                    $connParams['VcenterUser']   = $eps.vcenter.username
+                }
+                if ($eps.nsx_manager) {
+                    $connParams['NsxManagerServer'] = $eps.nsx_manager.server
+                    $connParams['NsxManagerUser']   = $eps.nsx_manager.username
+                }
+                $connResult = Test-PatchScanConnection @connParams
+                foreach ($epTest in $connResult.EndpointTests) { $endpointTests.Add($epTest) }
+            }
+        }
+        else {
+            $connParams = @{ EnvironmentType = $VcfMajorVersion; TimeoutSeconds = $ConnectionTimeoutSeconds }
+            if ($SddcManagerServer) { $connParams['SddcManagerServer'] = $SddcManagerServer }
+            if ($SddcManagerUser)   { $connParams['SddcManagerUser']   = $SddcManagerUser }
+            if ($VrslcmServer)      { $connParams['VrslcmServer']      = $VrslcmServer }
+            if ($VrslcmUser)        { $connParams['VrslcmUser']        = $VrslcmUser }
+            if ($VcfOpsServer)      { $connParams['VcfOpsServer']      = $VcfOpsServer }
+            if ($VcfOpsUser)        { $connParams['VcfOpsUser']        = $VcfOpsUser }
+            if ($VcfFMServer)       { $connParams['VcfFMServer']       = $VcfFMServer }
+            if ($VcfFMUser)         { $connParams['VcfFMUser']         = $VcfFMUser }
+            if ($VcfMinorVersion)   { $connParams['VcfMinorVersion']   = $VcfMinorVersion }
+            if ($VcenterServer)     { $connParams['VcenterServer']     = $VcenterServer }
+            if ($VcenterUser)       { $connParams['VcenterUser']       = $VcenterUser }
+            if ($NsxManagerServer)  { $connParams['NsxManagerServer']  = $NsxManagerServer }
+            if ($NsxManagerUser)    { $connParams['NsxManagerUser']    = $NsxManagerUser }
+            $connResult = Test-PatchScanConnection @connParams
+            foreach ($epTest in $connResult.EndpointTests) { $endpointTests.Add($epTest) }
+        }
+
+        # Return validation results in expected JSON format
+        $result = @{ EndpointTests = $endpointTests; Success = ($endpointTests | Where-Object { $_.Status -ne 'Connected' }).Count -eq 0 }
+        $result | ConvertTo-Json -Depth 3 -Compress
+        exit ([Int](-not $result.Success))
     }
     catch {
         Write-LogMessage -Type ERROR -Message "Validation error: $($_.Exception.Message)"

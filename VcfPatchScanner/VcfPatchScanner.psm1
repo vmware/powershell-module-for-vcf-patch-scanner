@@ -28,19 +28,20 @@
 #
 # PowerShell Module: VcfPatchScanner
 # VCF Patch Scanner
-# Last modified: 2026-06-08
+# Last modified: 2026-06-24
 #
 # Private implementation files (dot-sourced below):
-#   Private/Logging.ps1     — Log initialization and Write-LogMessage
-#   Private/Mapping.ps1     — Component name mappings, lookup tables (SCRIPT variables)
-#   Private/Settings.ps1    — Settings file CRUD, validation, template generation
-#   Private/Advisory.ps1    — Security advisory loading, parsing, schema validation
-#   Private/Discovery.ps1   — VCF environment discovery and connectivity validation
-#   Private/Inventory.ps1   — Live inventory collection from SDDC Manager, vCenter, Fleet Manager APIs
-#   Private/Scanning.ps1    — Vulnerability matching and scanning logic
-#   Private/Findings.ps1    — Findings export (JSON, CSV)
-#   Private/Tools.ps1       — Python server launcher and Tools directory management
-#   Private/EntryPoint.ps1  — Invoke-VCFPatchScanner orchestration
+#   Private/Logging.ps1              — Log initialization and Write-LogMessage
+#   Private/Mapping.ps1              — Component name mappings, lookup tables (SCRIPT variables)
+#   Private/Settings.ps1             — Settings file CRUD, validation, template generation
+#   Private/Advisory.ps1             — Security advisory loading, parsing, schema validation
+#   Private/CredentialManagement.ps1 — Credential resolution from SecretStore, env vars, or interactive prompts
+#   Private/Discovery.ps1            — VCF environment discovery and connectivity validation
+#   Private/Inventory.ps1            — Live inventory collection from SDDC Manager, vCenter, Fleet Manager APIs
+#   Private/Scanning.ps1             — Vulnerability matching and scanning logic
+#   Private/Findings.ps1             — Findings export (JSON, CSV)
+#   Private/Tools.ps1                — Python server launcher and Tools directory management
+#   Private/EntryPoint.ps1           — Invoke-VCFPatchScanner orchestration
 #
 
 # Dot-source private implementation files in dependency order
@@ -50,6 +51,7 @@ $privateFiles = @(
     'Mapping.ps1'
     'Settings.ps1'
     'Advisory.ps1'
+    'CredentialManagement.ps1'
     'Discovery.ps1'
     'Inventory.ps1'
     'Scanning.ps1'
@@ -71,8 +73,8 @@ foreach ($file in $privateFiles) {
 # Module constants — set once at load time, never mutate.
 $Script:VcfPatchScannerModuleLoaded    = $true
 $Script:VcfPatchScannerVersion         = "1.0.0.1000"
-$Script:JSON_PARSE_MAX_DEPTH        = 100
-$Script:JSON_SERIALIZE_DEPTH        = 10
+$Script:JSON_PARSE_MAX_DEPTH           = 100
+$Script:JSON_SERIALIZE_DEPTH           = 10
 
 # Environment variable that stores the active base directory (set by Initialize-VcfPatchScanner).
 $Script:VCF_PATCH_SCANNER_ENV_VAR      = "VcfPatchScannerBaseDirectory"
