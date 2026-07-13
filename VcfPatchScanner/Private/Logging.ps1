@@ -214,17 +214,16 @@ function Initialize-PatchScanLogging {
         }
     }
 
-    # Create log directory if it doesn't exist, then restrict it to the current user on non-Windows.
+    # Create log directory if it doesn't exist with owner-only permissions.
     if (-not (Test-Path -Path $Script:VcfPatchScannerLogDirectory -PathType Container)) {
         try {
-            New-Item -ItemType Directory -Path $Script:VcfPatchScannerLogDirectory -Force | Out-Null
+            $null = New-OwnerOnlyDirectory -Path $Script:VcfPatchScannerLogDirectory -Force -ErrorAction Stop
         }
         catch {
             Write-Host "Warning: Could not create log directory: $($_.Exception.Message)" -ForegroundColor Yellow
         }
-    }
-    if ($PSVersionTable.Platform -ne "Win32NT") {
-        & chmod 700 $Script:VcfPatchScannerLogDirectory 2>$null
+    } else {
+        $null = New-OwnerOnlyDirectory -Path $Script:VcfPatchScannerLogDirectory -Force
     }
 
     $fileTimestamp = (Get-Date).ToString('yyyy-MM-dd')
@@ -233,16 +232,11 @@ function Initialize-PatchScanLogging {
 
     if ($PSVersionTable.Platform -ne "Win32NT") {
         try {
-            # Pre-create the log file and set 0600 before the first append so it is
-            # never world-readable even briefly at session start.
+            # Pre-create the log file with owner-only permissions before the first append
+            # so it is never world-readable even briefly at session start.
             if ($isNewLogFile) {
-                [System.IO.File]::WriteAllText(
-                    $Script:VcfPatchScannerLogFilePath,
-                    "",
-                    [System.Text.UTF8Encoding]::new($false)
-                )
+                $null = New-OwnerOnlyFile -Path $Script:VcfPatchScannerLogFilePath
             }
-            & chmod 600 $Script:VcfPatchScannerLogFilePath 2>$null
         }
         catch {
             Write-Host "Warning: Could not set log file permissions: $($_.Exception.Message)" -ForegroundColor Yellow
@@ -544,7 +538,7 @@ function Invoke-PersistPatchScanBaseDirectory {
     try {
         $profileDir = Split-Path -Path $PROFILE -Parent
         if (-not (Test-Path -LiteralPath $profileDir)) {
-            New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
+            $null = New-OwnerOnlyDirectory -Path $profileDir -Force
         }
         if (-not (Test-Path -LiteralPath $PROFILE)) {
             New-Item -ItemType File -Path $PROFILE -Force | Out-Null
@@ -865,7 +859,7 @@ function Initialize-VcfPatchScanner {
         if ($RefreshTools.IsPresent) {
             $targetToolsPath = Join-Path -Path $trimmedBase -ChildPath $Script:SCAN_TOOLS_DIR_NAME
             if (-not (Test-Path -LiteralPath $targetToolsPath -PathType Container)) {
-                New-Item -ItemType Directory -Path $targetToolsPath -Force | Out-Null
+                $null = New-OwnerOnlyDirectory -Path $targetToolsPath -Force
             }
             foreach ($f in (Copy-PatchScanToolFilesFromModule -TargetDirectory $targetToolsPath)) {
                 $filesCopied.Add($f)
@@ -876,7 +870,7 @@ function Initialize-VcfPatchScanner {
             if ($RefreshTools.IsPresent) { Write-Host "" }
             $targetDataPath = Join-Path -Path $trimmedBase -ChildPath $Script:SCAN_DATA_DIR_NAME
             if (-not (Test-Path -LiteralPath $targetDataPath -PathType Container)) {
-                New-Item -ItemType Directory -Path $targetDataPath -Force | Out-Null
+                $null = New-OwnerOnlyDirectory -Path $targetDataPath -Force
             }
             if (Copy-PatchScanAdvisoryDataFromModule -TargetDirectory $targetDataPath) {
                 $filesCopied.Add($Script:SCAN_ADVISORY_FILE_NAME)
@@ -905,7 +899,7 @@ function Initialize-VcfPatchScanner {
 
     $baseWasCreated = -not (Test-Path -LiteralPath $targetDir -PathType Container)
     if ($baseWasCreated) {
-        New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+        $null = New-OwnerOnlyDirectory -Path $targetDir -Force
     }
 
     $subdirectoriesCreated = [System.Collections.Generic.List[String]]::new()
@@ -914,7 +908,7 @@ function Initialize-VcfPatchScanner {
     foreach ($subName in @($Script:SCAN_CONFIG_DIR_NAME, $Script:SCAN_DATA_DIR_NAME, $Script:SCAN_FINDINGS_DIR_NAME, $Script:SCAN_LOGS_DIR_NAME, $Script:SCAN_TOOLS_DIR_NAME)) {
         $subPath = Join-Path -Path $targetDir -ChildPath $subName
         if (-not (Test-Path -LiteralPath $subPath -PathType Container)) {
-            New-Item -ItemType Directory -Path $subPath -Force | Out-Null
+            $null = New-OwnerOnlyDirectory -Path $subPath -Force
             $subdirectoriesCreated.Add($subName)
         }
     }
@@ -968,13 +962,17 @@ function Invoke-VcfPatchScannerCollectLogs {
 
     <#
         .SYNOPSIS
-        Bundle the patch scanner logs directory into a timestamped zip file.
+        Bundle the patch scanner logs directory and configuration into a timestamped zip file.
 
         .DESCRIPTION
         Reads the log directory from the scan-settings.json in VcfPatchScannerBaseDirectory (or the module
-        Tools directory), copies all .log files into a temp staging area, compresses them into a zip, and
-        saves the zip under $HOME. Designed to be called interactively or triggered by the Python UI's
-        Collect Logs button.
+        Tools directory), copies all .log files and the user's scan-settings.json configuration into a temp
+        staging area, compresses them into a zip, and saves the zip under $HOME. Designed to be called
+        interactively or triggered by the Python UI's Collect Logs button.
+
+        Included in the archive:
+        - All .log files from the configured Logs directory
+        - scan-settings.json (if present) from VcfPatchScannerBaseDirectory/Config/ — enables diagnostics of scan configuration
 
         .OUTPUTS
         [String] Absolute path to the created zip file, or $null on failure.
@@ -1017,6 +1015,27 @@ function Invoke-VcfPatchScannerCollectLogs {
         return $null
     }
 
+    # Display security warning before creating the archive.
+    Write-Host ""
+    Write-Host "╔════════════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
+    Write-Host "║                           SECURITY WARNING                                     ║" -ForegroundColor Yellow
+    Write-Host "╚════════════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "The support archive you are about to create contains sensitive infrastructure data:" -ForegroundColor Yellow
+    Write-Host "  • Endpoint FQDNs and IP addresses (SDDC Manager, vCenter, NSX, vRSLCM, etc.)" -ForegroundColor Yellow
+    Write-Host "  • Environment names and configuration topology" -ForegroundColor Yellow
+    Write-Host "  • Service account usernames" -ForegroundColor Yellow
+    Write-Host "  • All log file contents (may include errors exposing configuration details)" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "IMPORTANT: Do NOT share this archive with untrusted parties." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Best Practices:" -ForegroundColor Yellow
+    Write-Host "  1. Store the archive securely (encrypted storage or password-protected)" -ForegroundColor Yellow
+    Write-Host "  2. Share only with authorized Broadcom support personnel" -ForegroundColor Yellow
+    Write-Host "  3. Delete the archive after support has completed their review" -ForegroundColor Yellow
+    Write-Host "  4. If the archive is compromised, consider reviewing logs for exposed sensitive data" -ForegroundColor Yellow
+    Write-Host ""
+
     $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $zipFileName = "VcfPatchScanner-logs-$stamp.zip"
     $zipPath = Join-Path -Path $HOME -ChildPath $zipFileName
@@ -1024,11 +1043,19 @@ function Invoke-VcfPatchScannerCollectLogs {
     $stagingRoot = Join-Path -Path $stagingParent -ChildPath "archive"
 
     try {
-        $null = New-Item -ItemType Directory -Path $stagingRoot -Force -ErrorAction Stop
+        $null = New-OwnerOnlyDirectory -Path $stagingRoot -Force -ErrorAction Stop
 
         foreach ($logFile in $logFiles) {
             $destPath = Join-Path -Path $stagingRoot -ChildPath $logFile.Name
             Copy-Item -LiteralPath $logFile.FullName -Destination $destPath -Force -ErrorAction Stop
+        }
+
+        # Include scan-settings.json for diagnostic context if present in the Config directory.
+        $configDir = Join-Path -Path $env:VcfPatchScannerBaseDirectory.Trim() -ChildPath "Config"
+        $settingsFile = Join-Path -Path $configDir -ChildPath "scan-settings.json"
+        if (Test-Path -LiteralPath $settingsFile -PathType Leaf) {
+            $destPath = Join-Path -Path $stagingRoot -ChildPath "scan-settings.json"
+            Copy-Item -LiteralPath $settingsFile -Destination $destPath -Force -ErrorAction Stop
         }
 
         if (Test-Path -LiteralPath $zipPath -PathType Leaf) {
@@ -1091,6 +1118,159 @@ function Remove-AnsiEscapeCodes {
     # Remove ANSI escape sequences: ESC[ followed by any sequence ending with a letter
     # Covers: color codes, cursor movement, text formatting, etc.
     return $InputString -replace '\x1b\[[0-9;]*[a-zA-Z]', ''
+}
+
+function Set-TempFileOwnerOnlyPermissions {
+
+    <#
+        .SYNOPSIS
+        Restricts a file to owner-only read/write using chmod (Unix) or ACL (Windows).
+
+        .DESCRIPTION
+        On non-Windows systems calls chmod 600. On Windows, disables inherited permissions
+        and grants only the current user FullControl. Failures are logged as WARNING; the
+        function is non-fatal so callers can proceed even if permissions cannot be set.
+
+        .PARAMETER FilePath
+        Full path to the file to restrict.
+
+        .EXAMPLE
+        Set-TempFileOwnerOnlyPermissions -FilePath $tempYamlFile
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)] [ValidateNotNullOrEmpty()] [String]$FilePath
+    )
+
+    if (-not $IsWindows) {
+        & chmod 600 $FilePath
+        if ($LASTEXITCODE -ne 0) {
+            Write-LogMessage -Type WARNING -Message "Set-TempFileOwnerOnlyPermissions: chmod 600 failed (exit $LASTEXITCODE) on `"$FilePath`". File may be readable by other OS users."
+        }
+    } else {
+        try {
+            $acl = Get-Acl -Path $FilePath
+            $acl.SetAccessRuleProtection($true, $false)
+            $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+            $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
+                $currentUser,
+                [System.Security.AccessControl.FileSystemRights]::FullControl,
+                [System.Security.AccessControl.InheritanceFlags]::None,
+                [System.Security.AccessControl.PropagationFlags]::None,
+                [System.Security.AccessControl.AccessControlType]::Allow
+            )
+            $acl.AddAccessRule($rule)
+            Set-Acl -Path $FilePath -AclObject $acl
+        } catch {
+            Write-LogMessage -Type WARNING -Message "Set-TempFileOwnerOnlyPermissions: Could not restrict ACL on `"$FilePath`": $($_.Exception.Message). File may be readable by other OS users."
+        }
+    }
+}
+
+function New-OwnerOnlyDirectory {
+
+    <#
+        .SYNOPSIS
+        Creates a directory that is restricted to the current user on both Windows and non-Windows platforms.
+
+        .DESCRIPTION
+        Wraps New-Item -ItemType Directory so every directory VcfPatchScanner creates is non-world-readable
+        from the moment it exists, with no TOCTOU window. On non-Windows platforms, sets mode 0700
+        immediately after creation. On Windows, disables inherited permissions and grants only the
+        current user FullControl, with container/object inheritance so files and subdirectories created
+        later inherit the same restriction. Permissions are re-applied every time this function is called
+        for a given path — including when the directory already exists — so a directory created by an
+        older, unpatched version of this module is self-healed the next time it is touched. Permission
+        hardening failures are logged as WARNING and are non-fatal; directory-creation failures propagate
+        exactly as New-Item would, so existing try/catch and -ErrorAction handling at call sites is
+        unaffected by adopting this function in place of New-Item -ItemType Directory.
+
+        .PARAMETER Path
+        Full path of the directory to create.
+
+        .PARAMETER Force
+        Suppresses the error when the directory already exists and creates any missing intermediate
+        parent directories, matching New-Item -Force semantics.
+
+        .EXAMPLE
+        $null = New-OwnerOnlyDirectory -Path $logFolder -Force -ErrorAction Stop
+
+        .NOTES
+        Never call New-Item -ItemType Directory directly elsewhere in this module — always call
+        New-OwnerOnlyDirectory so newly created directories cannot be world-readable, even briefly.
+    #>
+
+    [CmdletBinding()]
+    [OutputType([System.IO.DirectoryInfo])]
+    Param (
+        [Parameter(Mandatory = $true)] [ValidateNotNullOrEmpty()] [String]$Path,
+        [Parameter(Mandatory = $false)] [Switch]$Force
+    )
+
+    $directoryInfo = New-Item -ItemType Directory -Path $Path -Force:$Force.IsPresent
+
+    if (-not $IsWindows) {
+        & chmod 700 $Path 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-LogMessage -Type WARNING -Message "New-OwnerOnlyDirectory: chmod 700 failed (exit $LASTEXITCODE) on `"$Path`". Directory may be readable by other OS users."
+        }
+    } else {
+        try {
+            $acl = Get-Acl -Path $Path
+            $acl.SetAccessRuleProtection($true, $false)
+            $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+            $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
+                $currentUser,
+                [System.Security.AccessControl.FileSystemRights]::FullControl,
+                ([System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit),
+                [System.Security.AccessControl.PropagationFlags]::None,
+                [System.Security.AccessControl.AccessControlType]::Allow
+            )
+            $acl.AddAccessRule($rule)
+            Set-Acl -Path $Path -AclObject $acl
+        } catch {
+            Write-LogMessage -Type WARNING -Message "New-OwnerOnlyDirectory: Could not restrict ACL on `"$Path`": $($_.Exception.Message). Directory may be readable by other OS users."
+        }
+    }
+
+    return $directoryInfo
+}
+
+function New-OwnerOnlyFile {
+
+    <#
+        .SYNOPSIS
+        Creates an empty file restricted to the current user before any content is written to it.
+
+        .DESCRIPTION
+        Eliminates the TOCTOU window where a temporary or secret-bearing file would otherwise be
+        briefly world-readable between creation and permission restriction. Opens the file with
+        FileShare.None so no other handle can be created concurrently, closes it, then delegates
+        to Set-TempFileOwnerOnlyPermissions to apply chmod 600 (non-Windows) or an owner-only ACL
+        (Windows). The caller writes content to the returned path afterward. If the file already
+        exists, its content is truncated to zero bytes (FileMode.Create semantics) before
+        permissions are (re-)applied.
+
+        .PARAMETER Path
+        Full path of the file to create.
+
+        .EXAMPLE
+        $secretsFile = New-OwnerOnlyFile -Path $tempYamlFile
+        [System.IO.File]::WriteAllText($secretsFile, $yamlContent, [System.Text.UTF8Encoding]::new($false))
+    #>
+
+    [CmdletBinding()]
+    [OutputType([String])]
+    Param (
+        [Parameter(Mandatory = $true)] [ValidateNotNullOrEmpty()] [String]$Path
+    )
+
+    $fileStream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+    $fileStream.Close()
+    Set-TempFileOwnerOnlyPermissions -FilePath $Path
+
+    return $Path
 }
 
 #endregion

@@ -398,6 +398,31 @@ Log files are written to `~/VcfPatchScanner/Logs/`:
 | `VcfPatchScannerServer-daemon.log` | Background server startup output (only present when started with `-Background`) |
 | `vcfpatch-server.pid` | Background server PID file — read by `Stop-VCFPatchScannerServer` and `Get-VCFPatchScannerServerStatus` |
 
+### Security: Log Archive Contents
+
+Before you create the archive, a **security warning** is displayed reminding you that the bundle contains sensitive infrastructure data. The archive includes:
+
+- **Endpoint FQDNs and IP addresses** — SDDC Manager, vCenter, NSX, vRSLCM, VCF Operations, Fleet Controller endpoints
+- **Environment names and configuration topology** — cluster structure and network layout
+- **Service account usernames** — admin accounts used for scanning
+- **All log file contents** — which may reference configuration details, error messages, or other sensitive data
+
+#### Storage and Sharing Best Practices
+
+- **Store securely** — Use encrypted storage or password-protect the ZIP file
+- **Share only with authorized support** — Do not share with untrusted parties or public channels
+- **Delete after review** — Remove the archive once Broadcom support has completed their investigation
+- **Monitor for compromise** — If the archive is leaked or exposed, review the logs for any sensitive data that may require credential rotation
+
+#### What's NOT in the Archive
+
+The archive does **not** include:
+- Passwords or credentials (never stored on disk or written to logs)
+- Encrypted secrets or secret files
+- User data or PII (unless logged in error messages)
+
+The archive contains topology and configuration data needed by Broadcom support to understand your environment structure and troubleshoot issues.
+
 ## PowerShell cmdlets (advanced)
 
 The web UI is the recommended interface. For automation or scripting, the following cmdlets are available:
@@ -456,6 +481,19 @@ $advisories = Get-SecurityAdvisory `
 - Advisory database downloads are verified against a SHA-256 checksum before the local file is replaced.
 - The advisory JSON and settings file are validated before use; oversized files are rejected.
 - All endpoint connections use HTTPS with configurable certificate handling.
+
+### Supply-Chain Security: Module Manifest Verification
+
+VcfPatchScanner implements **SHA256 manifest verification** to detect supply-chain attacks and tampering after module download from PSGallery:
+
+- **Automatic verification** (optional): Set `VCFPATCHSCANNER_MANIFEST_URL` environment variable to enable SHA256 verification at module import time
+- **Audit logging**: Every module update logs the version and repository before executing `Update-Module`
+- **Manual verification**: Run verification scripts from [`MANIFEST_VERIFICATION.md`](MANIFEST_VERIFICATION.md) to inspect hashes and validate module integrity
+- **Graceful degradation**: Verification failures alert via warnings but do not block module load (maintains usability in air-gapped environments)
+
+**For security-sensitive deployments**: Enable manifest verification to detect PSGallery account compromise, MITM attacks, or local file tampering.
+
+**For release managers**: See [`RELEASE.md`](RELEASE.md) for the complete release runbook, including manifest generation steps.
 
 ## Credentials and Secrets Management
 

@@ -354,4 +354,47 @@ Describe "VcfPatchScanner.Settings" {
             $loaded.environments.Count | Should -Be 2
         }
     }
+
+    Context "Security - Owner-Only Permissions" {
+
+        It "Creates settings file with owner-only permissions (0600) on non-Windows" -Skip:$IsWindows {
+            InModuleScope VcfPatchScanner {
+                $settingsFile = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-settings-perms-$(New-Guid).json"
+
+                try {
+                    $settings = New-PatchScanEnvironmentTemplate
+                    Set-PatchScanSettings -Settings $settings -OutputPath $settingsFile
+                    Test-Path -LiteralPath $settingsFile -PathType Leaf | Should -Be $true
+
+                    $mode = (Get-Item -LiteralPath $settingsFile).UnixFileMode
+                    ($mode -band [System.IO.UnixFileMode]::GroupRead)  | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::GroupWrite) | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::OtherRead)  | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::OtherWrite) | Should -Be 0
+                } finally {
+                    if (Test-Path -LiteralPath $settingsFile) { Remove-Item -LiteralPath $settingsFile -Force }
+                }
+            }
+        }
+
+        It "Creates settings file with owner-only ACL on Windows" -Skip:(-not $IsWindows) {
+            InModuleScope VcfPatchScanner {
+                $settingsFile = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-settings-perms-$(New-Guid).json"
+
+                try {
+                    $settings = New-PatchScanEnvironmentTemplate
+                    Set-PatchScanSettings -Settings $settings -OutputPath $settingsFile
+                    Test-Path -LiteralPath $settingsFile -PathType Leaf | Should -Be $true
+
+                    $acl = Get-Acl -Path $settingsFile
+                    $acl.AreAccessRulesProtected | Should -Be $true
+                    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+                    $ownerRule = $acl.Access | Where-Object { $_.IdentityReference.Value -eq $currentUser -and $_.FileSystemRights -match "FullControl" }
+                    $ownerRule | Should -Not -BeNullOrEmpty
+                } finally {
+                    if (Test-Path -LiteralPath $settingsFile) { Remove-Item -LiteralPath $settingsFile -Force }
+                }
+            }
+        }
+    }
 }

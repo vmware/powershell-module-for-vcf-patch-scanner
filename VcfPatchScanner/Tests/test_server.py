@@ -157,16 +157,17 @@ class TestValidateEnvConfig(unittest.TestCase):
         self.assertIn("Fleet Manager Server", err)
 
     def test_vvf9_missing_vcenter_user(self):
+        # vcenterUser is optional — usernames default to vcenter admin at scan time.
         err = self._v({"type": "vvf9", "vcfOpsServer": "ops.lab",
                        "vcfOpsUser": "admin", "vcfFMServer": "fm.lab"})
-        self.assertIsNotNone(err)
-        self.assertIn("vCenter Username", err)
+        self.assertIsNone(err)
 
-    def test_vvf9_whitespace_vcenter_user_fails(self):
+    def test_vvf9_whitespace_vcenter_user_accepted(self):
+        # vcenterUser is optional; whitespace resolves to default at scan time.
         err = self._v({"type": "vvf9", "vcfOpsServer": "ops.lab",
                        "vcfOpsUser": "admin", "vcfFMServer": "fm.lab",
                        "vcenterUser": "   "})
-        self.assertIsNotNone(err)
+        self.assertIsNone(err)
 
     def test_vvf9_valid_returns_none(self):
         err = self._v({"type": "vvf9", "vcfOpsServer": "ops.lab",
@@ -238,9 +239,10 @@ class TestBuildEnvVars(unittest.TestCase):
                          {"opsPass": "op", "fmPass": "fm"})
         self.assertNotIn("VCENTER_PASSWORD", ev)
 
-    # VCF 9.1 — ops password must be suppressed
+    # VCF 9.1 — ops password must be suppressed; SDDC password flows through
     def test_vcf9_91_suppresses_ops_password(self):
-        env = {"type": "vcf9", "vcfMinorVersion": "9.1", "useSinglePassword": False}
+        env = {"type": "vcf9", "vcfMinorVersion": "9.1", "useSinglePassword": False,
+               "sddcManagerServer": "sddc.lab", "sddcManagerUser": "admin@vsphere.local"}
         ev = self._build(env, {"sddcPass": "sp", "opsPass": "op", "fmPass": "fm"})
         self.assertNotIn("VCF_OPS_PASSWORD", ev)
         self.assertEqual(ev.get("SDDC_MANAGER_PASSWORD"), "sp")
@@ -256,6 +258,39 @@ class TestBuildEnvVars(unittest.TestCase):
         env = {"type": "vcf9", "useSinglePassword": True}
         ev = self._build(env, {"sddcPass": "shared"})
         self.assertEqual(ev.get("VCF_FM_PASSWORD"), "shared")
+
+    # VCF 9 with sddcManagerFqdns — indexed password keys
+    def test_vcf9_single_fqdn_indexed_key_accepted(self):
+        """sddcPass_0 must be accepted when sddcManagerFqdns has exactly one entry.
+
+        The UI's _isMultiSddc returns True for any env with sddcManagerFqdns (even
+        one entry) and renders sddcPass_0, not sddcPass.  Python must resolve the
+        password from the indexed key regardless of instance count.
+        """
+        env = {"type": "vcf9", "useSinglePassword": False,
+               "sddcManagerFqdns": ["sddcmgr01.example.com"]}
+        ev = self._build(env, {"sddcPass_0": "indexed_pw", "fmPass": "fm", "opsPass": "op"})
+        self.assertEqual(ev.get("SDDC_MANAGER_1_PASSWORD"), "indexed_pw")
+        self.assertEqual(ev.get("SDDC_MANAGER_PASSWORD"), "indexed_pw")
+
+    def test_vcf9_multi_fqdns_per_instance_keys(self):
+        """sddcPass_0 and sddcPass_1 are each applied to the correct indexed variable."""
+        env = {"type": "vcf9", "useSinglePassword": False,
+               "sddcManagerFqdns": ["sddcmgr01.example.com", "sddcmgr02.example.com"]}
+        ev = self._build(env, {"sddcPass_0": "pw_first", "sddcPass_1": "pw_second",
+                               "fmPass": "fm", "opsPass": "op"})
+        self.assertEqual(ev.get("SDDC_MANAGER_1_PASSWORD"), "pw_first")
+        self.assertEqual(ev.get("SDDC_MANAGER_2_PASSWORD"), "pw_second")
+        self.assertEqual(ev.get("SDDC_MANAGER_PASSWORD"), "pw_first",
+                         "Un-indexed var must hold the first instance password for backward compat")
+
+    def test_vcf9_legacy_sddcpass_still_accepted(self):
+        """Legacy sddcPass key remains valid when sddcManagerFqdns is absent."""
+        env = {"type": "vcf9", "useSinglePassword": False,
+               "sddcManagerServer": "sddcmgr.example.com"}
+        ev = self._build(env, {"sddcPass": "legacy_pw", "fmPass": "fm", "opsPass": "op"})
+        self.assertEqual(ev.get("SDDC_MANAGER_1_PASSWORD"), "legacy_pw")
+        self.assertEqual(ev.get("SDDC_MANAGER_PASSWORD"), "legacy_pw")
 
     # VCF 5 — no NSX password injected (retrieved via SDDC credentials API)
     def test_vcf5_never_sets_nsx_password(self):
@@ -387,9 +422,13 @@ class TestEnvTypeArgs(unittest.TestCase):
         self.assertEqual(args[args.index("-VcfMajorVersion") + 1], "vcf9")
 
     def test_vcf9_includes_sddc_and_fm_flags(self):
+        # _env_type_args routes all SDDC Manager instances through -SddcManagerInstancesJson
+        # (even a single instance) so per-instance passwordEnvVar is always threaded through.
         args = self._args({"type": "vcf9", "sddcManagerServer": "sddc.lab",
                            "sddcManagerUser": "admin", "vcfFMServer": "fm.lab", "vcfFMUser": "fu"})
-        self.assertIn("-SddcManagerServer", args)
+        self.assertIn("-SddcManagerInstancesJson", args)
+        self.assertNotIn("-SddcManagerServer", args,
+                         "vcf9 routes SDDC Manager through -SddcManagerInstancesJson even for a single instance")
         self.assertIn("-VcfFMServer", args)
 
     def test_vcf9_91_omits_ops_server_and_user(self):
@@ -774,6 +813,113 @@ class TestIsVcf91(unittest.TestCase):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# _run_validation_in_powershell — VCF 9.1 skips VCF Operations args
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestRunValidationVcf91OpsSkip(unittest.TestCase):
+    """_run_validation_in_powershell must omit -VcfOpsServer/-VcfOpsUser for VCF 9.1.
+
+    _build_env_vars does not set VCF_OPS_PASSWORD for VCF 9.1 (Fleet Controller is
+    authoritative). If the server/user args were still forwarded, PowerShell's TCP test
+    would reach the VCF Operations host, find no password, and log a spurious
+    "VCF Operations password not configured" warning. The fix mirrors the skip_ops
+    guard already present in _env_type_args.
+    """
+
+    def _vcf91_env(self):
+        return {
+            "type": "vcf9",
+            "vcfMinorVersion": "9.1",
+            "sddcManagerFqdns": ["sfo-vcf01.example.com"],
+            "sddcManagerCredentials": [{"fqdn": "sfo-vcf01.example.com", "user": "administrator@vsphere.local"}],
+            "vcfOpsServer": "flt-ops01a.example.com",
+            "vcfOpsUser": "admin@local",
+            "vcfFMServer": "flt-fc01.example.com",
+            "vcfFMUser": "admin@vsp.local",
+        }
+
+    def _capture_args(self, env):
+        """Run _run_validation_in_powershell and return the captured subprocess args."""
+        captured = {}
+        proc = _make_popen_mock('{"EndpointTests": []}', returncode=0)
+
+        def _popen(args, **kwargs):
+            captured["args"] = args
+            return proc
+
+        with unittest.mock.patch("subprocess.Popen", side_effect=_popen):
+            _mod._run_validation_in_powershell(env, {}, 30)
+        return captured.get("args", [])
+
+    def test_vcf91_does_not_forward_vcf_ops_server(self):
+        args = self._capture_args(self._vcf91_env())
+        self.assertNotIn("-VcfOpsServer", args)
+
+    def test_vcf91_does_not_forward_vcf_ops_user(self):
+        args = self._capture_args(self._vcf91_env())
+        self.assertNotIn("-VcfOpsUser", args)
+
+    def test_vcf91_still_forwards_fleet_manager_server(self):
+        args = self._capture_args(self._vcf91_env())
+        self.assertIn("-VcfFMServer", args)
+
+    def test_vcf90_does_forward_vcf_ops_server(self):
+        env = self._vcf91_env()
+        env["vcfMinorVersion"] = "9.0"
+        args = self._capture_args(env)
+        self.assertIn("-VcfOpsServer", args)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _build_pending_endpoint_items — VCF 9.1 omits VCF Operations placeholder
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestBuildPendingEndpointItemsVcf91(unittest.TestCase):
+    """_build_pending_endpoint_items must omit VCF Operations for VCF 9.1.
+
+    VCF 9.1 skips the native VCF Operations credential check (Fleet Controller is
+    authoritative). The UI placeholder list must mirror that skip so the user
+    does not see a 'Checking...' spinner for VCF Operations that never resolves.
+    """
+
+    def _vcf91_env(self):
+        return {
+            "type": "vcf9",
+            "name": "dev-vcf91",
+            "vcfMinorVersion": "9.1",
+            "sddcManagerServer": "sfo-vcf01.example.com",
+            "sddcManagerUser": "administrator@vsphere.local",
+            "vcfOpsServer": "flt-ops01a.example.com",
+            "vcfOpsUser": "admin@local",
+            "vcfFMServer": "flt-fc01.example.com",
+            "vcfFMUser": "admin@vsp.local",
+        }
+
+    def test_vcf91_omits_vcf_ops_placeholder(self):
+        items = _mod._build_pending_endpoint_items(self._vcf91_env(), "")
+        endpoints = [i["endpoint"] for i in items]
+        self.assertNotIn("VCF Operations", endpoints)
+
+    def test_vcf91_includes_fleet_manager_placeholder(self):
+        items = _mod._build_pending_endpoint_items(self._vcf91_env(), "")
+        endpoints = [i["endpoint"] for i in items]
+        self.assertIn("Fleet Manager", endpoints)
+
+    def test_vcf91_includes_sddc_manager_placeholder(self):
+        items = _mod._build_pending_endpoint_items(self._vcf91_env(), "")
+        endpoints = [i["endpoint"] for i in items]
+        self.assertIn("SDDC Manager", endpoints)
+
+    def test_vcf90_includes_vcf_ops_placeholder(self):
+        env = self._vcf91_env()
+        env["name"] = "dev-vcf90"  # neutral name — must not trigger the vcf91 name fallback
+        env["vcfMinorVersion"] = "9.0"
+        items = _mod._build_pending_endpoint_items(env, "")
+        endpoints = [i["endpoint"] for i in items]
+        self.assertIn("VCF Operations", endpoints)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # _validate_settings
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -836,6 +982,32 @@ class TestValidateSettings(unittest.TestCase):
             "lightMode": False,
             "environments": [],
         })
+        self.assertIsNone(err)
+
+    def _vsphere8_env(self, name):
+        return {"type": "vsphere8", "name": name, "vcenterServer": "vc.lab", "vcenterUser": "admin"}
+
+    def test_duplicate_environment_name_returns_error(self):
+        err = self._validate({"environments": [self._vsphere8_env("VCF911"), self._vsphere8_env("VCF911")]})
+        self.assertIsNotNone(err)
+        self.assertIn("VCF911", err)
+
+    def test_duplicate_environment_name_case_insensitive_returns_error(self):
+        err = self._validate({"environments": [self._vsphere8_env("VCF911"), self._vsphere8_env("vcf911")]})
+        self.assertIsNotNone(err)
+
+    def test_duplicate_environment_name_with_whitespace_returns_error(self):
+        err = self._validate({"environments": [self._vsphere8_env("VCF911"), self._vsphere8_env("  VCF911  ")]})
+        self.assertIsNotNone(err)
+
+    def test_unique_environment_names_returns_none(self):
+        err = self._validate({"environments": [self._vsphere8_env("VCF911"), self._vsphere8_env("VCF912")]})
+        self.assertIsNone(err)
+
+    def test_multiple_environments_with_empty_name_does_not_trigger_duplicate_error(self):
+        env_a = self._vsphere8_env("")
+        env_b = self._vsphere8_env("")
+        err = self._validate({"environments": [env_a, env_b]})
         self.assertIsNone(err)
 
 
@@ -1913,6 +2085,160 @@ class TestDownloadAdvisoryIfChanged(unittest.TestCase):
         self.assertFalse(result["downloaded"])
         self.assertIsNotNone(result["error"])
         self.assertIn("no advisories", result["error"].lower())
+
+    def test_successful_download_does_not_overwrite_bundled_advisory(self):
+        """Step 9 mirror must not write to Data/securityAdvisory.json when local_path is outside _USER_BASE_DIR.
+
+        Tests download to a temp dir unrelated to _USER_BASE_DIR. Before this fix,
+        _download_advisory_if_changed always mirrored to Path(__file__).parent.parent/Data/,
+        which is the source-tree Data/ directory when running from the git repo. Each test
+        run silently replaced the full bundled advisory with a 1-advisory stub.
+        """
+        advisory_path = self._tmp / "securityAdvisory.json"
+        body = self._minimal_advisory_body("2026-06-01T00:00:00Z")
+
+        import hashlib
+        body_digest = hashlib.sha256(body).hexdigest()
+        checksum_body = body_digest.encode("ascii")
+
+        bundled_path = Path(_mod.__file__).parent.parent / "Data" / "securityAdvisory.json"
+        bundled_content_before = bundled_path.read_bytes() if bundled_path.exists() else None
+
+        call_seq = [0]
+
+        def urlopen_seq(request, **kwargs):
+            call_seq[0] += 1
+            method = getattr(request, "method", "GET") or "GET"
+            mock_resp = unittest.mock.MagicMock()
+            url = request.full_url if hasattr(request, "full_url") else str(request)
+            if method == "HEAD":
+                mock_resp.headers.get = lambda k, default="": '"mirror-guard-test"' if k == "ETag" else default
+            elif "sha256sum" in url:
+                mock_resp.read.return_value = checksum_body
+            else:
+                mock_resp.read.return_value = body
+                mock_resp.headers.get = lambda k, default="": '"mirror-guard-test"' if k == "ETag" else default
+            mock_resp.__enter__ = lambda s: s
+            mock_resp.__exit__ = unittest.mock.MagicMock(return_value=False)
+            return mock_resp
+
+        with unittest.mock.patch("urllib.request.urlopen", side_effect=urlopen_seq):
+            result = _mod._download_advisory_if_changed(advisory_path)
+
+        self.assertTrue(result["downloaded"], "Download should succeed to temp path")
+
+        if bundled_content_before is not None:
+            bundled_content_after = bundled_path.read_bytes()
+            self.assertEqual(
+                bundled_content_before, bundled_content_after,
+                "Data/securityAdvisory.json must not be modified when local_path is outside _USER_BASE_DIR",
+            )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _validate_probe_slots / _validate_subprocess_timeout
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestValidateProbeSlots(unittest.TestCase):
+    """A fixed subprocess timeout does not scale with the number of endpoints
+    PowerShell tests sequentially within one -ValidateCredentialsOnly invocation.
+    These tests pin the per-endpoint slot costs so the ceiling grows with the
+    environment's shape (multi-SDDC Manager, Fleet Manager's dual auth-path
+    fallback) instead of silently killing a legitimate slow-but-working run.
+    """
+
+    def test_single_sddc_manager_vcf9_costs_two_slots(self):
+        env = {"type": "vcf9", "sddcManagerServer": "sddc.lab", "sddcManagerUser": "admin",
+               "vcfMinorVersion": "9.1"}
+        self.assertEqual(_mod._validate_probe_slots(env), 2)
+
+    def test_two_sddc_managers_double_the_slot_cost(self):
+        env = {
+            "type": "vcf9", "vcfMinorVersion": "9.1",
+            "sddcManagerFqdns": ["sfo-vcf01.sfo.rainpole.io", "lax-vcf01.lax.rainpole.io"],
+            "sddcManagerCredentials": [
+                {"fqdn": "sfo-vcf01.sfo.rainpole.io", "user": "administrator@vsphere.local"},
+                {"fqdn": "lax-vcf01.lax.rainpole.io", "user": "administrator@vsphere.local"},
+            ],
+        }
+        self.assertEqual(_mod._validate_probe_slots(env), 4)
+
+    def test_fleet_manager_adds_four_slots_for_dual_auth_path(self):
+        env = {"type": "vcf9", "vcfMinorVersion": "9.1", "sddcManagerServer": "sddc.lab",
+               "sddcManagerUser": "admin", "vcfFMServer": "flt-fc01.rainpole.io"}
+        self.assertEqual(_mod._validate_probe_slots(env), 2 + 4)
+
+    def test_vcf91_skips_vcf_ops_slots(self):
+        env = {"type": "vcf9", "vcfMinorVersion": "9.1", "sddcManagerServer": "sddc.lab",
+               "sddcManagerUser": "admin", "vcfOpsServer": "flt-ops01a.rainpole.io"}
+        self.assertEqual(_mod._validate_probe_slots(env), 2)
+
+    def test_vcf90_counts_vcf_ops_slots(self):
+        env = {"type": "vcf9", "vcfMinorVersion": "9.0", "sddcManagerServer": "sddc.lab",
+               "sddcManagerUser": "admin", "vcfOpsServer": "ops.lab"}
+        self.assertEqual(_mod._validate_probe_slots(env), 2 + 2)
+
+    def test_two_sddc_managers_plus_fleet_manager_matches_screenshot_scenario(self):
+        # Real-world case that motivated this fix: VCF 9.1 with two SDDC Managers
+        # plus a Fleet Lifecycle Manager — worst case is 8 sequential probes, which
+        # at the default 30 s connection timeout (240 s) exceeded the old fixed
+        # 120 s subprocess ceiling and caused Python to kill PowerShell mid-run.
+        env = {
+            "type": "vcf9", "vcfMinorVersion": "9.1", "vcfFMServer": "flt-fc01.rainpole.io",
+            "sddcManagerFqdns": ["sfo-vcf01.sfo.rainpole.io", "lax-vcf01.lax.rainpole.io"],
+            "sddcManagerCredentials": [
+                {"fqdn": "sfo-vcf01.sfo.rainpole.io", "user": "administrator@vsphere.local"},
+                {"fqdn": "lax-vcf01.lax.rainpole.io", "user": "administrator@vsphere.local"},
+            ],
+        }
+        self.assertEqual(_mod._validate_probe_slots(env), 8)
+
+    def test_no_endpoints_configured_returns_minimum_one_slot(self):
+        self.assertEqual(_mod._validate_probe_slots({"type": "vcf9"}), 1)
+
+    def test_vsphere8_counts_vcenter_and_nsx(self):
+        env = {"type": "vsphere8", "vcenterServer": "vc.lab", "nsxManagerServer": "nsx.lab"}
+        self.assertEqual(_mod._validate_probe_slots(env), 2 + 2)
+
+    def test_vvf9_counts_ops_fleet_and_vcenter(self):
+        env = {"type": "vvf9", "vcfMinorVersion": "9.0", "vcfOpsServer": "ops.lab",
+               "vcenterServer": "vc.lab"}
+        self.assertEqual(_mod._validate_probe_slots(env), 2 + 2)
+
+
+class TestValidateSubprocessTimeout(unittest.TestCase):
+    """_validate_subprocess_timeout scales the ceiling with slot count so a
+    multi-endpoint environment is not killed before PowerShell can finish."""
+
+    def test_single_endpoint_uses_the_120s_floor(self):
+        env = {"type": "vcf9", "sddcManagerServer": "sddc.lab", "sddcManagerUser": "admin",
+               "vcfMinorVersion": "9.1"}
+        # 2 slots * 30 s + 15 s buffer = 75 s, below the 120 s floor.
+        self.assertEqual(_mod._validate_subprocess_timeout(env, 30), 120)
+
+    def test_multi_sddc_plus_fleet_manager_exceeds_the_floor(self):
+        env = {
+            "type": "vcf9", "vcfMinorVersion": "9.1", "vcfFMServer": "flt-fc01.rainpole.io",
+            "sddcManagerFqdns": ["sfo-vcf01.sfo.rainpole.io", "lax-vcf01.lax.rainpole.io"],
+            "sddcManagerCredentials": [
+                {"fqdn": "sfo-vcf01.sfo.rainpole.io", "user": "administrator@vsphere.local"},
+                {"fqdn": "lax-vcf01.lax.rainpole.io", "user": "administrator@vsphere.local"},
+            ],
+        }
+        # 8 slots * 30 s + 15 s buffer = 255 s, above the old fixed 120 s ceiling
+        # that previously killed this exact environment shape mid-validation.
+        self.assertEqual(_mod._validate_subprocess_timeout(env, 30), 255)
+
+    def test_scales_with_user_configured_connection_timeout(self):
+        env = {
+            "type": "vcf9", "vcfMinorVersion": "9.1", "vcfFMServer": "flt-fc01.rainpole.io",
+            "sddcManagerFqdns": ["sfo-vcf01.sfo.rainpole.io", "lax-vcf01.lax.rainpole.io"],
+            "sddcManagerCredentials": [
+                {"fqdn": "sfo-vcf01.sfo.rainpole.io", "user": "administrator@vsphere.local"},
+                {"fqdn": "lax-vcf01.lax.rainpole.io", "user": "administrator@vsphere.local"},
+            ],
+        }
+        self.assertEqual(_mod._validate_subprocess_timeout(env, 60), 8 * 60 + 15)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

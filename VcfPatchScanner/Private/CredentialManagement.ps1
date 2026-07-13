@@ -351,6 +351,36 @@ function Import-EnvironmentsFromConfig {
                 throw
             }
         }
+
+        # Multi-SDDC Manager array: resolve each instance independently.
+        if ($env.endpoints.sddc_managers) {
+            $sddcMgrIdx = 0
+            foreach ($sddcMgr in $env.endpoints.sddc_managers) {
+                $sddcMgrIdx++
+                Write-LogMessage -Type DEBUG -Message "  sddc_manager[$sddcMgrIdx] ($($sddcMgr.server)): resolving '$($sddcMgr.password_secret_ref)'"
+
+                if (-not $sddcMgr.password_secret_ref) {
+                    $err = "SDDC Manager entry $sddcMgrIdx ($($sddcMgr.server)) in environment '$($env.name)' missing required 'password_secret_ref'"
+                    Write-LogMessage -Type ERROR -Message $err
+                    throw [System.InvalidOperationException]::new($err)
+                }
+
+                try {
+                    $plaintext = Resolve-SecretReference `
+                        -SecretRef $sddcMgr.password_secret_ref `
+                        -EnvironmentName $env.name `
+                        -EndpointType "sddc_manager" `
+                        -AllowInteractivePrompt:$AllowInteractivePrompt
+
+                    $sddcMgr | Add-Member -NotePropertyName password -NotePropertyValue $plaintext -Force
+                    $resolvedCount++
+                }
+                catch {
+                    Write-LogMessage -Type ERROR -Message "Failed to resolve credential for $($env.name).sddc_manager[$sddcMgrIdx]: $($_.Exception.Message)"
+                    throw
+                }
+            }
+        }
     }
 
     Write-LogMessage -Type INFO -Message "Credentials loaded: $resolvedCount endpoint(s) configured across $($config.environments.Count) environment(s)"
@@ -398,6 +428,28 @@ function ConvertTo-ScanParameters {
     $vcfOps = $Environment.endpoints.vcf_ops
     $vrslcm = $Environment.endpoints.vrslcm
 
+    # Build SddcManagers array for multi-SDDC environments (sddc_managers takes priority).
+    # Each instance carries PasswordEnvVar so EntryPoint.ps1 can bridge passwords via env vars.
+    # Where-Object filters the null that @($null) would produce when the property is absent.
+    $sddcMgrArray = @($Environment.endpoints.sddc_managers | Where-Object { $null -ne $_ })
+    if ($sddcMgrArray.Count -gt 0) {
+        $sddcManagers = @($sddcMgrArray | ForEach-Object -Begin { $i = 0 } -Process {
+            $i++
+            [PSCustomObject]@{
+                Server         = [String]$_.server
+                User           = [String]$_.username
+                Password       = [String]$_.password
+                PasswordEnvVar = "SDDC_MANAGER_${i}_PASSWORD"
+            }
+        })
+        $firstSddcServer = $sddcManagers[0].Server
+        $firstSddcUser   = $sddcManagers[0].User
+    } else {
+        $sddcManagers    = $null
+        $firstSddcServer = [String]$sddc.server
+        $firstSddcUser   = [String]$sddc.username
+    }
+
     # Create EnvironmentConfig with both the nested endpoints (for password bridging) and the
     # flat properties consumed by ConvertTo-ScanInventory guards (sddcManagerServer, etc.).
     # endpoints.*.username maps to the legacy *User flat property name.
@@ -405,9 +457,10 @@ function ConvertTo-ScanParameters {
         name              = $Environment.name
         type              = $Environment.type
         endpoints         = $Environment.endpoints
+        SddcManagers      = $sddcManagers
         nsxManagerServer  = [String]$nsx.server
-        sddcManagerServer = [String]$sddc.server
-        sddcManagerUser   = [String]$sddc.username
+        sddcManagerServer = $firstSddcServer
+        sddcManagerUser   = $firstSddcUser
         vcenterServer     = [String]$vc.server
         vcenterUser       = [String]$vc.username
         vcfFMServer       = [String]$vcfFm.server

@@ -823,5 +823,63 @@ Describe "VcfPatchScanner.Advisory" {
                 $result.ErrorMessage | Should -Match "no advisories"
             }
         }
+
+        It "Creates advisory file with owner-only permissions (0600) on non-Windows" -Skip:$IsWindows {
+            $destPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-advisory-$(New-Guid).json"
+            $validJson = '{"schemaVersion":"2.0","updatedAt":"2026-07-06T00:00:00Z","advisories":[{"ID":"TEST-001"}]}'
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $destPath, $validJson {
+                    $destPath  = $args[0]
+                    $validJson = $args[1]
+                    function Invoke-WebRequest {
+                        [CmdletBinding()]
+                        Param([Parameter()] [Object]$Uri, [Parameter()] [Object]$Method, [Parameter()] [Object]$TimeoutSec)
+                        process {
+                            if ($Method -ieq 'Head') { return [PSCustomObject]@{ Headers = @{ ETag = '"test"' }; Content = "" } }
+                            return [PSCustomObject]@{ Headers = @{ ETag = '"test"' }; Content = $validJson }
+                        }
+                    }
+                    $result = Invoke-AdvisoryDownloadIfChanged -DestinationPath $destPath
+                    $result.Downloaded | Should -Be $true
+                }
+                Test-Path -LiteralPath $destPath -PathType Leaf | Should -Be $true
+                $mode = (Get-Item -LiteralPath $destPath).UnixFileMode
+                ($mode -band [System.IO.UnixFileMode]::GroupRead) | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherRead) | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $destPath -Force -ErrorAction SilentlyContinue
+                $etagPath = "$destPath.etag"
+                Remove-Item -LiteralPath $etagPath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Creates etag file with owner-only permissions (0600) on non-Windows" -Skip:$IsWindows {
+            $destPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-advisory-$(New-Guid).json"
+            $etagPath = "$destPath.etag"
+            $validJson = '{"schemaVersion":"2.0","updatedAt":"2026-07-06T00:00:00Z","advisories":[{"ID":"TEST-001"}]}'
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $destPath, $validJson {
+                    $destPath  = $args[0]
+                    $validJson = $args[1]
+                    function Invoke-WebRequest {
+                        [CmdletBinding()]
+                        Param([Parameter()] [Object]$Uri, [Parameter()] [Object]$Method, [Parameter()] [Object]$TimeoutSec)
+                        process {
+                            if ($Method -ieq 'Head') { return [PSCustomObject]@{ Headers = @{ ETag = '"test"' }; Content = "" } }
+                            return [PSCustomObject]@{ Headers = @{ ETag = '"test"' }; Content = $validJson }
+                        }
+                    }
+                    $result = Invoke-AdvisoryDownloadIfChanged -DestinationPath $destPath
+                    $result.Downloaded | Should -Be $true
+                }
+                Test-Path -LiteralPath $etagPath -PathType Leaf | Should -Be $true
+                $mode = (Get-Item -LiteralPath $etagPath).UnixFileMode
+                ($mode -band [System.IO.UnixFileMode]::GroupRead) | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherRead) | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $destPath -Force -ErrorAction SilentlyContinue
+                Remove-Item -LiteralPath $etagPath -Force -ErrorAction SilentlyContinue
+            }
+        }
     }
 }

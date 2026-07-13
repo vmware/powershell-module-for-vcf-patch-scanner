@@ -73,11 +73,18 @@
     Human-readable VCF 9 instance name (e.g. "San Francisco") discovered from VCF Operations.
     Stamped onto all VCF 9 inventory items so findings can be grouped by instance.
 
+    .PARAMETER SddcManagerInstancesJson
+    JSON array of SDDC Manager instances for VCF 9 environments with multiple SDDC Managers.
+    Format: '[{"server":"sddc1.corp.local","user":"admin@vsphere.local","passwordEnvVar":"SDDC_MANAGER_1_PASSWORD"},...]'
+    When set, supersedes SddcManagerServer and SddcManagerUser. Each instance reads its password
+    from the named environment variable (passwordEnvVar). Set by the Python server for multi-SDDC
+    environments; set by ConvertTo-ScanParameters for the CLI config-file path.
+
     .PARAMETER SddcManagerServer
-    SDDC Manager FQDN or IP. Required for vcf5 and vcf9.
+    SDDC Manager FQDN or IP. Required for vcf5 and single-instance vcf9.
 
     .PARAMETER SddcManagerUser
-    SDDC Manager username. Required for vcf5 and vcf9.
+    SDDC Manager username. Required for vcf5 and single-instance vcf9.
 
     .PARAMETER VrslcmServer
     vRealize Suite Lifecycle Manager FQDN. Optional for vcf5.
@@ -145,6 +152,7 @@ Param (
     [Parameter(Mandatory = $false)] [AllowEmptyString()] [ValidateNotNull()] [String]$SddcManagerInstanceName = '',
     [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$SddcManagerServer,
     [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$SddcManagerUser,
+    [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$SddcManagerInstancesJson,
     [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$SecurityAdvisoryFile = 'Data/securityAdvisory.json',
     [Parameter(Mandatory = $false)] [Switch]$ValidateCredentialsOnly,
     [Parameter(Mandatory = $false)] [ValidateNotNullOrEmpty()] [String]$VcenterBuildMapFile,
@@ -287,7 +295,7 @@ if (-not [String]::IsNullOrWhiteSpace($ConfigFile)) {
 
                 if ($result.Status -eq 'Success') {
                     $successCount++
-                    Write-LogMessage -Type INFO -Message "Scan completed for environment: $($env.name) — $($result.FindingsCount) vulnerabilities found in $($result.DurationSeconds)s"
+                    # Scan completion is already logged by EntryPoint.ps1; suppressing duplicate here
                     if ($result.FailedEndpoints -and $result.FailedEndpoints.Count -gt 0) {
                         Write-LogMessage -Type WARNING -Message "Environment '$($env.name)' had $($result.FailedEndpoints.Count) endpoint(s) that could not be reached"
                     }
@@ -350,8 +358,17 @@ if (-not $isDiscoveryOnly) {
 
     # Add VCF 5/9 parameters
     if (-not [String]::IsNullOrWhiteSpace($SddcManagerInstanceName)) { $configParams['SddcManagerInstanceName'] = $SddcManagerInstanceName }
-    if ($SddcManagerServer) { $configParams['SddcManagerServer'] = $SddcManagerServer }
-    if ($SddcManagerUser)   { $configParams['SddcManagerUser']   = $SddcManagerUser }
+    # Multi-SDDC: use first instance's server/user for legacy flat fields; full array stored below.
+    if ($SddcManagerInstancesJson) {
+        $sddcInstances = @($SddcManagerInstancesJson | ConvertFrom-Json)
+        if ($sddcInstances.Count -gt 0) {
+            $configParams['SddcManagerServer'] = $sddcInstances[0].server
+            $configParams['SddcManagerUser']   = $sddcInstances[0].user
+        }
+    } elseif ($SddcManagerServer) {
+        $configParams['SddcManagerServer'] = $SddcManagerServer
+        if ($SddcManagerUser) { $configParams['SddcManagerUser'] = $SddcManagerUser }
+    }
 
     # Add VCF 5.x optional parameters
     if ($VrslcmServer) { $configParams['VrslcmServer'] = $VrslcmServer }
@@ -377,6 +394,19 @@ if (-not $isDiscoveryOnly) {
         # that New-PatchScanEnvironment does not declare — a code defect, not a user error.
         Write-Host "ERROR: Environment configuration failed: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
+    }
+
+    # Multi-SDDC: attach instance array to $envConfig so EntryPoint.ps1 can loop over all managers.
+    # Instances are read from parsed $SddcManagerInstancesJson; each carries its passwordEnvVar name.
+    if ($SddcManagerInstancesJson -and $sddcInstances -and $sddcInstances.Count -gt 0) {
+        $sddcManagerObjects = @($sddcInstances | ForEach-Object {
+            [PSCustomObject]@{
+                Server         = [String]$_.server
+                User           = [String]$_.user
+                PasswordEnvVar = [String]$_.passwordEnvVar
+            }
+        })
+        $envConfig | Add-Member -NotePropertyName SddcManagers -NotePropertyValue $sddcManagerObjects -Force
     }
 }
 
@@ -463,7 +493,6 @@ if ($DiscoverVrslcm) {
 if ($ValidateCredentialsOnly) {
     $InformationPreference = 'SilentlyContinue'
     Initialize-PatchScanLogging -LogLevel $LogLevel -LogDirectory $LogDirectory | Out-Null
-    Write-ScanRuntimeInfo
     try {
         $endpointTests = [System.Collections.Generic.List[PSCustomObject]]::new()
 
@@ -480,9 +509,17 @@ if ($ValidateCredentialsOnly) {
                 $eps        = $envConfig.endpoints
                 $connParams = @{ EnvironmentType = $envConfig.type; TimeoutSeconds = $ConnectionTimeoutSeconds }
                 if ($envConfig.vcfMinorVersion) { $connParams['VcfMinorVersion'] = $envConfig.vcfMinorVersion }
-                if ($eps.sddc_manager) {
-                    $connParams['SddcManagerServer'] = $eps.sddc_manager.server
-                    $connParams['SddcManagerUser']   = $eps.sddc_manager.username
+                # Multi-SDDC: sddc_managers array (passwords already resolved by Import-EnvironmentsFromConfig).
+                if ($eps.sddc_managers -and @($eps.sddc_managers).Count -gt 0) {
+                    $connParams['SddcManagerInstances'] = @($eps.sddc_managers | ForEach-Object {
+                        [PSCustomObject]@{ Server = $_.server; User = $_.username; Password = $_.password }
+                    })
+                } elseif ($eps.sddc_manager) {
+                    $connParams['SddcManagerInstances'] = @([PSCustomObject]@{
+                        Server   = $eps.sddc_manager.server
+                        User     = $eps.sddc_manager.username
+                        Password = $eps.sddc_manager.password
+                    })
                 }
                 if ($eps.vcf_ops) {
                     $connParams['VcfOpsServer'] = $eps.vcf_ops.server
@@ -510,8 +547,15 @@ if ($ValidateCredentialsOnly) {
         }
         else {
             $connParams = @{ EnvironmentType = $VcfMajorVersion; TimeoutSeconds = $ConnectionTimeoutSeconds }
-            if ($SddcManagerServer) { $connParams['SddcManagerServer'] = $SddcManagerServer }
-            if ($SddcManagerUser)   { $connParams['SddcManagerUser']   = $SddcManagerUser }
+            # Multi-SDDC: pass instance objects; Discovery.ps1 reads per-instance env vars.
+            if ($SddcManagerInstancesJson -and $sddcInstances -and $sddcInstances.Count -gt 0) {
+                $connParams['SddcManagerInstances'] = @($sddcInstances | ForEach-Object {
+                    [PSCustomObject]@{ Server = [String]$_.server; User = [String]$_.user; PasswordEnvVar = [String]$_.passwordEnvVar }
+                })
+            } else {
+                if ($SddcManagerServer) { $connParams['SddcManagerServer'] = $SddcManagerServer }
+                if ($SddcManagerUser)   { $connParams['SddcManagerUser']   = $SddcManagerUser }
+            }
             if ($VrslcmServer)      { $connParams['VrslcmServer']      = $VrslcmServer }
             if ($VrslcmUser)        { $connParams['VrslcmUser']        = $VrslcmUser }
             if ($VcfOpsServer)      { $connParams['VcfOpsServer']      = $VcfOpsServer }

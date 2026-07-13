@@ -278,6 +278,26 @@ function ConvertTo-ScanInventory {
             if ($null -ne $epVcfFm  -and -not [String]::IsNullOrEmpty($epVcfFm.password))  { [System.Environment]::SetEnvironmentVariable('VCF_FM_PASSWORD',       $epVcfFm.password);  [Void]$bridgedEnvVarNames.Add('VCF_FM_PASSWORD') }
             if ($null -ne $epVcfOps -and -not [String]::IsNullOrEmpty($epVcfOps.password)) { [System.Environment]::SetEnvironmentVariable('VCF_OPS_PASSWORD',      $epVcfOps.password); [Void]$bridgedEnvVarNames.Add('VCF_OPS_PASSWORD') }
             if ($null -ne $epVrslcm -and -not [String]::IsNullOrEmpty($epVrslcm.password)) { [System.Environment]::SetEnvironmentVariable('VRSLCM_PASSWORD',       $epVrslcm.password); [Void]$bridgedEnvVarNames.Add('VRSLCM_PASSWORD') }
+
+            # Multi-SDDC Manager: bridge per-instance passwords to indexed env vars so the
+            # scan loop below can resolve them uniformly via PasswordEnvVar lookup.
+            # Where-Object filters the null that @($null) would produce when the property is absent.
+            $sddcMgrArray = @($EnvironmentConfig.endpoints.sddc_managers | Where-Object { $null -ne $_ })
+            if ($sddcMgrArray.Count -gt 0) {
+                for ($sddcIdx = 0; $sddcIdx -lt $sddcMgrArray.Count; $sddcIdx++) {
+                    $sddcMgrEntry = $sddcMgrArray[$sddcIdx]
+                    if (-not [String]::IsNullOrEmpty($sddcMgrEntry.password)) {
+                        $sddcEnvVarI = "SDDC_MANAGER_$($sddcIdx + 1)_PASSWORD"
+                        [System.Environment]::SetEnvironmentVariable($sddcEnvVarI, $sddcMgrEntry.password)
+                        [Void]$bridgedEnvVarNames.Add($sddcEnvVarI)
+                        if ($sddcIdx -eq 0) {
+                            # First instance also sets the un-indexed var for backward compat.
+                            [System.Environment]::SetEnvironmentVariable('SDDC_MANAGER_PASSWORD', $sddcMgrEntry.password)
+                            [Void]$bridgedEnvVarNames.Add('SDDC_MANAGER_PASSWORD')
+                        }
+                    }
+                }
+            }
         }
 
         if (-not [String]::IsNullOrWhiteSpace($VcenterBuildMapFile)) {
@@ -287,13 +307,47 @@ function ConvertTo-ScanInventory {
         }
 
         if ($EnvironmentType -in 'vcf5', 'vcf9') {
-            $fqdn = $EnvironmentConfig.sddcManagerServer
-            if ($fqdn -and $EnvironmentConfig.sddcManagerUser -and
-                ($IncludeOnlyFqdns.Count -eq 0 -or $fqdn -in $IncludeOnlyFqdns)) {
+            # Build the list of SDDC Manager instances to scan.
+            # Multi-SDDC (SddcManagers property set): iterate over all instances.
+            # Single-SDDC (legacy sddc_manager key): wrap the single server/user in a one-element array.
+            if ($EnvironmentConfig.SddcManagers -and @($EnvironmentConfig.SddcManagers).Count -gt 0) {
+                $sddcScanList = @($EnvironmentConfig.SddcManagers)
+            } else {
+                $sddcScanList = @([PSCustomObject]@{
+                    Server         = $EnvironmentConfig.sddcManagerServer
+                    User           = $EnvironmentConfig.sddcManagerUser
+                    PasswordEnvVar = 'SDDC_MANAGER_PASSWORD'
+                    Password       = $null
+                })
+            }
+
+            foreach ($sddcInst in $sddcScanList) {
+                $instFqdn = [String]$sddcInst.Server
+                # Default the user when absent — consistent with Test-SddcManagerAuthentication.
+                $instUser = if ([String]::IsNullOrWhiteSpace($sddcInst.User)) { "administrator@vsphere.local" } else { [String]$sddcInst.User }
+                if ([String]::IsNullOrWhiteSpace($instFqdn)) { continue }
+                if ($IncludeOnlyFqdns.Count -gt 0 -and $instFqdn -notin $IncludeOnlyFqdns) { continue }
+
+                # Resolve this instance's password: indexed env var first, then direct property.
+                $instPassword = if ($sddcInst.PasswordEnvVar) { [System.Environment]::GetEnvironmentVariable($sddcInst.PasswordEnvVar) }
+                                elseif ($sddcInst.Password)    { $sddcInst.Password }
+                                else                           { $null }
+
+                if ([String]::IsNullOrWhiteSpace($instPassword)) {
+                    Write-LogMessage -Type WARNING -Message "SDDC Manager password not configured for '$instFqdn' — skipping inventory."
+                    $failedEndpoints.Add([PSCustomObject]@{ Fqdn = $instFqdn; Component = "SDDC Manager"; ErrorMessage = "Password not configured." })
+                    continue
+                }
+
+                Write-LogMessage -Type INFO -Message "Collecting SDDC Manager inventory from: $instFqdn..."
+                # Bridge this instance's password to the un-indexed env var that
+                # Get-SddcManagerInventory reads, then restore after the call.
+                $prevSddcPass = [System.Environment]::GetEnvironmentVariable('SDDC_MANAGER_PASSWORD')
+                [System.Environment]::SetEnvironmentVariable('SDDC_MANAGER_PASSWORD', $instPassword)
                 try {
                     $sw = [System.Diagnostics.Stopwatch]::StartNew()
-                    $sddcInventory = Get-SddcManagerInventory -Server $fqdn `
-                        -User $EnvironmentConfig.sddcManagerUser -TimeoutSeconds $TimeoutSeconds `
+                    $sddcInventory = Get-SddcManagerInventory -Server $instFqdn `
+                        -User $instUser -TimeoutSeconds $TimeoutSeconds `
                         -VcenterBuildMaps $vcenterBuildMaps
                     $sw.Stop()
                     foreach ($mergeKey in $sddcInventory.Keys) {
@@ -317,8 +371,12 @@ function ConvertTo-ScanInventory {
                     }
                 }
                 catch {
-                    Write-LogMessage -Type WARNING -Message "SDDC Manager inventory failed for '$fqdn': $($_.Exception.Message) — skipping endpoint."
-                    $failedEndpoints.Add([PSCustomObject]@{ Fqdn = $fqdn; Component = "SDDC Manager"; ErrorMessage = $_.Exception.Message })
+                    Write-LogMessage -Type WARNING -Message "SDDC Manager inventory failed for '$instFqdn': $($_.Exception.Message) — skipping endpoint."
+                    $failedEndpoints.Add([PSCustomObject]@{ Fqdn = $instFqdn; Component = "SDDC Manager"; ErrorMessage = $_.Exception.Message })
+                }
+                finally {
+                    # Restore the previous SDDC_MANAGER_PASSWORD to avoid contaminating subsequent iterations.
+                    [System.Environment]::SetEnvironmentVariable('SDDC_MANAGER_PASSWORD', $prevSddcPass)
                 }
             }
         }
@@ -426,23 +484,27 @@ function ConvertTo-ScanInventory {
             }
 
             # VCF Operations inventory — conditional on detected VCF minor version:
-            # 9.1 (VSP path): Fleet Controller is authoritative; skip the native VCF Operations
-            # API to avoid an extra credential requirement. The entry is built from Fleet data.
+            # 9.1 (VSP path): Fleet Controller is authoritative. The component FQDN and version
+            # come entirely from the Fleet LCM /v1/components response; no VCF Ops credentials
+            # are required or consulted. Separated from the 9.0 block so a missing vcfOpsServer
+            # config does not silently suppress the Fleet-sourced entry.
             # 9.0 (lcops path) or unknown: the native API is the primary source; Fleet data
             # supplements it for build-number enrichment when available.
-            $fqdn = $EnvironmentConfig.vcfOpsServer
-            if ($fqdn -and $EnvironmentConfig.vcfOpsUser -and
-                ($IncludeOnlyFqdns.Count -eq 0 -or $fqdn -in $IncludeOnlyFqdns)) {
-                if ($vcfMinorVersion -eq '9.1' -and $EnvironmentType -eq 'vcf9') {
-                    if ($null -ne $opsFromFleet) {
-                        $inventory['VCF Operations'] = @([PSCustomObject]@{
-                            Fqdn       = $opsFromFleet.Fqdn
-                            Version    = $opsFromFleet.Version
-                            DomainName = "VCF Fleet"
-                        })
-                        Write-LogMessage -Type INFO -Message "VCF Operations (9.1): version sourced from Fleet Controller: $($opsFromFleet.Version)"
-                    }
+            if ($vcfMinorVersion -eq '9.1' -and $EnvironmentType -eq 'vcf9') {
+                if ($null -ne $opsFromFleet) {
+                    $inventory['VCF Operations'] = @([PSCustomObject]@{
+                        Fqdn       = $opsFromFleet.Fqdn
+                        Version    = $opsFromFleet.Version
+                        DomainName = "VCF Fleet"
+                    })
+                    Write-LogMessage -Type INFO -Message "VCF Operations (9.1): version sourced from Fleet Controller: $($opsFromFleet.Version)"
                 } else {
+                    Write-LogMessage -Type WARNING -Message "VCF Operations version not found in Fleet Controller inventory — component may not be deployed in this environment."
+                }
+            } else {
+                $fqdn = $EnvironmentConfig.vcfOpsServer
+                if ($fqdn -and $EnvironmentConfig.vcfOpsUser -and
+                    ($IncludeOnlyFqdns.Count -eq 0 -or $fqdn -in $IncludeOnlyFqdns)) {
                     try {
                         $sw = [System.Diagnostics.Stopwatch]::StartNew()
                         $opsInventory = Get-VcfOpsInventory -Server $fqdn `
@@ -824,6 +886,63 @@ function ConvertTo-InventoryStatus {
     }
 
     , @($endpointStatus)
+}
+function Invoke-VcfPatchScannerModuleUpdate {
+
+    <#
+        .SYNOPSIS
+        Runs Update-Module with audit logging for supply-chain security.
+
+        .DESCRIPTION
+        Logs the module version and repository before Update-Module is invoked,
+        enabling forensic audit trails in case of supply-chain compromise.
+
+        Called by the module update UI when an operator confirms a module update.
+
+        .PARAMETER ModuleName
+        Name of the module to update (e.g. "VcfPatchScanner"). Default: VcfPatchScanner.
+
+        .PARAMETER Repository
+        Repository source (e.g. "PSGallery"). Default: PSGallery.
+
+        .PARAMETER CurrentVersion
+        Current running version. Optional (for logging).
+
+        .PARAMETER LatestVersion
+        Latest version available. Optional (for logging).
+
+        .OUTPUTS
+        None. Logs output and returns success/failure.
+
+        .NOTES
+        Always logs version and repository BEFORE Update-Module runs.
+        Failures log to ERROR; caller must handle gracefully.
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $false)] [String]$ModuleName = "VcfPatchScanner",
+        [Parameter(Mandatory = $false)] [String]$Repository = "PSGallery",
+        [Parameter(Mandatory = $false)] [String]$CurrentVersion,
+        [Parameter(Mandatory = $false)] [String]$LatestVersion
+    )
+
+    # Log version and repository BEFORE Update-Module runs (security audit requirement)
+    if (-not [String]::IsNullOrWhiteSpace($CurrentVersion) -and -not [String]::IsNullOrWhiteSpace($LatestVersion)) {
+        Write-LogMessage -Type INFO -Message "Installing $ModuleName version $LatestVersion from repository '$Repository' (current version: $CurrentVersion)."
+    } elseif (-not [String]::IsNullOrWhiteSpace($LatestVersion)) {
+        Write-LogMessage -Type INFO -Message "Installing $ModuleName version $LatestVersion from repository '$Repository'."
+    } else {
+        Write-LogMessage -Type INFO -Message "Updating $ModuleName from repository '$Repository'."
+    }
+
+    try {
+        Update-Module -Name $ModuleName -ErrorAction Stop
+        Write-LogMessage -Type INFO -Message "$ModuleName updated successfully from $Repository."
+    } catch {
+        Write-LogMessage -Type ERROR -Message "Update failed: $($_.Exception.Message)"
+        throw
+    }
 }
 
 #endregion

@@ -1,6 +1,6 @@
 # VcfPatchScanner Release Notes
 
-## 1.0.0.1003
+## 1.0.0.1007
 
 - Bug fixes
 

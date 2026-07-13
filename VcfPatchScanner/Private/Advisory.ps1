@@ -141,7 +141,8 @@ function Invoke-AdvisoryDownloadIfChanged {
     }
 
     # GET the full file.
-    $tempPath = "$DestinationPath.$(New-Guid).tmp"
+    $tempPathUnrestricted = "$DestinationPath.$(New-Guid).tmp"
+    $tempPath = $null
     try {
         $getResp = Invoke-WebRequest -Uri $Uri -Method Get -TimeoutSec $TimeoutSeconds -ErrorAction Stop
         $body    = $getResp.Content
@@ -198,8 +199,9 @@ function Invoke-AdvisoryDownloadIfChanged {
     try {
         $destDir = Split-Path -Path $DestinationPath -Parent
         if (-not (Test-Path -Path $destDir -PathType Container)) {
-            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+            $null = New-OwnerOnlyDirectory -Path $destDir -Force
         }
+        $tempPath = New-OwnerOnlyFile -Path $tempPathUnrestricted
         $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
         [System.IO.File]::WriteAllText($tempPath, $body, $utf8NoBom)
         Move-Item -LiteralPath $tempPath -Destination $DestinationPath -Force
@@ -216,8 +218,9 @@ function Invoke-AdvisoryDownloadIfChanged {
         }
     }
 
-    # Persist the new ETag.
+    # Persist the new ETag with owner-only permissions.
     try {
+        $etagPath = New-OwnerOnlyFile -Path $etagPath
         [System.IO.File]::WriteAllText($etagPath, $getEtag, [System.Text.Encoding]::UTF8)
     } catch { }
 

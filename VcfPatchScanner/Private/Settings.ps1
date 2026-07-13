@@ -158,13 +158,14 @@ function Set-PatchScanSettings {
     try {
         $directory = [System.IO.Path]::GetDirectoryName($resolvedPath)
         if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
-            New-Item -ItemType Directory -Path $directory -Force | Out-Null
+            $null = New-OwnerOnlyDirectory -Path $directory -Force
         }
 
         $json     = $Settings | ConvertTo-Json -Depth $Script:JSON_SERIALIZE_DEPTH -ErrorAction Stop
         $tempPath = Join-Path -Path $directory -ChildPath "settings_$(New-Guid).tmp"
 
         # Atomic write: temp file in same directory + rename so readers never see a partial file.
+        $tempPath = New-OwnerOnlyFile -Path $tempPath
         $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
         [System.IO.File]::WriteAllText($tempPath, $json, $utf8NoBom)
         Move-Item -LiteralPath $tempPath -Destination $resolvedPath -Force

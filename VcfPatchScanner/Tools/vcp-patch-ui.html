@@ -76,11 +76,11 @@ body.light .btn-primary:disabled,body.light .btn-secondary:disabled{background:#
 .status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 13px;border-radius:99px;font-size:.87rem;font-weight:600}
 .status-idle{background:var(--status-idle-bg);color:var(--status-idle-text)}
 .status-running,.status-checking{background:var(--status-run-bg);color:var(--status-run-text)}
-.status-complete{background:var(--status-ok-bg);color:var(--status-ok-text)}
 .status-failed{background:var(--status-fail-bg);color:var(--status-fail-text)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
 .dot.pulse{animation:pulse 1.4s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeInOut{0%{opacity:0;transform:translateY(-10px)}10%{opacity:1;transform:translateY(0)}90%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-10px)}}
 .log-auth{color:var(--log-auth-color)}
 .log-box{background:var(--depth-bg);border:1px solid var(--border);border-radius:7px;padding:12px;height:280px;min-height:120px;
   overflow-y:auto;font:13px/1.6 'Cascadia Code','Fira Mono',monospace;color:var(--muted);white-space:pre-wrap;word-break:break-all;
@@ -101,12 +101,13 @@ body.light .vuln-banner.all-clear{background:#dcfce7;color:#166534;border-color:
 .scard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 20px;text-align:center;min-width:90px}
 .scard .num{font-size:1.85rem;font-weight:700;line-height:1}
 .scard .lbl{font-size:.82rem;color:var(--muted);margin-top:4px}
-.scard .sub{font-size:.73rem;color:var(--muted);margin-top:2px;opacity:.75}
+.scard .sub{font-size:.82rem;color:var(--muted);margin-top:2px}
 .scard.total .num{color:var(--text)}
 .scard.crit  .num{color:var(--crit)}
 .scard.high  .num{color:var(--high)}
 .scard.ml    .num{color:var(--med)}
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.sort-indicator{font-size:.85rem;color:var(--text);opacity:.7;white-space:nowrap;flex-shrink:0;cursor:default}
 .search-input{flex:1;min-width:180px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;
   color:var(--text);padding:8px 12px;font-size:.92rem;outline:none}
 .search-input:focus{border-color:var(--accent)}
@@ -215,7 +216,7 @@ body.light .workaround-avail{background:#dcfce7;color:#166534}
 .col-vis-menu label{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:.85rem;user-select:none}
 .col-vis-menu label input{width:14px;height:14px;cursor:pointer}
 .col-vis-menu .col-vis-divider{border:none;border-top:1px solid var(--border);margin:6px 0}
-.col-vis-save{width:100%;margin-top:4px;font-size:.82rem;padding:5px 0}
+.col-vis-save{width:100%;margin-top:4px;font-size:.82rem;padding:5px 0;justify-content:center}
 body.light .col-vis-menu{box-shadow:0 6px 20px rgba(0,0,0,.12)}
 body.light .sev-Critical{background:#fee2e2;color:#991b1b}
 body.light .sev-High{background:#ffedd5;color:#9a3412}
@@ -243,6 +244,17 @@ body.light .step-hint{background:rgba(99,102,241,.06)}
 .empty-state{text-align:center;padding:40px;color:var(--muted)}
 .alert{padding:12px 14px;border-radius:6px;margin-bottom:14px;font-size:.92rem}
 .alert-error{background:#450a0a;border:1px solid #991b1b;color:#fca5a5}
+/* ── Endpoint credential section (improved UX for multiple endpoints) ──────── */
+.endpoint-block{background:var(--surface2);border-left:4px solid var(--accent);border-radius:6px;padding:14px 16px;margin-bottom:12px}
+.endpoint-fqdn{font-family:'Cascadia Code','Fira Mono',monospace;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:6px;display:flex;align-items:center;gap:8px;justify-content:space-between;word-break:break-all}
+.endpoint-fqdn-text{flex:1;line-height:1.4}
+.endpoint-fqdn-copy{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:4px;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s;flex-shrink:0;white-space:nowrap}
+.endpoint-fqdn-copy:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,145,218,.06)}
+.endpoint-label{font-size:.8rem;color:var(--muted);margin-bottom:10px;display:block}
+.endpoint-fields{display:grid;grid-template-columns:1fr;gap:10px}
+body.light .endpoint-block{background:#f4f7fb;border-left-color:#0076b3}
+body.light .endpoint-fqdn{color:#0076b3}
+body.light .endpoint-fqdn-copy:hover{background:rgba(0,118,179,.05)}
 .alert-success{background:#052e16;border:1px solid #166534;color:#86efac}
 .alert-warning{background:#4a3f0a;border:1px solid #b8860b;color:#fbbf24}
 body.light .alert-error{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
@@ -321,7 +333,7 @@ body.light .req-empty{border-color:var(--warn)!important}
 .env-fqdns-panel{margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
 .env-fqdn-row{display:flex;align-items:baseline;gap:8px;padding:3px 0}
 .env-fqdn-type{color:var(--muted);min-width:112px;flex-shrink:0;font-weight:500;font-size:.79rem;text-transform:uppercase;letter-spacing:.04em}
-.env-fqdn-val{color:var(--text);font-size:.83rem;font-family:'Cascadia Code','Fira Mono',monospace;word-break:break-all}
+.env-fqdn-val{color:var(--text);font-size:.83rem;font-family:'Cascadia Code','Fira Mono',monospace;word-break:break-all;user-select:text;cursor:text}
 .expand-chevron{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 5px;font-size:1rem;flex-shrink:0;line-height:1}
 .expand-chevron:hover{color:var(--text)}
 /* ── Scan-locked banner (shown instead of opacity dimming) ───────────────── */
@@ -444,11 +456,13 @@ body.light .comp-dd-menu{box-shadow:0 6px 22px rgba(0,0,0,.12)}
 #advisoryBar.adv-checking{display:flex;background:var(--info-bg,#f1f5f9);border-color:var(--info-border,#cbd5e1);color:var(--muted)}
 #advisoryBar.adv-disabled{display:flex;background:var(--info-bg,#f1f5f9);border-color:var(--info-border,#cbd5e1);color:var(--muted)}
 #advisoryBar.adv-error{display:flex;background:#450a0a;border-color:#b91c1c;color:#fca5a5}
+#advisoryBar.adv-warning{display:flex;align-items:flex-start;background:var(--surface2);border-color:var(--warn);color:var(--text)}
 body.light #advisoryBar.adv-ok{background:#dcfce7;border-color:#86efac;color:#14532d}
 body.light #advisoryBar.adv-update{background:#fef3c7;border-color:#fcd34d;color:#78350f}
 body.light #advisoryBar.adv-offline,body.light #advisoryBar.adv-checking,body.light #advisoryBar.adv-disabled{background:#f8fafc;border-color:#cbd5e1;color:#475569}
 body.light #advisoryBar.adv-error{background:#fee2e2;border-color:#fca5a5;color:#7f1d1d}
 #advisoryBarMsg{flex:1;min-width:0;word-break:break-all}
+#advisoryBar.adv-warning #advisoryBarMsg{word-break:normal}
 #advisoryBarActions{display:flex;gap:6px;flex-shrink:0}
 /* ── Module update bar (PSGallery) ───────────────────────────────────────── */
 #moduleUpdateBar{display:none;align-items:center;gap:10px;padding:7px 14px;border-radius:8px;font-size:.82rem;margin-bottom:10px;border:1px solid transparent;flex-wrap:wrap}
@@ -649,14 +663,8 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
 
           <!-- SDDC Manager fields: hidden until discovery succeeds. -->
           <div id="sddcFieldsBlock" class="hidden">
-            <div class="row2">
-              <div>
-                <label class="req">SDDC Manager Server</label>
-                <input id="vcf9-sddcManagerServer" type="text" placeholder="sddc.example.com" data-type="server" spellcheck="false" autocomplete="off">
-                <input type="hidden" id="vcf9-sddcManagerInstanceName" value="">
-              </div>
-              <div><label class="req">SDDC Manager Username <span style="font-weight:400;font-size:.78rem;color:var(--muted)">(must have <a href="https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vvs/1-0/identity-and-access-management-for-vmware-cloud-foundation/detailed-design-for-identity-and-access-management/information-security-for-identity-and-access-management-design/information-security-and-access-for-sddc-manager.html" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">ADMIN rights</a>)</span></label><input id="vcf9-sddcManagerUser" type="text" placeholder="administrator@vsphere.local"></div>
-            </div>
+            <div id="vcf9-sddcCredentialsHint" class="step-hint" style="margin-top:0;margin-bottom:12px">Discovered SDDC Manager(s). Enter credentials for each instance.</div>
+            <div id="vcf9-sddcManagerRows" style="margin-top:4px"></div>
           </div>
 
           <div style="margin-top:16px;display:none" id="vcf9-fleetManagerSection">
@@ -987,7 +995,7 @@ body.light #serverDownBar{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
     <button class="btn btn-secondary btn-sm" id="filterToggleBtn" onclick="toggleFilterRow()" title="Show or hide per-column filters">Filters</button>
     <button class="btn btn-secondary btn-sm hidden" id="clearFiltersBtn" onclick="_clearColFilters()" title="Clear all column filters">✕ Clear Filters</button>
     <button class="btn btn-secondary btn-sm hidden" id="resetSortBtn" onclick="resetSort()" title="Return to default sort order">↺ Default</button>
-    <span id="sortIndicator" style="font-size:.82rem;color:var(--muted);white-space:nowrap;flex-shrink:0"></span>
+    <span id="sortIndicator" class="sort-indicator"></span>
     <div class="col-vis-wrap" id="colVisWrap">
       <button class="btn btn-secondary btn-sm" id="colVisBtn" onclick="toggleColMenu(event)">Columns ▾</button>
       <div class="col-vis-menu hidden" id="colVisMenu"></div>
@@ -1136,6 +1144,8 @@ let _opsVersion = '';
 let _vvf9DiscoveredVcenters    = []; // vCenter FQDNs discovered from VCF Operations VMWARE adapter (VVF9 only)
 let _wizardVcenterPasswords    = {}; // FQDN → password entered in the vCenter wizard step; cleared when wizard closes
 let _vcf9StandaloneVcenters   = []; // standalone vCenter FQDNs co-discovered alongside SDDC Managers (VCF9 only)
+let _vcf9DiscoveredSddcManagers = []; // SDDC Manager instances discovered from VCF Operations (VCF9 only); each has {fqdn, instanceName, sddcUsername}
+let _wizardSddcPasswords    = {}; // FQDN → password entered in the SDDC Manager wizard step; cleared when wizard closes
 let _discoverAbortCtrl  = null; // AbortController for the in-flight discover-sddc fetch
 let _discoverLogTimer   = null; // interval that polls /discovery/log during authentication
 let _discoverAbortTimer = null; // safety-net auto-abort setTimeout handle
@@ -1850,7 +1860,9 @@ function _pwFieldHtml(id, placeholder, attrs, wrapStyle) {
 }
 
 function renderEnvList() {
-  const envs = curSettings.environments || [];
+  const envs = (curSettings.environments || []).slice().sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '')
+  );
   const list = document.getElementById('envList');
   const noMsg = document.getElementById('noEnvs');
   const actions = document.getElementById('settingsActions');
@@ -1968,7 +1980,7 @@ const _REQUIRED_FIELDS = {
     vvf9:     ['vvf9-vcfOpsServer',       'vvf9-vcfOpsUser'],
   },
   2: {
-    vcf9:     ['vcf9-sddcManagerServer', 'vcf9-sddcManagerUser'],
+    vcf9:     [], // per-SDDC-Manager inputs are dynamic; validated in _validateStep
     vcf5:     [], // vRSLCM is optional — no required fields on this step
     vsphere8: [],
     vvf9:     [], // per-vCenter inputs are dynamic; validated in _validateStep
@@ -2055,6 +2067,10 @@ function _showEditorPanels() {
   if (type === 'vvf9' && _editorStep === 2) {
     _renderVvf9VcenterRows();
   }
+  // VCF9 SDDC Manager step: render per-instance credential rows when sddcFieldsBlock is shown.
+  if (type === 'vcf9' && _vcf9DiscoveredSddcManagers.length > 0) {
+    _renderVcf9SddcManagerRows();
+  }
 }
 
 function _syncNextButton() {
@@ -2068,12 +2084,12 @@ function _syncNextButton() {
 
   // On the VCF Operations step (step 1), the Authenticate button must have completed
   // successfully before Next is enabled.  Auth completion is signalled by the discovery
-  // result fields being populated: vcf9-sddcManagerServer for vcf9, and the Fleet
+  // result being populated: _vcf9DiscoveredSddcManagers for vcf9, and the Fleet
   // Manager server for both vcf9 (when the section is visible) and vvf9.
   let authDone = true;
   if (_editorStep === 1 && (type === 'vcf9' || type === 'vvf9')) {
     if (type === 'vcf9') {
-      authDone = !!document.getElementById('vcf9-sddcManagerServer')?.value?.trim();
+      authDone = _vcf9DiscoveredSddcManagers.length > 0;
       if (authDone) {
         const fmSectionHidden = document.getElementById('vcf9-fleetManagerSection')?.style.display === 'none';
         if (!fmSectionHidden) {
@@ -2102,11 +2118,10 @@ function _syncNextButton() {
 
 function _validateStep(step, type) {
   // On the combined VCF 9 step, discovery is required before proceeding to Review.
-  // If the SDDC Manager Server is still empty, discovery hasn't run — block Next.
+  // If SDDC Managers haven't been discovered, block Next.
   if (step === 1 && (type === 'vcf9' || type === 'vvf9')) {
     if (type === 'vcf9') {
-      const sddcFilled = document.getElementById('vcf9-sddcManagerServer')?.value?.trim();
-      if (!sddcFilled) {
+      if (_vcf9DiscoveredSddcManagers.length === 0) {
         showAlert('envEditorAlert', 'error', 'Enter the VCF Operations password and click "Authenticate" before proceeding.');
         document.getElementById('discoverOpsPass')?.focus();
         return false;
@@ -2159,6 +2174,22 @@ function _validateStep(step, type) {
     return true;
   }
 
+  // VCF9 SDDC Manager step: all per-SDDC-Manager usernames required before proceeding.
+  if (step === 1 && type === 'vcf9' && _vcf9DiscoveredSddcManagers.length > 0) {
+    for (let i = 0; i < _vcf9DiscoveredSddcManagers.length; i++) {
+      const userEl = document.getElementById(`vcf9-sddcManagerUser-${i}`);
+      if (!userEl?.value?.trim()) {
+        const displayName = _vcf9DiscoveredSddcManagers[i].instanceName
+          ? `${_vcf9DiscoveredSddcManagers[i].fqdn} (${_vcf9DiscoveredSddcManagers[i].instanceName})`
+          : _vcf9DiscoveredSddcManagers[i].fqdn;
+        showAlert('envEditorAlert', 'error', `Username is required for ${esc(displayName)}.`);
+        userEl?.focus();
+        return false;
+      }
+    }
+    clearAlert('envEditorAlert');
+  }
+
   const req = step === 0
     ? (_REQUIRED_FIELDS[0].all || [])
     : ((_REQUIRED_FIELDS[step] || {})[type] || []);
@@ -2197,6 +2228,15 @@ function _buildReview() {
       const user = document.getElementById(`vvf9-vcenterUser-${i}`)?.value?.trim() || '';
       reviewFields.push(['vCenter Server', fqdn]);
       if (user) reviewFields.push(['vCenter Username', user]);
+    });
+  }
+  // VCF9: add per-SDDC-Manager rows — FQDN and username as separate fields.
+  if (type === 'vcf9') {
+    _vcf9DiscoveredSddcManagers.forEach((inst, i) => {
+      const user = document.getElementById(`vcf9-sddcManagerUser-${i}`)?.value?.trim() || '';
+      const displayFqdn = inst.instanceName ? `${inst.fqdn} (${inst.instanceName})` : inst.fqdn;
+      reviewFields.push(['SDDC Manager Server', displayFqdn]);
+      if (user) reviewFields.push(['SDDC Manager Username', user]);
     });
   }
   const rows = reviewFields
@@ -2351,6 +2391,13 @@ function openEditor(idx = -1) {
   _vcf9StandaloneVcenters  = (_openEditorEnv?.type === 'vcf9' && Array.isArray(_openEditorEnv.vcenterFqdns))
     ? _openEditorEnv.vcenterFqdns.slice()
     : [];
+  _vcf9DiscoveredSddcManagers = (_openEditorEnv?.type === 'vcf9' && Array.isArray(_openEditorEnv.sddcManagerFqdns))
+    ? _openEditorEnv.sddcManagerFqdns.map(fqdn => ({
+        fqdn,
+        instanceName: '',
+        sddcUsername: _openEditorEnv.sddcManagerCredentials?.find(c => c.fqdn === fqdn)?.user || '',
+      }))
+    : [];
   const type = v('eType') || 'vcf9';
   _fmPfx = (type === 'vvf9') ? 'vvf9' : 'vcf9';
   // Clear the vcf5 detection password and reset the vRSLCM step hint.
@@ -2399,16 +2446,22 @@ function openEditor(idx = -1) {
     if (vvf9FmHint) vvf9FmHint.textContent = 'After authenticating, vCenter endpoints will be discovered. On VVF 9.1, Fleet Lifecycle Controller will also be discovered automatically.';
     if (vvf9FmRow) vvf9FmRow.style.display = 'none';
   }
-  // vcf9: always hide the SDDC fields block on editor open — it is revealed only
-  // after a fresh Authenticate run. Show the saved server in the hint instead so
-  // the user knows the current state without having to re-authenticate.
-  document.getElementById('sddcFieldsBlock')?.classList.add('hidden');
+  // vcf9: show the SDDC fields block when editing an existing environment with discovered
+  // SDDC managers, otherwise hide it until a fresh discovery run. When hidden, show the
+  // saved managers in the hint so the user knows the current state.
+  const sddcFieldsBlock = document.getElementById('sddcFieldsBlock');
   const sddcHint = document.getElementById('vcf9-sddcDiscoveryHint');
-  if (sddcHint) {
-    const savedSddc = idx >= 0 ? (curSettings.environments||[])[idx]?.sddcManagerServer : '';
-    sddcHint.innerHTML = savedSddc
-      ? `SDDC Manager: <strong>${esc(savedSddc)}</strong>. Re-authenticate to update.`
-      : 'After authenticating, SDDC Manager, Fleet Manager, and vCenter endpoints will be discovered automatically. On VCF 9.1, Fleet Lifecycle Controller replaces Fleet Manager.';
+  if (_vcf9DiscoveredSddcManagers.length > 0) {
+    sddcFieldsBlock?.classList.remove('hidden');
+    if (sddcHint) {
+      const displayList = _vcf9DiscoveredSddcManagers.map(m => m.fqdn).join(', ');
+      sddcHint.textContent = `${_vcf9DiscoveredSddcManagers.length === 1 ? 'SDDC Manager' : 'SDDC Managers'} discovered. Enter credentials for each instance.`;
+    }
+  } else {
+    sddcFieldsBlock?.classList.add('hidden');
+    if (sddcHint) {
+      sddcHint.innerHTML = 'After authenticating, SDDC Manager, Fleet Manager, and vCenter endpoints will be discovered automatically. On VCF 9.1, Fleet Lifecycle Controller replaces Fleet Manager.';
+    }
   }
   // Reset discovery panels to initial state (pass panel visible, others hidden).
   ['discoverUsernamePanel', 'discoverResultPanel'].forEach(id =>
@@ -2443,6 +2496,12 @@ async function saveEnv() {
   const name = v('eName').trim();
   const type = v('eType');
   if (!name) { showAlert('envEditorAlert','error','Environment name is required.'); return; }
+  const isDuplicateName = (curSettings.environments||[]).some((e, i) =>
+    i !== idx && (e.name||'').trim().toLowerCase() === name.toLowerCase());
+  if (isDuplicateName) {
+    showAlert('envEditorAlert','error', `An environment named "${name}" already exists. Choose a different name.`);
+    return;
+  }
   const env = {name, type};
   TYPE_FIELDS[type].forEach(f => {
     const el = document.getElementById(type + '-' + f);
@@ -2460,7 +2519,7 @@ async function saveEnv() {
     nsxManagerUser:    'NSX Manager Username',
   };
   const req = {
-    vcf9:     ['sddcManagerServer','sddcManagerUser','vcfOpsServer','vcfOpsUser','vcfFMServer'],
+    vcf9:     ['vcfOpsServer','vcfOpsUser','vcfFMServer'], // SDDC Manager fields are dynamically collected
     vcf5:     ['sddcManagerServer','sddcManagerUser'],
     vsphere8: ['vcenterServer','vcenterUser'],
     vvf9:     ['vcfOpsServer','vcfOpsUser'],
@@ -2473,6 +2532,23 @@ async function saveEnv() {
   }
   if ((type === 'vsphere8') && env.nsxManagerServer && !env.nsxManagerUser) {
     showAlert('envEditorAlert','error','NSX Manager Username is required when NSX Manager Server is set.'); return;
+  }
+  // For VCF9: ensure SDDC Managers have been discovered with usernames filled in.
+  if (type === 'vcf9') {
+    if (_vcf9DiscoveredSddcManagers.length === 0) {
+      showAlert('envEditorAlert','error','SDDC Manager discovery required. Authenticate to VCF Operations to discover SDDC Manager(s).');
+      return;
+    }
+    for (let i = 0; i < _vcf9DiscoveredSddcManagers.length; i++) {
+      const user = document.getElementById(`vcf9-sddcManagerUser-${i}`)?.value?.trim();
+      if (!user) {
+        const displayName = _vcf9DiscoveredSddcManagers[i].instanceName
+          ? `${_vcf9DiscoveredSddcManagers[i].fqdn} (${_vcf9DiscoveredSddcManagers[i].instanceName})`
+          : _vcf9DiscoveredSddcManagers[i].fqdn;
+        showAlert('envEditorAlert','error',`Username is required for SDDC Manager ${esc(displayName)}.`);
+        return;
+      }
+    }
   }
   // For VVF9: persist discovered vCenter FQDNs and per-vCenter credentials.
   if (type === 'vvf9') {
@@ -2489,7 +2565,20 @@ async function saveEnv() {
       if (prev?.vcenterCredentials?.length) env.vcenterCredentials = prev.vcenterCredentials;
     }
   }
+  // For VCF9: persist discovered SDDC Manager FQDNs and per-instance credentials.
   if (type === 'vcf9') {
+    if (_vcf9DiscoveredSddcManagers.length > 0) {
+      env.sddcManagerFqdns = _vcf9DiscoveredSddcManagers.map(inst => inst.fqdn);
+      env.sddcManagerCredentials = _vcf9DiscoveredSddcManagers.map((inst, i) => ({
+        fqdn: inst.fqdn,
+        user: document.getElementById(`vcf9-sddcManagerUser-${i}`)?.value?.trim() || '',
+      }));
+      _wizardSddcPasswords = {}; // passwords collected at scan time via credential panel
+    } else if (idx >= 0) {
+      const prev = (curSettings.environments||[])[idx];
+      if (prev?.sddcManagerFqdns?.length) env.sddcManagerFqdns = prev.sddcManagerFqdns;
+      if (prev?.sddcManagerCredentials?.length) env.sddcManagerCredentials = prev.sddcManagerCredentials;
+    }
     // vcenterFqdns is intentionally not persisted for VCF9: VCF Operations returns
     // vCenters that may overlap with SDDC Manager-managed workload-domain vCenters.
     // Scanning them separately would produce duplicate results without a reliable
@@ -2648,14 +2737,20 @@ function _renderDiscoveredEndpoints(instances) {
   ).join('');
 }
 // Applies all discovered instances to the vcf9 SDDC Manager form fields.
-// Primary goes into sddcManagerServer/User; additional go into sddcManagerItems.
+// Populates _vcf9DiscoveredSddcManagers with all instances for rendering via _renderVcf9SddcManagerRows.
 function _applyAllSddcInstances(instances, username) {
-  document.getElementById('vcf9-sddcManagerServer').value = instances[0].fqdn;
-  document.getElementById('vcf9-sddcManagerInstanceName').value = instances[0].instanceName || '';
-  document.getElementById('vcf9-sddcManagerUser').value = username;
-  if (instances.length > 1) {
-    loadSddcManagerServers('vcf9', instances.slice(1).map(i => i.fqdn));
-    updateSddcManagerServers('vcf9');
+  _vcf9DiscoveredSddcManagers = instances.map(inst => ({
+    fqdn: inst.fqdn,
+    instanceName: inst.instanceName || '',
+    sddcUsername: inst.sddcUsername || username,
+  }));
+  // Render the SDDC Manager rows (all instances, not just the first one).
+  _renderVcf9SddcManagerRows();
+  // Update the hint with the count of discovered instances
+  const hint = document.getElementById('vcf9-sddcCredentialsHint');
+  if (hint) {
+    const n = _vcf9DiscoveredSddcManagers.length;
+    hint.textContent = `${n === 1 ? '1 SDDC Manager discovered' : `${n} SDDC Managers discovered`}. Enter credentials for each instance.`;
   }
   document.getElementById('sddcFieldsBlock')?.classList.remove('hidden');
   _syncNextButton();
@@ -2805,6 +2900,8 @@ async function runDiscoverSddc() {
         vcHint.style.display = 'none';
       }
     }
+    // Store instances so confirmDiscoverUsername can access them.
+    window._discoverInstances = instances;
     document.getElementById('discoverUsernamePanel').classList.remove('hidden');
   } catch(e) {
     if (e.name !== 'AbortError') {
@@ -2891,26 +2988,57 @@ function applyDiscoveredSddc() {
   clearAlert('envEditorAlert');
   const checked = Array.from(document.querySelectorAll('input[name="discoverFqdn"]:checked'));
   if (!checked.length) { showAlert('envEditorAlert','error','Select at least one SDDC Manager.'); return; }
-  const fqdns        = checked.map(c => c.value);
-  const primary      = checked[0];
-  const autoUser     = (primary.dataset.username || '').trim();
-  const instanceName = (primary.dataset.instancename || '').trim();
-  document.getElementById('vcf9-sddcManagerServer').value = fqdns[0];
-  document.getElementById('vcf9-sddcManagerInstanceName').value = instanceName;
-  if (fqdns.length > 1) {
-    loadSddcManagerServers('vcf9', fqdns.slice(1));
-    updateSddcManagerServers('vcf9');
+  // Map selected checkboxes back to their full instance objects from the discovery response.
+  const selectedInstances = checked.map(c => ({
+    fqdn: c.value,
+    instanceName: (c.dataset.instancename || '').trim(),
+    sddcUsername: (c.dataset.username || '').trim(),
+  }));
+  _applyAllSddcInstances(selectedInstances, selectedInstances[0].sddcUsername);
+  document.getElementById('discoverResultPanel')?.classList.add('hidden');
+  document.getElementById('discoverUsernamePanel')?.classList.add('hidden');
+}
+
+// ── VCF9 per-SDDC-Manager credential rows ────────────────────────────────────
+// Renders one credential row per discovered SDDC Manager in the wizard SDDC step.
+// Pre-fills from _openEditorEnv.sddcManagerCredentials when editing an existing environment.
+function _renderVcf9SddcManagerRows() {
+  const container = document.getElementById('vcf9-sddcManagerRows');
+  if (!container) return;
+
+  if (_vcf9DiscoveredSddcManagers.length === 0) {
+    container.innerHTML = '';
+    return;
   }
-  if (autoUser) {
-    document.getElementById('vcf9-sddcManagerUser').value = autoUser;
-  }
-  
-  document.getElementById('sddcFieldsBlock')?.classList.remove('hidden');
-  const usernameNote = autoUser
-    ? ` Username set to <strong>${esc(autoUser)}</strong>. You may replace it with any account that holds SDDC Manager ADMIN rights.`
-    : ' Enter the SDDC Manager username to continue.';
-  showAlertHtml('envEditorAlert', 'ok', `SDDC Manager${fqdns.length > 1 ? 's' : ''} applied.${usernameNote}`);
-  setTimeout(() => document.getElementById('vcf9-sddcManagerUser')?.focus(), 50);
+
+  // Build a FQDN → creds lookup from the saved env (for pre-fill on edit).
+  const savedCreds = {};
+  (_openEditorEnv?.sddcManagerCredentials || []).forEach(c => {
+    if (c.fqdn) savedCreds[c.fqdn] = { user: c.user || '', hasPassword: c.hasPassword || false };
+  });
+
+  container.innerHTML = _vcf9DiscoveredSddcManagers.map((inst, i) => {
+    const savedCred = savedCreds[inst.fqdn];
+    const user = savedCred?.user ?? inst.sddcUsername ?? '';
+    const displayLabel = inst.instanceName ? `${esc(inst.fqdn)} (${esc(inst.instanceName)})` : esc(inst.fqdn);
+    return `
+      <div class="endpoint-block">
+        <div class="endpoint-fqdn">
+          <span class="endpoint-fqdn-text" title="${esc(inst.fqdn)}">${esc(inst.fqdn)}${inst.instanceName ? ` <span style="font-weight:500;color:var(--muted);font-size:.85rem">(${esc(inst.instanceName)})</span>` : ''}</span>
+          <button class="endpoint-fqdn-copy" onclick="_copyToClipboard('${inst.fqdn.replace(/'/g, "\\'")}', this)" type="button" title="Copy FQDN to clipboard">📋 Copy</button>
+        </div>
+        <label class="endpoint-label">SDDC Manager Server</label>
+        <div class="endpoint-fields">
+          <div>
+            <label class="req" style="margin-bottom:6px">Username <span style="color:var(--muted);font-weight:400;font-size:.78rem">(must have ADMIN rights)</span></label>
+            <input id="vcf9-sddcManagerUser-${i}" type="text" value="${esc(user)}"
+              placeholder="administrator@vsphere.local"
+              autocomplete="username" spellcheck="false" autocapitalize="none"
+              oninput="_syncNextButton()">
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ── VVF9 per-vCenter credential rows ──────────────────────────────────────────
@@ -2940,17 +3068,20 @@ function _renderVvf9VcenterRows() {
   container.innerHTML = _vvf9DiscoveredVcenters.map((fqdn, i) => {
     const user = savedCreds[fqdn] ?? savedFallback;
     return `
-      <div class="row2" style="margin-top:0;margin-bottom:10px;align-items:flex-end">
-        <div>
-          <label>vCenter Server</label>
-          <div style="font-family:monospace;font-size:.88rem;color:var(--muted);padding:7px 2px;line-height:1.4">${esc(fqdn)}</div>
+      <div class="endpoint-block">
+        <div class="endpoint-fqdn">
+          <span class="endpoint-fqdn-text" title="${esc(fqdn)}">${esc(fqdn)}</span>
+          <button class="endpoint-fqdn-copy" onclick="_copyToClipboard('${fqdn.replace(/'/g, "\\'")}', this)" type="button" title="Copy FQDN to clipboard">📋 Copy</button>
         </div>
-        <div>
-          <label class="req">Username</label>
-          <input id="vvf9-vcenterUser-${i}" type="text" value="${esc(user)}"
-            placeholder="administrator@vsphere.local"
-            autocomplete="username" spellcheck="false" autocapitalize="none"
-            oninput="_syncNextButton()">
+        <label class="endpoint-label">vCenter Server</label>
+        <div class="endpoint-fields">
+          <div>
+            <label class="req" style="margin-bottom:6px">Username</label>
+            <input id="vvf9-vcenterUser-${i}" type="text" value="${esc(user)}"
+              placeholder="administrator@vsphere.local"
+              autocomplete="username" spellcheck="false" autocapitalize="none"
+              oninput="_syncNextButton()">
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -3172,10 +3303,15 @@ async function runDiscoverFleetManager() {
 // ── Scan panel ─────────────────────────────────────────────────────────────
 // ── Scan environment card selection ────────────────────────────────────────
 function renderScanEnvCards() {
-  const envs = curSettings.environments || [];
+  const unsortedEnvs = curSettings.environments || [];
+  // Create array of {env, origIdx} pairs and sort by environment name
+  const envsWithIdx = unsortedEnvs.map((e, idx) => ({env: e, origIdx: idx}))
+    .sort((a, b) => (a.env.name || '').localeCompare(b.env.name || ''));
+  const envs = unsortedEnvs; // still use unsortedEnvs for lookups by index
+
   const container = document.getElementById('scanEnvCards');
   const noMsg = document.getElementById('scanNoEnvsMsg');
-  const hasEnvs = envs.length > 0;
+  const hasEnvs = envsWithIdx.length > 0;
   document.getElementById('selectAllBtn').disabled = !hasEnvs;
   document.getElementById('clearSelBtn').disabled  = !hasEnvs;
   if (!hasEnvs) {
@@ -3185,8 +3321,6 @@ function renderScanEnvCards() {
     return;
   }
   noMsg.classList.add('hidden');
-  // Prune selections that no longer exist after an env delete/edit.
-  selectedEnvs = new Set([...selectedEnvs].filter(i => i < envs.length));
 
   // Build per-environment filtered endpoint counts when findings are loaded and a filter is active.
   // Must use grouped rows (one per endpoint+component) and apply filters in the same order as
@@ -3220,7 +3354,7 @@ function renderScanEnvCards() {
     filterLabelParts.push([..._summaryFilters.components].map(displayComponent).join(', '));
   const filterLabel = filterLabelParts.join(' · ');
 
-  container.innerHTML = envs.map((e, i) => {
+  container.innerHTML = envsWithIdx.map(({env: e, origIdx: i}) => {
     const fqdns = envAllFqdns(e);
     const fqdnRows = fqdns.map(f =>
       `<div class="env-fqdn-row"><span class="env-fqdn-type">${esc(f.type)}</span><span class="env-fqdn-val">${esc(f.fqdn)}</span></div>`
@@ -3263,7 +3397,7 @@ function renderScanEnvCards() {
           ${fqdns.length ? `<button class="expand-chevron" title="Show/hide servers" onclick="event.stopPropagation();toggleEnvFqdns('sefp-${i}',this)" style="display:flex;align-items:center;gap:3px"><span>▶</span><span style="font-size:.72rem;white-space:nowrap">Show</span></button>` : ''}
         </div>
         ${scanResultRow}
-        <div class="env-fqdns-panel hidden" id="sefp-${i}">${fqdnRows}</div>
+        <div class="env-fqdns-panel hidden" id="sefp-${i}" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">${fqdnRows}</div>
       </div>
     </div>`;
   }).join('');
@@ -3358,8 +3492,9 @@ function _updateValidateButtonState() {
   const t = env.type;
   let ready;
   if (t === 'vcf9') {
-    const needsOps = !_isVcf91(env);
-    ready = v('sddcPass')?.length > 0 && (!needsOps || v('opsPass')?.length > 0) && v('fmPass')?.length > 0;
+    const needsOps  = !_isVcf91(env);
+    const sddcFilled = _sddcPasswordKeys(env).every(k => (v(k) || '').length > 0);
+    ready = sddcFilled && (!needsOps || v('opsPass')?.length > 0) && v('fmPass')?.length > 0;
   } else if (t === 'vvf9') {
     const skipOpsVvf9 = _isVvf91(env);
     const noFmVvf9    = _isVvf90(env);
@@ -3391,8 +3526,42 @@ function _buildEnvPassGroup(env, envIdx) {
   const _pf    = (key, label) => `<div><label class="req">${label}</label>${_pwFieldHtml(pfx + key, 'Required', `autocomplete="off" oninput="_updateValidateButtonState()"`)}</div>`;
   let   fields = '<div class="row2" style="margin-top:0">';
   if (t === 'vcf9' || t === 'vcf5') {
+    // Multi-SDDC VCF 9: per-instance rows; early return with a fully-built fields section.
+    if (t === 'vcf9' && _isMultiSddc(env)) {
+      const fqdns   = env.sddcManagerFqdns;
+      const creds   = env.sddcManagerCredentials || [];
+      const skipOps = _isVcf91(env);
+      const fmCtx   = _credHint(env.vcfFMUser, env.vcfFMServer);
+      const fmLbl   = _fmLabel(env);
+      let mFields = '';
+      for (let i = 0; i < fqdns.length; i += 2) {
+        const mt = i === 0 ? '0' : '4px';
+        mFields += `<div class="row2" style="margin-top:${mt}">`;
+        const ctx0 = _credHint(creds[i]?.user || '', fqdns[i], '');
+        mFields += _pf(`sddcPass_${i}`, `SDDC Manager ${ctx0} Password`);
+        if (i + 1 < fqdns.length) {
+          const ctx1 = _credHint(creds[i + 1]?.user || '', fqdns[i + 1], '');
+          mFields += _pf(`sddcPass_${i + 1}`, `SDDC Manager ${ctx1} Password`);
+        } else {
+          mFields += '<div></div>';
+        }
+        mFields += '</div>';
+      }
+      if (skipOps) {
+        mFields += `<div class="row2" style="margin-top:4px">${_pf('fmPass', `${fmLbl} Password ${fmCtx}`)}<div></div></div>`;
+      } else {
+        const opsCtx = _credHint(env.vcfOpsUser, env.vcfOpsServer);
+        mFields += `<div class="row2" style="margin-top:4px">${_pf('opsPass', `VCF Operations Password ${opsCtx}`)}${_pf('fmPass', `${fmLbl} Password ${fmCtx}`)}</div>`;
+      }
+      return `<div class="pass-env-group">
+    <div class="pass-env-group-hdr">${name} ${badge}</div>
+    ${mFields}
+  </div>`;
+    }
+    // Legacy single-SDDC VCF 9 or VCF 5: existing single sddcPass field.
     const sddcCtx = _credHint(env.sddcManagerUser, env.sddcManagerServer, '');
-    fields += _pf('sddcPass', `SDDC Manager Password ${sddcCtx}`);
+    fields += _pf('sddcPass', `SDDC Manager ${sddcCtx} Password`);
+
     if (t === 'vcf9') {
       const skipOps = _isVcf91(env);
       const fmCtx   = _credHint(env.vcfFMUser, env.vcfFMServer);
@@ -3481,8 +3650,11 @@ function renderPassFields(selectedList) {
   const env  = selectedList[0];
   let   html = '';
   if (_hasMultiplePasswords(env)) {
-    html += `<div class="pass-single-row">
-      <label><input type="checkbox" id="singlePassCb" onchange="onSinglePassToggle()"> Use single password for all endpoints</label>
+    html += `<div class="pass-single-row" style="margin-bottom:18px;padding:10px;background:var(--surface2);border-radius:6px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:500;color:var(--accent)">
+        <input type="checkbox" id="singlePassCb" onchange="onSinglePassToggle()" style="width:18px;height:18px;cursor:pointer">
+        <span title="Use a single password for all endpoints in this environment instead of entering a separate password for each one">Use single password for all endpoints</span>
+      </label>
     </div>`;
   }
   html += '<div id="passInputs"></div>';
@@ -3517,7 +3689,10 @@ function _isMultiEnvPassFilled(env, envIdx) {
   const vp      = id => (v(pfx + id) || '').length > 0;
   const t       = env.type;
   const skipOps = _isVcf91(env);
-  if (t === 'vcf9') return vp('sddcPass') && (skipOps || vp('opsPass')) && vp('fmPass');
+  if (t === 'vcf9') {
+    const sddcFilled = _sddcPasswordKeys(env).every(k => (v(pfx + k) || '').length > 0);
+    return sddcFilled && (skipOps || vp('opsPass')) && vp('fmPass');
+  }
   if (t === 'vvf9') { const skipOps91 = _isVvf91(env); const noFm90 = _isVvf90(env); return (!skipOps91 ? vp('opsPass') : true) && (noFm90 || vp('fmPass')) && vp('vcenterPass'); }
   if (t === 'vcf5') return vp('sddcPass') && (!env.vrslcmServer || vp('vrslcmPass'));
   return vp('vcenterPass') && (!env.nsxManagerServer || vp('nsxPass'));
@@ -3543,69 +3718,97 @@ function renderPassInputs() {
   const single = document.getElementById('singlePassCb')?.checked || false;
 
   if (single) {
-    el.innerHTML = `<div class="row2" style="margin-top:0">
-      <div><label class="req">Password (all endpoints)</label>
-        ${_pwFieldHtml('singlePass', 'Required', 'autocomplete="off" oninput="_updateValidateButtonState()"')}</div>
-      <div></div></div>`;
+    const pwHtml = _pwFieldHtml('singlePass', 'Required', 'autocomplete="off" oninput="_updateValidateButtonState()"');
+    el.innerHTML = `
+      <div style="margin-bottom:16px;padding:10px;background:var(--surface2);border-radius:6px;border-left:3px solid var(--accent)">
+        <div style="font-size:.85rem;color:var(--accent);font-weight:600;margin-bottom:10px">Using single password for all endpoints</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-weight:600;color:var(--text)">Password :</span>
+          <div style="flex:1">${pwHtml}</div>
+        </div>
+      </div>`;
     return;
   }
 
-  const sddcCtx  = _credHint(env.sddcManagerUser, env.sddcManagerServer, '');
-  const _pf = (id, label) => `<div><label class="req">${label}</label>${_pwFieldHtml(id, 'Required', 'autocomplete="off" oninput="_updateValidateButtonState()"')}</div>`;
-  let html = '<div class="row2" style="margin-top:0">';
+  const _endpointPassField = (id, fqdn, user, serviceLabel, attrs) => {
+    const pwHtml = _pwFieldHtml(id, 'Required', attrs || 'autocomplete="off" oninput="_updateValidateButtonState()"');
+    return `
+      <div style="margin-bottom:12px">
+        <div style="font-size:.92rem;margin-bottom:4px">
+          <span style="font-weight:600;color:var(--text)">${esc(serviceLabel)} FQDN:</span>
+          <span style="font-family:monospace;color:var(--accent);font-weight:600;margin-left:8px">${esc(fqdn)}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-weight:600;color:var(--text)">${esc(user)} Password :</span>
+          <div style="flex:1">${pwHtml}</div>
+        </div>
+      </div>`;
+  };
+
+  // Multi-SDDC VCF 9: per-instance rows + Fleet/Ops row (early return).
+  if (t === 'vcf9' && _isMultiSddc(env)) {
+    const fqdns   = env.sddcManagerFqdns;
+    const creds   = env.sddcManagerCredentials || [];
+    const skipOps = _isVcf91(env);
+    const fmLbl   = _fmLabel(env);
+    let mHtml = '';
+    for (let i = 0; i < fqdns.length; i++) {
+      const user = creds[i]?.user || '';
+      mHtml += _endpointPassField(`sddcPass_${i}`, fqdns[i], user, `SDDC Manager`);
+    }
+    if (skipOps) {
+      mHtml += _endpointPassField('fmPass', env.vcfFMServer, env.vcfFMUser, `${fmLbl}`);
+    } else {
+      mHtml += _endpointPassField('opsPass', env.vcfOpsServer, env.vcfOpsUser, `VCF Operations`);
+      mHtml += _endpointPassField('fmPass', env.vcfFMServer, env.vcfFMUser, `${fmLbl}`);
+    }
+    el.innerHTML = mHtml;
+    return;
+  }
+
+  // Legacy single-SDDC or non-vcf9 types.
+  let html = '';
   if (t === 'vcf9' || t === 'vcf5') {
-    html += _pf('sddcPass', `SDDC Manager Password ${sddcCtx}`);
+    html += _endpointPassField('sddcPass', env.sddcManagerServer, env.sddcManagerUser, `SDDC Manager`);
     if (t === 'vcf9') {
       const skipOps = _isVcf91(env);
-      const fmCtx   = _credHint(env.vcfFMUser, env.vcfFMServer);
       const fmLbl   = _fmLabel(env);
       if (skipOps) {
         // VCF 9.1: Fleet Lifecycle Manager covers VCF Operations — ops credential not needed.
-        html += _pf('fmPass', `${fmLbl} Password ${fmCtx}`);
+        html += _endpointPassField('fmPass', env.vcfFMServer, env.vcfFMUser, `${fmLbl}`);
       } else {
         // VCF 9.0 (or not yet identified): VCF Operations + Fleet Manager both required.
-        const opsCtx = _credHint(env.vcfOpsUser, env.vcfOpsServer);
-        html += `${_pf('opsPass', `VCF Operations Password ${opsCtx}`)}</div><div class="row2" style="margin-top:0">${_pf('fmPass', `${fmLbl} Password ${fmCtx}`)}<div></div>`;
+        html += _endpointPassField('opsPass', env.vcfOpsServer, env.vcfOpsUser, `VCF Operations`);
+        html += _endpointPassField('fmPass', env.vcfFMServer, env.vcfFMUser, `${fmLbl}`);
       }
     } else {
       // vcf5: NSX Manager uses the SDDC Manager credential — no separate prompt needed.
       if (env.vrslcmServer) {
-        const vrslcmCtx = _credHint(env.vrslcmUser, env.vrslcmServer);
-        html += _pf('vrslcmPass', `vRSLCM Password ${vrslcmCtx}`);
-      } else {
-        html += '<div></div>';
+        html += _endpointPassField('vrslcmPass', env.vrslcmServer, env.vrslcmUser, `vRSLCM`);
       }
     }
   } else if (t === 'vvf9') {
     const skipOps = _isVvf91(env);
     const fmLbl  = _fmLabel(env);
-    const fmCtx  = _credHint(env.vcfFMUser, env.vcfFMServer);
     const _vcCred0 = env.vcenterCredentials?.[0];
     const _vcUser  = _vcCred0?.user ?? env.vcenterUser ?? '';
     const _vcFqdn  = _vcCred0?.fqdn ?? env.vcenterServer ?? '';
-    const vcCtx    = _credHint(_vcUser, _vcFqdn);
     if (skipOps) {
       // VVF9 9.1: Fleet Lifecycle Manager covers VCF Operations — ops credential not needed.
-      html += `${_pf('fmPass', `${fmLbl} Password ${fmCtx}`)}<div></div></div><div class="row2" style="margin-top:0">`;
-      html += `${_pf('vcenterPass', `vCenter Password ${vcCtx}`)}<div></div>`;
+      html += _endpointPassField('fmPass', env.vcfFMServer, env.vcfFMUser, `${fmLbl}`);
+      html += _endpointPassField('vcenterPass', _vcFqdn, _vcUser, `vCenter`);
     } else {
       // VVF9 9.0: VCF Operations + vCenter only (no Fleet Manager).
-      const opsCtx = _credHint(env.vcfOpsUser, env.vcfOpsServer);
-      html += `${_pf('opsPass', `VCF Operations Password ${opsCtx}`)}<div></div></div><div class="row2" style="margin-top:0">`;
-      html += `${_pf('vcenterPass', `vCenter Password ${vcCtx}`)}<div></div>`;
+      html += _endpointPassField('opsPass', env.vcfOpsServer, env.vcfOpsUser, `VCF Operations`);
+      html += _endpointPassField('vcenterPass', _vcFqdn, _vcUser, `vCenter`);
     }
   } else {
-    // vsphere8
-    const vcCtx = _credHint(env.vcenterUser, env.vcenterServer);
-    html += _pf('vcenterPass', `vCenter Password ${vcCtx}`);
+    // vsphere8: vCenter + optional NSX Manager
+    html += _endpointPassField('vcenterPass', env.vcenterServer, env.vcenterUser, `vCenter`);
     if (env.nsxManagerServer) {
-      const nsxCtx = _credHint(env.nsxManagerUser, env.nsxManagerServer);
-      html += _pf('nsxPass', `NSX Manager Password ${nsxCtx}`);
-    } else {
-      html += '<div></div>';
+      html += _endpointPassField('nsxPass', env.nsxManagerServer, env.nsxManagerUser, `NSX Manager`);
     }
   }
-  html += '</div>';
   el.innerHTML = html;
 }
 
@@ -3621,7 +3824,13 @@ function _envPasswordsFromFields(env, prefix) {
   const skipCvcf9 = _isVcf91(env);
   const skipVvf9  = _isVvf91(env);
   const vp        = id => v(prefix + id);
-  if (t === 'vcf9') return _vcf9Passwords(vp('sddcPass'), vp('opsPass'), vp('fmPass'), skipCvcf9);
+  if (t === 'vcf9') {
+    const sddcDict = {};
+    _sddcPasswordKeys(env).forEach(k => { sddcDict[k] = vp(k); });
+    return skipCvcf9
+      ? { ...sddcDict, fmPass: vp('fmPass') }
+      : { ...sddcDict, opsPass: vp('opsPass'), fmPass: vp('fmPass') };
+  }
   if (t === 'vvf9') {
     const noFm90 = _isVvf90(env);
     if (skipVvf9) return {fmPass: vp('fmPass'), vcenterPass: vp('vcenterPass')};
@@ -3636,7 +3845,11 @@ function _envPasswords(env, sharedPass) {
   const skipCvcf9 = _isVcf91(env);
   const skipVvf9  = _isVvf91(env);
   if (sharedPass != null) {
-    if (t === 'vcf9') return _vcf9Passwords(sharedPass, sharedPass, sharedPass, skipCvcf9);
+    if (t === 'vcf9') {
+      const sddcDict = {};
+      _sddcPasswordKeys(env).forEach(k => { sddcDict[k] = sharedPass; });
+      return skipCvcf9 ? { ...sddcDict, fmPass: sharedPass } : { ...sddcDict, opsPass: sharedPass, fmPass: sharedPass };
+    }
     if (t === 'vvf9') {
       const noFm90s = _isVvf90(env);
       if (skipVvf9) return {fmPass: sharedPass, vcenterPass: sharedPass};
@@ -3649,7 +3862,11 @@ function _envPasswords(env, sharedPass) {
   const single = document.getElementById('singlePassCb')?.checked || false;
   if (single) {
     const p = v('singlePass');
-    if (t === 'vcf9') return _vcf9Passwords(p, p, p, skipCvcf9);
+    if (t === 'vcf9') {
+      const sddcDictS = {};
+      _sddcPasswordKeys(env).forEach(k => { sddcDictS[k] = p; });
+      return skipCvcf9 ? { ...sddcDictS, fmPass: p } : { ...sddcDictS, opsPass: p, fmPass: p };
+    }
     if (t === 'vvf9') {
       const noFm90p = _isVvf90(env);
       if (skipVvf9)  return {fmPass: p, vcenterPass: p};
@@ -3662,14 +3879,43 @@ function _envPasswords(env, sharedPass) {
   return _envPasswordsFromFields(env, '');
 }
 
+// Returns true when the environment has multiple SDDC Managers via sddcManagerFqdns.
+function _isMultiSddc(env) {
+  return !!(env && env.type === 'vcf9' && Array.isArray(env.sddcManagerFqdns) && env.sddcManagerFqdns.length > 0);
+}
+// Returns the password input ID keys for SDDC Manager(s) (without any prefix).
+// Multi-SDDC VCF 9: ['sddcPass_0', 'sddcPass_1', …]; legacy / vcf5: ['sddcPass'].
+function _sddcPasswordKeys(env) {
+  if (_isMultiSddc(env)) return env.sddcManagerFqdns.map((_, i) => `sddcPass_${i}`);
+  return ['sddcPass'];
+}
 // Returns true when the environment is known VCF 9.1 (Fleet-managed VCF Operations).
 // VCF Operations credentials are not needed for 9.1 — Fleet Manager is authoritative.
-function _isVcf91(env) { return !!(env && env.type === 'vcf9' && env.vcfMinorVersion === '9.1'); }
+// Uses explicit vcfMinorVersion if set, or infers from environment name as fallback.
+function _isVcf91(env) {
+  if (!env || env.type !== 'vcf9') return false;
+  if (env.vcfMinorVersion === '9.1') return true;
+  // Fallback: infer from environment name (e.g. "prod-vcf910" → 9.1, "dev-vcf91x" → 9.1)
+  if (env.name && /vcf\s*91/i.test(env.name)) return true;
+  return false;
+}
 // Returns true when the environment is a known VVF 9.1 (VSP Fleet-LCM path).
 // VCF Operations credentials are not needed for scan — Fleet Manager is authoritative.
-function _isVvf91(env) { return !!(env && env.type === 'vvf9' && env.vcfMinorVersion === '9.1'); }
+function _isVvf91(env) {
+  if (!env || env.type !== 'vvf9') return false;
+  if (env.vcfMinorVersion === '9.1') return true;
+  // Fallback: infer from environment name
+  if (env.name && /vvf\s*91|vsf\s*91/i.test(env.name)) return true;
+  return false;
+}
 // Returns true when the environment is a known VVF 9.0 (no Fleet Manager or Fleet Lifecycle Controller).
-function _isVvf90(env) { return !!(env && env.type === 'vvf9' && env.vcfMinorVersion === '9.0'); }
+function _isVvf90(env) {
+  if (!env || env.type !== 'vvf9') return false;
+  if (env.vcfMinorVersion === '9.0') return true;
+  // Fallback: infer from environment name
+  if (env.name && /vvf\s*90|vsf\s*90/i.test(env.name)) return true;
+  return false;
+}
 // Returns the correct display name for the Fleet Manager component based on an env object.
 // 9.1+ uses "Fleet Lifecycle Manager"; 9.0 (and unknown) uses "Fleet Manager".
 function _fmLabel(env) { return (_isVcf91(env) || _isVvf91(env)) ? 'Fleet Lifecycle Manager' : 'Fleet Manager'; }
@@ -3731,12 +3977,15 @@ function _buildQueue() {
 // Credential validation helpers
 // ---------------------------------------------------------------------------
 
-// Endpoint name → password input element ID (covers both FM variant names).
+// Endpoint name → password input element ID. "VCF Fleet" is the generic label
+// Test-FleetManagerAuthentication returns on failure (before it can tell whether
+// the 9.1 or 9.0 auth path applies), distinct from the version-specific success labels.
 const _EP_PASS_ID = {
   'SDDC Manager':           'sddcPass',
   'VCF Operations':         'opsPass',
   'Fleet Manager':          'fmPass',
   'Fleet Lifecycle Manager':'fmPass',
+  'VCF Fleet':              'fmPass',
   'vCenter':                'vcenterPass',
   'NSX Manager':            'nsxPass',
   'vRSLCM':                 'vrslcmPass',
@@ -4047,8 +4296,19 @@ function _renderValidationActions(authFailed, unreachable, successCount = 0) {
 
   // Highlight the corresponding password inputs and scroll to them.
   _clearPassHighlights();
+  const _curEnv = (() => {
+    const envs = curSettings.environments || [];
+    const selArr = [...selectedEnvs].map(i => envs[i]).filter(Boolean);
+    return selArr.length === 1 ? selArr[0] : null;
+  })();
   for (const item of authFailed) {
-    const inputId = _EP_PASS_ID[item.endpoint] || null;
+    let inputId = _EP_PASS_ID[item.endpoint] || null;
+    // Multi-SDDC: resolve the specific SDDC Manager index from the server FQDN.
+    if (item.endpoint === 'SDDC Manager' && _isMultiSddc(_curEnv)) {
+      const fqdns = _curEnv.sddcManagerFqdns || [];
+      const idx   = fqdns.findIndex(f => f.toLowerCase() === (item.server || '').toLowerCase());
+      inputId = idx >= 0 ? `sddcPass_${idx}` : `sddcPass_0`;
+    }
     if (inputId) {
       const inp = document.getElementById(inputId);
       if (inp) {
@@ -4891,9 +5151,13 @@ function _updateSortIndicator() {
   if (!el) return;
   if (sortCol >= 0) {
     const colDef = _COL_DEFS.find(c => c.idx === sortCol);
-    el.textContent = `Sorted: ${colDef ? colDef.name : sortCol} ${sortAsc ? '↑' : '↓'}`;
+    const dir = sortAsc ? 'ascending' : 'descending';
+    el.textContent = `Sorted by ${colDef ? colDef.name : sortCol} (${dir})`;
+    el.title = `Click a column header to sort by it. Click "↺ Default" to return to the default order.`;
   } else {
-    el.textContent = 'Default: VMSA ID ↓ → Severity → Endpoint';
+    el.textContent = 'Default sort: newest advisory first';
+    el.title = 'Rows are ordered by VMSA advisory (newest first). Within the same advisory, '
+      + 'rows are ordered by severity (Critical to Low), then alphabetically by endpoint.';
   }
 }
 // Per-column match functions: (finding, filterValue) → boolean
@@ -5217,8 +5481,58 @@ function downloadFilteredFindings() {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
 }
+// Holds the resolver for an in-flight security warning shown in the advisory bar
+// (top of page) so the Cancel / Proceed buttons — rendered via _setAdvBar's
+// actionsHtml, not attached inline — can settle the promise returned by
+// _showLogSecurityWarning.
+let _logWarningResolve = null;
+
+function _showLogSecurityWarning() {
+  return new Promise((resolve) => {
+    const savedStatus = _lastAdvStatus;
+    _logWarningResolve = (proceeded) => {
+      _logWarningResolve = null;
+      _postJson('/scan/collect-logs-ack', { proceeded }).catch(() => {});
+      if (savedStatus) {
+        _applyAdvStatus(savedStatus, /*isManual=*/true);
+      } else {
+        _setAdvBar('checking', 'Checking for advisory database updates…', '');
+      }
+      resolve(proceeded);
+    };
+    _setAdvBar('warning',
+      `<strong style="color:var(--warn)">⚠ Security Warning</strong> — the support archive contains sensitive infrastructure data:
+      <ul style="margin:6px 0 8px 1.3rem;padding:0">
+        <li>Endpoint FQDNs and IP addresses (SDDC Manager, vCenter, NSX, etc.)</li>
+        <li>Environment names and configuration topology</li>
+        <li>Service account usernames</li>
+        <li>All log file contents (may include errors exposing configuration)</li>
+      </ul>
+      <strong style="color:#ff6b6b">Do NOT share this archive with untrusted parties.</strong>
+      <div style="font-size:.85rem;margin-top:8px;color:var(--muted)">
+        <strong>Best Practices:</strong><br>
+        • Store securely (encrypted storage or password-protected)<br>
+        • Share only with authorized Broadcom personnel<br>
+        • Delete after support review<br>
+        • If compromised, review logs for exposed data
+      </div>`,
+      `<button class="btn btn-secondary btn-sm" onclick="_dismissLogSecurityWarning(false)">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="_dismissLogSecurityWarning(true)">I Understand, Proceed</button>`
+    );
+  });
+}
+
+function _dismissLogSecurityWarning(proceeded) {
+  if (_logWarningResolve) _logWarningResolve(proceeded);
+}
+
 async function collectLogs() {
   const btn = document.getElementById('collectLogsBtn');
+
+  // Show security warning first
+  const confirmed = await _showLogSecurityWarning();
+  if (!confirmed) return;
+
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin">↻</span> Collecting…'; }
   let btnEndState = 'Collect Logs';
   try {
@@ -5300,27 +5614,54 @@ function str(x) { return x == null ? '' : String(x); }
 
 // Returns [{type, fqdn}] for every configured server in an environment object.
 function envAllFqdns(e) {
-  const fields = [
-    ['sddcManagerServer', 'SDDC Manager'],
-    ['vrslcmServer',      'vRSLCM'],
-    ['vcfOpsServer',      'VCF Operations'],
-    ['vcfFMServer',       'Fleet Manager'],
-    ['vcenterServer',     'vCenter'],
-    ['nsxManagerServer',  'NSX Manager'],
-  ];
-  const fqdns = fields.flatMap(([field, label]) => {
-    if (!e[field]) return [];
-    // Decorate the primary SDDC Manager FQDN with its discovered fleet instance name.
-    const fqdn = (field === 'sddcManagerServer' && e.sddcManagerInstanceName)
-      ? `${e[field]} (${e.sddcManagerInstanceName})`
-      : e[field];
-    return [{type: label, fqdn}];
-  });
+  const fqdns = [];
+
+  // Order: VCF Operations, Fleet Manager, SDDC Manager(s) — alphabetically if multiple
+
+  // VCF Operations
+  if (e.vcfOpsServer) {
+    fqdns.push({type: 'VCF Operations', fqdn: e.vcfOpsServer});
+  }
+
+  // Fleet Manager
+  if (e.vcfFMServer) {
+    fqdns.push({type: 'Fleet Manager', fqdn: e.vcfFMServer});
+  }
+
+  // SDDC Manager(s) — handle both single and multiple
+  if (e.sddcManagerServer) {
+    // Legacy single SDDC Manager field
+    const fqdn = (e.sddcManagerInstanceName)
+      ? `${e.sddcManagerServer} (${e.sddcManagerInstanceName})`
+      : e.sddcManagerServer;
+    fqdns.push({type: 'SDDC Manager', fqdn});
+  } else if (Array.isArray(e.sddcManagerFqdns) && e.sddcManagerFqdns.length > 0) {
+    // New multi-SDDC Manager support: sort alphabetically by FQDN
+    const sddcList = e.sddcManagerFqdns.slice().sort();
+    sddcList.forEach(fqdn => {
+      fqdns.push({type: 'SDDC Manager', fqdn});
+    });
+  }
+
+  // vRSLCM
+  if (e.vrslcmServer) {
+    fqdns.push({type: 'vRSLCM', fqdn: e.vrslcmServer});
+  }
+
+  // vCenter(s)
+  if (e.vcenterServer) {
+    fqdns.push({type: 'vCenter', fqdn: e.vcenterServer});
+  }
 
   // VVF9: all vCenters are standalone (no SDDC Manager); stored as an array from wizard auth.
   // VCF9: standalone vCenters are additive — scanned alongside SDDC Manager managed vCenters.
   if ((e.type === 'vvf9' || e.type === 'vcf9') && Array.isArray(e.vcenterFqdns)) {
     e.vcenterFqdns.forEach(f => { if (f) fqdns.push({type: 'vCenter', fqdn: f}); });
+  }
+
+  // NSX Manager
+  if (e.nsxManagerServer) {
+    fqdns.push({type: 'NSX Manager', fqdn: e.nsxManagerServer});
   }
 
   return fqdns;
@@ -5394,6 +5735,24 @@ function esc(s) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    // Brief visual feedback: show "Copied!" toast
+    const toast = document.createElement('div');
+    toast.textContent = 'Copied!';
+    toast.style.cssText = `
+      position: fixed; top: 20px; right: 20px; z-index: 10000;
+      background: var(--accent); color: white; padding: 8px 12px;
+      border-radius: 4px; font-size: 0.85rem; font-weight: 600;
+      animation: fadeInOut 1.5s ease-in-out;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 1500);
+  }).catch(err => {
+    console.error('Failed to copy to clipboard:', err);
+  });
+}
+
 const _STATUS_TOOLTIP = {
   idle:     'No scan running',
   running:  'Scan in progress',
@@ -5403,7 +5762,6 @@ const _STATUS_TOOLTIP = {
 };
 
 let _prevStatus = 'idle';
-let _idleTimer  = null;
 function setStatus(status, queuePos, queueTotal, envName) {
   const cssStatus = (status === 'checking') ? 'checking' : status;
   const isActive  = status === 'running' || status === 'checking';
@@ -5418,19 +5776,10 @@ function setStatus(status, queuePos, queueTotal, envName) {
   }
   const hdrBadge = document.getElementById('headerStatusBadge');
   if (hdrBadge) {
-    clearTimeout(_idleTimer);
-    if (status === 'idle' && (_prevStatus === 'running' || _prevStatus === 'checking')) {
-      hdrBadge.className = 'status-badge status-complete';
-      hdrBadge.querySelector('.dot').className = 'dot';
-      document.getElementById('headerStatusText').textContent = 'Complete';
-      hdrBadge.title = 'Scan complete';
-      _idleTimer = setTimeout(() => { hdrBadge.className = 'status-badge status-idle hidden'; }, 8000);
-    } else {
-      hdrBadge.className = 'status-badge status-' + cssStatus + (status === 'idle' ? ' hidden' : '');
-      hdrBadge.querySelector('.dot').className = 'dot' + (isActive ? ' pulse' : '');
-      document.getElementById('headerStatusText').textContent = text;
-      hdrBadge.title = _STATUS_TOOLTIP[status] || text;
-    }
+    hdrBadge.className = 'status-badge status-' + cssStatus + (status === 'idle' ? ' hidden' : '');
+    hdrBadge.querySelector('.dot').className = 'dot' + (isActive ? ' pulse' : '');
+    document.getElementById('headerStatusText').textContent = text;
+    hdrBadge.title = _STATUS_TOOLTIP[status] || text;
   }
   _prevStatus = status;
   const hint = document.getElementById('logHint');
@@ -5452,6 +5801,22 @@ function _copyLog() {
     const orig = btn.innerHTML;
     btn.innerHTML = '✔ Copied';
     setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  });
+}
+function _copyToClipboard(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    if (!btn) return;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✔ Copied';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 1600);
+  }).catch(err => {
+    console.error('Failed to copy:', err);
   });
 }
 function showAlert(id, type, msg) {

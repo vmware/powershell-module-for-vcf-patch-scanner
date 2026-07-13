@@ -32,6 +32,7 @@
 #
 # Private implementation files (dot-sourced below):
 #   Private/Logging.ps1              — Log initialization and Write-LogMessage
+#   Private/ManifestVerification.ps1 — SHA256 manifest generation and verification (supply-chain security)
 #   Private/Mapping.ps1              — Component name mappings, lookup tables (SCRIPT variables)
 #   Private/Settings.ps1             — Settings file CRUD, validation, template generation
 #   Private/Advisory.ps1             — Security advisory loading, parsing, schema validation
@@ -48,6 +49,7 @@
 $privatePath = Join-Path -Path $PSScriptRoot -ChildPath 'Private'
 $privateFiles = @(
     'Logging.ps1'
+    'ManifestVerification.ps1'
     'Mapping.ps1'
     'Settings.ps1'
     'Advisory.ps1'
@@ -100,3 +102,11 @@ $Script:SCAN_TOOL_FILE_NAMES        = @(
     'Start-VCFPatchScannerServer.py'
     'vcp-patch-ui.html'
 )
+
+# Manifest verification — optional supply-chain security check enabled via environment variable
+$manifestUrl = [System.Environment]::GetEnvironmentVariable("VCFPATCHSCANNER_MANIFEST_URL")
+if (-not [String]::IsNullOrWhiteSpace($manifestUrl)) {
+    $Script:ManifestVerificationResult = Test-ModuleManifest -ModulePath $PSScriptRoot -ManifestUrl $manifestUrl
+} else {
+    $Script:ManifestVerificationResult = $true  # Verification skipped (not configured)
+}

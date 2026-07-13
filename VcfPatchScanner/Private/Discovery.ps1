@@ -28,6 +28,42 @@
 
 #region Environment Discovery and Inventory Collection
 
+function Get-ProbeExceptionMessage {
+
+    <#
+        .SYNOPSIS
+        Return a human-readable message that includes both the outer and root-cause exception text.
+
+        .DESCRIPTION
+        Walks the InnerException chain to find the deepest exception and appends its message to
+        the outer message when they differ. This surfaces the real failure reason instead of the
+        generic wrapper text (e.g. "The SSL connection could not be established, see inner exception.
+        (Received an unexpected EOF or 0 bytes from the transport stream.)").
+
+        .PARAMETER Exception
+        The exception whose message chain should be summarised.
+
+        .EXAMPLE
+        $msg = Get-ProbeExceptionMessage -Exception $_.Exception
+        Write-LogMessage -Type WARNING -Message "Probe failed on $server — $msg"
+
+        .NOTES
+        Used in all authentication probe catch blocks to provide actionable diagnostics.
+    #>
+
+    [CmdletBinding()]
+    [OutputType([String])]
+    Param (
+        [Parameter(Mandatory = $true)] [ValidateNotNull()] [System.Exception]$Exception
+    )
+
+    $outer = $Exception.Message
+    $root = $Exception.GetBaseException().Message
+    if ($root -ne $outer -and -not [String]::IsNullOrWhiteSpace($root)) {
+        return "$outer ($root)"
+    }
+    return $outer
+}
 function Get-InventoryPassword {
 
     <#
@@ -190,13 +226,14 @@ function Test-EndpointTcpConnection {
         }
     }
     catch {
-        Write-LogMessage -Type WARNING -Message "$EndpointName connectivity test error: $($_.Exception.Message)"
+        $probeErr = Get-ProbeExceptionMessage -Exception $_.Exception
+        Write-LogMessage -Type WARNING -Message "$EndpointName connectivity test error: $probeErr"
         return [PSCustomObject]@{
             Endpoint  = $EndpointName
             Server    = $Server
             Status    = "Failed"
             Connected = $false
-            Message   = "Connectivity test failed: $($_.Exception.Message)"
+            Message   = "Connectivity test failed: $probeErr"
             Password  = $null
         }
     }
@@ -304,7 +341,7 @@ function Test-FleetManagerAuthentication {
             $sysHeaders = @{ "Authorization" = "Bearer $bearerToken"; "Accept" = "application/json" }
             $null = Invoke-RestMethod -Uri "https://$Server/fleet-lcm/v1/system" `
                 -Method GET -Headers $sysHeaders -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
-            Write-LogMessage -Type INFO -Message "Authenticated: Fleet Lifecycle Manager — $Server"
+            Write-LogMessage -Type INFO -Message "Authentication successful: Fleet Lifecycle Manager — $Server"
             return [PSCustomObject]@{
                 Endpoint  = "Fleet Lifecycle Manager"
                 Server    = $Server
@@ -320,11 +357,19 @@ function Test-FleetManagerAuthentication {
     }
 
     try {
+        # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+        # The plaintext credential string below is created on the .NET managed heap and will remain
+        # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+        # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+        # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+        # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+        # session token immediately after auth. TLS validation is non-negotiable; an insecure
+        # connection exposes credentials in transit, compounding this memory risk.
         $encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("${User}:${password}"))
         $headers = @{ "Authorization" = "Basic $encoded"; "Accept" = "application/json" }
         $null = Invoke-RestMethod -Uri "https://$Server/lcm/lcops/api/v2/settings/system-details" `
             -Method GET -Headers $headers -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
-        Write-LogMessage -Type INFO -Message "Authenticated: Fleet Manager — $Server"
+        Write-LogMessage -Type INFO -Message "Authentication successful: Fleet Manager — $Server"
             return [PSCustomObject]@{
                 Endpoint  = "Fleet Manager"
                 Server    = $Server
@@ -396,13 +441,21 @@ function Test-VrslcmAuthentication {
     }
 
     $password = $tcpResult.Password
+    # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+    # The plaintext credential string below is created on the .NET managed heap and will remain
+    # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+    # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+    # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+    # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+    # session token immediately after auth. TLS validation is non-negotiable; an insecure
+    # connection exposes credentials in transit, compounding this memory risk.
     $encoded  = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("${User}:${password}"))
     $headers  = @{ "Authorization" = "Basic $encoded"; "Accept" = "application/json" }
 
     try {
         $null = Invoke-RestMethod -Uri "https://$Server/lcm/lcops/api/v2/settings/system-details" `
             -Method GET -Headers $headers -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
-        Write-LogMessage -Type INFO -Message "Authenticated: vRSLCM — $Server"
+        Write-LogMessage -Type INFO -Message "Authentication successful: vRSLCM — $Server"
         return [PSCustomObject]@{
             Endpoint  = "vRSLCM"
             Server    = $Server
@@ -428,13 +481,14 @@ function Test-VrslcmAuthentication {
                 Password  = $null
             }
         }
-        Write-LogMessage -Type WARNING -Message "vRSLCM auth probe failed on $Server — $($_.Exception.Message)"
+        $probeErr = Get-ProbeExceptionMessage -Exception $_.Exception
+        Write-LogMessage -Type WARNING -Message "vRSLCM auth probe failed on $Server — $probeErr"
         return [PSCustomObject]@{
             Endpoint  = "vRSLCM"
             Server    = $Server
             Status    = "Failed"
             Connected = $false
-            Message   = "Auth probe failed: $($_.Exception.Message)"
+            Message   = "Auth probe failed: $probeErr"
             Password  = $null
         }
     }
@@ -499,7 +553,7 @@ function Test-SddcManagerAuthentication {
         $null = Invoke-RestMethod -Uri "https://$Server/v1/tokens" `
             -Method POST -Body $tokenBody -ContentType "application/json" `
             -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
-        Write-LogMessage -Type INFO -Message "Authenticated: SDDC Manager — $Server"
+        Write-LogMessage -Type INFO -Message "Authentication successful: SDDC Manager — $Server"
         return [PSCustomObject]@{
             Endpoint  = "SDDC Manager"
             Server    = $Server
@@ -525,13 +579,14 @@ function Test-SddcManagerAuthentication {
                 Password  = $null
             }
         }
-        Write-LogMessage -Type WARNING -Message "SDDC Manager auth probe failed on $Server — $($_.Exception.Message)"
+        $probeErr = Get-ProbeExceptionMessage -Exception $_.Exception
+        Write-LogMessage -Type WARNING -Message "SDDC Manager auth probe failed on $Server — $probeErr"
         return [PSCustomObject]@{
             Endpoint  = "SDDC Manager"
             Server    = $Server
             Status    = "Failed"
             Connected = $false
-            Message   = "Auth probe failed: $($_.Exception.Message)"
+            Message   = "Auth probe failed: $probeErr"
             Password  = $null
         }
     }
@@ -588,7 +643,7 @@ function Test-VcfOpsAuthentication {
 
     $token = Get-VcfOpsRestToken -Server $Server -User $User -Password $password -TimeoutSeconds $TimeoutSeconds
     if (-not [String]::IsNullOrWhiteSpace($token)) {
-        Write-LogMessage -Type INFO -Message "Authenticated: VCF Operations — $Server"
+        Write-LogMessage -Type INFO -Message "Authentication successful: VCF Operations — $Server"
         return [PSCustomObject]@{
             Endpoint  = "VCF Operations"
             Server    = $Server
@@ -662,6 +717,14 @@ function Test-VcenterAuthentication {
 
     $password = $tcpResult.Password
 
+    # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+    # The plaintext credential string below is created on the .NET managed heap and will remain
+    # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+    # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+    # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+    # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+    # session token immediately after auth. TLS validation is non-negotiable; an insecure
+    # connection exposes credentials in transit, compounding this memory risk.
     $basicAuth = [Convert]::ToBase64String(
         [System.Text.Encoding]::UTF8.GetBytes("${User}:${password}")
     )
@@ -669,7 +732,7 @@ function Test-VcenterAuthentication {
         $null = Invoke-RestMethod -Uri "https://$Server/api/session" `
             -Method POST -Headers @{ "Authorization" = "Basic $basicAuth" } `
             -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
-        Write-LogMessage -Type INFO -Message "Authenticated: vCenter — $Server"
+        Write-LogMessage -Type INFO -Message "Authentication successful: vCenter — $Server"
         return [PSCustomObject]@{
             Endpoint  = "vCenter"
             Server    = $Server
@@ -695,13 +758,14 @@ function Test-VcenterAuthentication {
                 Password  = $null
             }
         }
-        Write-LogMessage -Type WARNING -Message "vCenter auth probe failed on $Server — $($_.Exception.Message)"
+        $probeErr = Get-ProbeExceptionMessage -Exception $_.Exception
+        Write-LogMessage -Type WARNING -Message "vCenter auth probe failed on $Server — $probeErr"
         return [PSCustomObject]@{
             Endpoint  = "vCenter"
             Server    = $Server
             Status    = "Failed"
             Connected = $false
-            Message   = "Auth probe failed: $($_.Exception.Message)"
+            Message   = "Auth probe failed: $probeErr"
             Password  = $null
         }
     }
@@ -752,6 +816,14 @@ function Test-NsxManagerAuthentication {
 
     $password = $tcpResult.Password
 
+    # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+    # The plaintext credential string below is created on the .NET managed heap and will remain
+    # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+    # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+    # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+    # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+    # session token immediately after auth. TLS validation is non-negotiable; an insecure
+    # connection exposes credentials in transit, compounding this memory risk.
     $basicAuth = [Convert]::ToBase64String(
         [System.Text.Encoding]::ASCII.GetBytes("admin:$password")
     )
@@ -759,7 +831,7 @@ function Test-NsxManagerAuthentication {
         $null = Invoke-RestMethod -Uri "https://$Server/api/v1/node" `
             -Method GET -Headers @{ "Authorization" = "Basic $basicAuth"; "Accept" = "application/json" } `
             -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
-        Write-LogMessage -Type INFO -Message "Authenticated: NSX Manager — $Server"
+        Write-LogMessage -Type INFO -Message "Authentication successful: NSX Manager — $Server"
         return [PSCustomObject]@{
             Endpoint  = "NSX Manager"
             Server    = $Server
@@ -785,13 +857,14 @@ function Test-NsxManagerAuthentication {
                 Password  = $null
             }
         }
-        Write-LogMessage -Type WARNING -Message "NSX Manager auth probe failed on $Server — $($_.Exception.Message)"
+        $probeErr = Get-ProbeExceptionMessage -Exception $_.Exception
+        Write-LogMessage -Type WARNING -Message "NSX Manager auth probe failed on $Server — $probeErr"
         return [PSCustomObject]@{
             Endpoint  = "NSX Manager"
             Server    = $Server
             Status    = "Failed"
             Connected = $false
-            Message   = "Auth probe failed: $($_.Exception.Message)"
+            Message   = "Auth probe failed: $probeErr"
             Password  = $null
         }
     }
@@ -832,11 +905,17 @@ function Test-PatchScanConnection {
         .PARAMETER NsxManagerUser
         NSX Manager username (required when NsxManagerServer is configured).
 
+        .PARAMETER SddcManagerInstances
+        Array of SDDC Manager instances for multi-SDDC VCF 9 environments.
+        Each element must have: Server (FQDN), User (username), and either
+        PasswordEnvVar (name of the env var holding the password) or Password (resolved plaintext).
+        When set, supersedes SddcManagerServer and SddcManagerUser.
+
         .PARAMETER SddcManagerServer
-        SDDC Manager FQDN or IP (required for vcf5, vcf9).
+        SDDC Manager FQDN or IP (required for vcf5 and single-instance vcf9).
 
         .PARAMETER SddcManagerUser
-        SDDC Manager username (required for vcf5, vcf9).
+        SDDC Manager username (required for vcf5 and single-instance vcf9).
 
         .PARAMETER TimeoutSeconds
         Connection timeout in seconds (1-300, default 30).
@@ -895,6 +974,7 @@ function Test-PatchScanConnection {
     [OutputType([PSCustomObject])]
     Param (
         [Parameter(Mandatory = $true)] [ValidateSet('vcf5', 'vcf9', 'vsphere8', 'vvf9')] [String]$EnvironmentType,
+        [Parameter(Mandatory = $false)] [Object[]]$SddcManagerInstances,
         [Parameter(Mandatory = $false)] [String]$NsxManagerServer,
         [Parameter(Mandatory = $false)] [String]$NsxManagerUser,
         [Parameter(Mandatory = $false)] [String]$SddcManagerServer,
@@ -926,7 +1006,32 @@ function Test-PatchScanConnection {
     try {
         # Test SDDC Manager (VCF 5, VCF 9) — real REST auth probe.
         if (@('vcf5', 'vcf9') -contains $EnvironmentType) {
-            if ([String]::IsNullOrWhiteSpace($SddcManagerServer)) {
+            # Multi-SDDC: test each instance when SddcManagerInstances is provided.
+            if ($SddcManagerInstances -and @($SddcManagerInstances).Count -gt 0) {
+                foreach ($inst in $SddcManagerInstances) {
+                    $instServer = [String]$inst.Server
+                    $instUser   = if ([String]::IsNullOrWhiteSpace($inst.User)) { "administrator@vsphere.local" } else { [String]$inst.User }
+                    # Resolve instance password: indexed env var name (Python server path) or direct value (CLI path).
+                    $instPassword = if ($inst.PasswordEnvVar) { [System.Environment]::GetEnvironmentVariable([String]$inst.PasswordEnvVar) }
+                                    elseif ($inst.Password)    { [String]$inst.Password }
+                                    else                       { $null }
+                    # Bridge to the un-indexed env var that Test-SddcManagerAuthentication reads.
+                    $prevSddcPass = [System.Environment]::GetEnvironmentVariable('SDDC_MANAGER_PASSWORD')
+                    if (-not [String]::IsNullOrWhiteSpace($instPassword)) {
+                        [System.Environment]::SetEnvironmentVariable('SDDC_MANAGER_PASSWORD', $instPassword)
+                    }
+                    try {
+                        $result = Test-SddcManagerAuthentication -Server $instServer -User $instUser -TimeoutSeconds $TimeoutSeconds
+                        $testResults.Add($result)
+                        if ($result.Status -ne "Connected") { $allSuccess = $false }
+                    }
+                    finally {
+                        # Restore the previous SDDC_MANAGER_PASSWORD to isolate iterations.
+                        [System.Environment]::SetEnvironmentVariable('SDDC_MANAGER_PASSWORD', $prevSddcPass)
+                    }
+                }
+            }
+            elseif ([String]::IsNullOrWhiteSpace($SddcManagerServer)) {
                 $testResults.Add([PSCustomObject]@{
                     Endpoint  = "SDDC Manager"
                     Server    = "NOT_CONFIGURED"

@@ -95,7 +95,7 @@ function Export-PatchScanFindings {
     try {
         $directory = [System.IO.Path]::GetDirectoryName($resolvedPath)
         if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
-            New-Item -ItemType Directory -Path $directory -Force | Out-Null
+            $null = New-OwnerOnlyDirectory -Path $directory -Force
             Write-LogMessage -Type DEBUG -Message "Created findings directory: $directory"
         }
 
@@ -106,9 +106,10 @@ function Export-PatchScanFindings {
             versionCatalog  = @($VersionCatalog)
         }
         $json     = ConvertTo-Json -InputObject $output -Depth $Script:JSON_SERIALIZE_DEPTH -ErrorAction Stop
-        $tempPath = Join-Path -Path $directory -ChildPath "findings_$(New-Guid).tmp"
+        $tempPathUnrestricted = Join-Path -Path $directory -ChildPath "findings_$(New-Guid).tmp"
 
         # Atomic write: temp file in same directory + rename so readers never see a partial file.
+        $tempPath = New-OwnerOnlyFile -Path $tempPathUnrestricted
         $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
         [System.IO.File]::WriteAllText($tempPath, $json, $utf8NoBom)
         Move-Item -LiteralPath $tempPath -Destination $resolvedPath -Force
@@ -171,7 +172,7 @@ function Export-PatchScanFindingsCSV {
     try {
         $directory = [System.IO.Path]::GetDirectoryName($resolvedPath)
         if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
-            New-Item -ItemType Directory -Path $directory -Force | Out-Null
+            $null = New-OwnerOnlyDirectory -Path $directory -Force
         }
 
         $findings = @($Findings)

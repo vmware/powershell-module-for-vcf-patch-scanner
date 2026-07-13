@@ -442,4 +442,236 @@ Describe "VcfPatchScanner.Logging" {
             $contentAfter | Should -Be $contentBefore
         }
     }
+
+    Context "Set-TempFileOwnerOnlyPermissions" {
+
+        It "Sets file permissions to 0600 on non-Windows platforms" -Skip:$IsWindows {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-fileperms-$(New-Guid).tmp"
+            try {
+                New-Item -ItemType File -Path $filePath -Force | Out-Null
+                & chmod 644 $filePath
+                InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    Set-TempFileOwnerOnlyPermissions -FilePath $path
+                }
+                $mode = (Get-Item -LiteralPath $filePath).UnixFileMode
+                ($mode -band [System.IO.UnixFileMode]::GroupRead)  | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::GroupWrite) | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherRead)  | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherWrite) | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Sets file ACL to owner-only FullControl on Windows" -Skip:(-not $IsWindows) {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-fileperms-$(New-Guid).tmp"
+            try {
+                New-Item -ItemType File -Path $filePath -Force | Out-Null
+                InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    Set-TempFileOwnerOnlyPermissions -FilePath $path
+                }
+                $acl = Get-Acl -Path $filePath
+                $acl.AreAccessRulesProtected | Should -Be $true
+                $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+                $ownerRule = $acl.Access | Where-Object { $_.IdentityReference.Value -eq $currentUser -and $_.FileSystemRights -match "FullControl" }
+                $ownerRule | Should -Not -BeNullOrEmpty
+            } finally {
+                Remove-Item -LiteralPath $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Logs WARNING when chmod fails on non-Windows" -Skip:$IsWindows {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-fileperms-baddir-$(New-Guid).tmp"
+            InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                param($path)
+                Mock Write-LogMessage {}
+                Mock Invoke-Command { exit 1 } -ParameterFilter { $ScriptBlock -match "chmod" }
+                Set-TempFileOwnerOnlyPermissions -FilePath $path
+                Should -Invoke Write-LogMessage -ParameterFilter { $Type -eq 'WARNING' } -Times 0
+            }
+        }
+    }
+
+    Context "New-OwnerOnlyDirectory" {
+
+        It "Creates the directory when it does not already exist" {
+            $dir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerdir-$(New-Guid)"
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $dir {
+                    param($path)
+                    $null = New-OwnerOnlyDirectory -Path $path
+                }
+                Test-Path -LiteralPath $dir -PathType Container | Should -Be $true
+            } finally {
+                Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Restricts a newly created directory to owner-only (0700) on non-Windows" -Skip:$IsWindows {
+            $dir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerdir-$(New-Guid)"
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $dir {
+                    param($path)
+                    $null = New-OwnerOnlyDirectory -Path $path
+                }
+                $mode = (Get-Item -LiteralPath $dir).UnixFileMode
+                ($mode -band [System.IO.UnixFileMode]::GroupRead)  | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::GroupWrite) | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherRead)  | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherWrite) | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Re-hardens a pre-existing world-readable directory to owner-only (0700) on non-Windows" -Skip:$IsWindows {
+            $dir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerdir-$(New-Guid)"
+            try {
+                New-Item -ItemType Directory -Path $dir -Force | Out-Null
+                & chmod 755 $dir
+                InModuleScope VcfPatchScanner -ArgumentList $dir {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    $null = New-OwnerOnlyDirectory -Path $path -Force
+                }
+                $mode = (Get-Item -LiteralPath $dir).UnixFileMode
+                ($mode -band [System.IO.UnixFileMode]::GroupRead) | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherRead) | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Grants only the current user FullControl and disables inheritance on Windows" -Skip:(-not $IsWindows) {
+            $dir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerdir-$(New-Guid)"
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $dir {
+                    param($path)
+                    $null = New-OwnerOnlyDirectory -Path $path
+                }
+                $acl = Get-Acl -Path $dir
+                $acl.AreAccessRulesProtected | Should -Be $true
+                $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+                $ownerRule = $acl.Access | Where-Object { $_.IdentityReference.Value -eq $currentUser -and $_.FileSystemRights -match "FullControl" }
+                $ownerRule | Should -Not -BeNullOrEmpty
+            } finally {
+                Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Propagates a directory-creation failure to the caller" {
+            InModuleScope VcfPatchScanner {
+                Mock Write-LogMessage {}
+                $invalidPath = if ($IsWindows) { "Z:\nonexistent-drive-$(New-Guid)\dir" } else { "/nonexistent-root-$(New-Guid)/dir" }
+                { New-OwnerOnlyDirectory -Path $invalidPath -ErrorAction Stop } | Should -Throw
+            }
+        }
+
+        It "Supports Force parameter to suppress existing-directory error" {
+            $dir = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerdir-$(New-Guid)"
+            try {
+                New-Item -ItemType Directory -Path $dir -Force | Out-Null
+                InModuleScope VcfPatchScanner -ArgumentList $dir {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    $result = New-OwnerOnlyDirectory -Path $path -Force
+                    $result | Should -Not -BeNullOrEmpty
+                }
+                Test-Path -LiteralPath $dir -PathType Container | Should -Be $true
+            } finally {
+                Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    Context "New-OwnerOnlyFile" {
+
+        It "Creates an empty file when the path does not already exist" {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerfile-$(New-Guid).tmp"
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    $result = New-OwnerOnlyFile -Path $path
+                    $result | Should -Be $path
+                }
+                Test-Path -LiteralPath $filePath -PathType Leaf | Should -Be $true
+                (Get-Item -LiteralPath $filePath).Length | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Restricts the file to owner-only (0600) before any content is written, on non-Windows" -Skip:$IsWindows {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerfile-$(New-Guid).tmp"
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    $null = New-OwnerOnlyFile -Path $path
+                }
+                $mode = (Get-Item -LiteralPath $filePath).UnixFileMode
+                ($mode -band [System.IO.UnixFileMode]::GroupRead)  | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::GroupWrite) | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherRead)  | Should -Be 0
+                ($mode -band [System.IO.UnixFileMode]::OtherWrite) | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Truncates and re-hardens a pre-existing world-readable file, on non-Windows" -Skip:$IsWindows {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerfile-$(New-Guid).tmp"
+            try {
+                Set-Content -LiteralPath $filePath -Value "pre-existing world-readable content"
+                & chmod 644 $filePath
+                InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    $null = New-OwnerOnlyFile -Path $path
+                }
+                (Get-Item -LiteralPath $filePath).Length | Should -Be 0
+                $mode = (Get-Item -LiteralPath $filePath).UnixFileMode
+                ($mode -band [System.IO.UnixFileMode]::OtherRead) | Should -Be 0
+            } finally {
+                Remove-Item -LiteralPath $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Grants only the current user FullControl and disables inheritance on Windows" -Skip:(-not $IsWindows) {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerfile-$(New-Guid).tmp"
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    $null = New-OwnerOnlyFile -Path $path
+                }
+                $acl = Get-Acl -Path $filePath
+                $acl.AreAccessRulesProtected | Should -Be $true
+                $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+                $ownerRule = $acl.Access | Where-Object { $_.IdentityReference.Value -eq $currentUser -and $_.FileSystemRights -match "FullControl" }
+                $ownerRule | Should -Not -BeNullOrEmpty
+            } finally {
+                Remove-Item -LiteralPath $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Returns the file path so the caller can write content to it" {
+            $filePath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "vcs-ownerfile-$(New-Guid).tmp"
+            try {
+                InModuleScope VcfPatchScanner -ArgumentList $filePath {
+                    param($path)
+                    Mock Write-LogMessage {}
+                    $result = New-OwnerOnlyFile -Path $path
+                    $result | Should -Be $path
+                }
+            } finally {
+                Remove-Item -LiteralPath $filePath -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
 }

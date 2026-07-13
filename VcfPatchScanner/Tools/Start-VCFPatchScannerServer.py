@@ -70,7 +70,7 @@ try:
 except ImportError:
     _UPSTREAM_SSL_CTX = ssl.create_default_context()
 
-_SERVER_VERSION             = "1.0.0.1006"
+_SERVER_VERSION             = "1.0.0.1007"
 _DEFAULT_ADVISORY_FILE      = "securityAdvisory.json"
 _VCENTER_BUILD_MAP_FILE     = "vcenterBuildMap.json"
 _DEFAULT_FINDINGS_DIR       = "Findings"
@@ -83,7 +83,7 @@ _HTTP_HANDLER_TIMEOUT       = 30   # seconds; applied to each accepted socket by
 # ConnectionAbortedError = WinError 10053 (Windows "software caused connection abort",
 #   raised when the local TCP stack aborts a send after the remote peer disappears)
 _CLIENT_DISCONNECT_ERRORS   = (ConnectionResetError, BrokenPipeError, ConnectionAbortedError)
-_VALIDATE_TIMEOUT_SECONDS   = 120  # max time to wait for a validate-credentials subprocess
+_VALIDATE_TIMEOUT_SECONDS_MIN = 120  # floor for a validate-credentials subprocess ceiling
 # Discovery subprocess ceiling = user timeout + 15 s fixed startup overhead.
 # The user's configured timeout is the primary control; the buffer covers PowerShell
 # startup, module load, and any single internal retry without doubling the wait.
@@ -576,12 +576,19 @@ def _validate_settings(data: dict) -> "str | None":
             return "environments must be a list."
         if len(envs) > 100:
             return "environments must contain at most 100 items."
+        seen_names: dict = {}
         for i, env in enumerate(envs):
             if not isinstance(env, dict):
                 return f"environments[{i}] must be an object."
             env_error = _validate_env_config(env)
             if env_error:
                 return f"environments[{i}]: {env_error}"
+            name_key = str(env.get("name", "")).strip().lower()
+            if name_key and name_key in seen_names:
+                return (f"environments[{i}]: an environment named "
+                        f"'{env.get('name', '').strip()}' already exists.")
+            if name_key:
+                seen_names[name_key] = i
 
     hidden_cols = data.get("hiddenCols")
     if hidden_cols is not None and not isinstance(hidden_cols, list):
@@ -707,6 +714,36 @@ _ENV_TYPE_SERVER_FIELDS: dict = {
 }
 
 
+def _sddc_instances(env: dict) -> "list[dict]":
+    """Return SDDC Manager instances as a list of {fqdn, user} dicts.
+
+    Uses sddcManagerFqdns (multi-SDDC) when available, falling back to
+    sddcManagerServer / sddcManagerUser (legacy single). Returns [] when
+    no SDDC Manager is configured.
+    """
+    fqdns = env.get("sddcManagerFqdns") or []
+    creds = env.get("sddcManagerCredentials") or []
+    if isinstance(fqdns, list) and fqdns:
+        result = []
+        for fqdn in fqdns:
+            fqdn = (fqdn or "").strip()
+            if not fqdn:
+                continue
+            user = ""
+            for cred in creds:
+                if (cred.get("fqdn") or "").strip() == fqdn:
+                    user = (cred.get("user") or "").strip()
+                    break
+            result.append({"fqdn": fqdn, "user": user})
+        return result
+    # Legacy single SDDC Manager
+    server = (env.get("sddcManagerServer") or "").strip()
+    user   = (env.get("sddcManagerUser") or "").strip()
+    if server:
+        return [{"fqdn": server, "user": user}]
+    return []
+
+
 def _generate_secret_reference_name(env_name: str, endpoint_type: str, instance: int = 1) -> str:
     """Generate a secret reference name in the format: {ENV}_{ENDPOINT}_{INSTANCE}_PASSWORD.
 
@@ -748,13 +785,21 @@ def _generate_environments_config(env: dict, passwords: dict) -> dict:
 
     # VCF 9.x / VCF 5.x endpoints
     if env_type in ("vcf9", "vcf5"):
-        sddc_pass = passwords.get("sddcPass")
-        if sddc_pass:
-            endpoints["sddc_manager"] = {
-                "server": env.get("sddcManagerServer", "").strip(),
-                "username": env.get("sddcManagerUser", "").strip(),
-                "password_secret_ref": _generate_secret_reference_name(env_name, "sddc_manager", 1)
-            }
+        instances = _sddc_instances(env)
+        if instances:
+            managers_list = []
+            for i, inst in enumerate(instances):
+                # Try indexed key first (sddcPass_0, sddcPass_1, …); fall back to legacy sddcPass.
+                # The UI sends sddcPass_0 for any env with sddcManagerFqdns, even single-entry.
+                sddc_pass = passwords.get(f"sddcPass_{i}") or passwords.get("sddcPass")
+                if sddc_pass:
+                    managers_list.append({
+                        "server":               inst["fqdn"],
+                        "username":             inst["user"],
+                        "password_secret_ref":  _generate_secret_reference_name(env_name, "sddc_manager", i + 1),
+                    })
+            if managers_list:
+                endpoints["sddc_managers"] = managers_list
 
         if env_type == "vcf9":
             # VCF Operations (skip for 9.1 where Fleet Controller is authoritative)
@@ -918,9 +963,20 @@ def _is_vcf91(env: dict) -> bool:
 
     VCF 9.1 uses Fleet Controller as the authoritative source for VCF Operations
     inventory; the native VCF Operations API is not called and its credential is
-    not required.
+    not required. Uses explicit vcfMinorVersion if set (authoritative); falls back
+    to inferring from the environment name (e.g., "prod-vcf910" → 9.1) only when
+    no explicit version is configured.
     """
-    return env.get("type") == "vcf9" and env.get("vcfMinorVersion", "") == "9.1"
+    if env.get("type") != "vcf9":
+        return False
+    minor = env.get("vcfMinorVersion", "").strip()
+    if minor:
+        # Explicit version set: treat as authoritative, skip name inference.
+        return minor == "9.1"
+    # Fallback: infer from environment name only when no explicit version is set.
+    import re
+    env_name = str(env.get("name", ""))
+    return bool(re.search(r'vcf\s*91', env_name, re.IGNORECASE))
 
 
 def _is_vvf91(env: dict) -> bool:
@@ -930,8 +986,16 @@ def _is_vvf91(env: dict) -> bool:
     inventory; the native VCF Operations API is not called and its credential is
     not required at scan time.  Standalone vCenter FQDNs are stored in the
     environment config during wizard authentication and passed via VCENTER_FQDNS.
+    Uses explicit vcfMinorVersion if set, or infers from environment name as fallback.
     """
-    return env.get("type") == "vvf9" and env.get("vcfMinorVersion", "") == "9.1"
+    if env.get("type") != "vvf9":
+        return False
+    if env.get("vcfMinorVersion", "") == "9.1":
+        return True
+    # Fallback: infer from environment name
+    import re
+    env_name = str(env.get("name", ""))
+    return bool(re.search(r'vvf\s*91|vsf\s*91', env_name, re.IGNORECASE))
 
 
 def _env_type_args(env: dict) -> list:
@@ -957,9 +1021,35 @@ def _env_type_args(env: dict) -> list:
     for key, flag in fields:
         if skip_ops and key in ops_keys:
             continue
+        if key in ("sddcManagerServer", "sddcManagerUser") and t in ("vcf9", "vcf5"):
+            # Handled separately below via _sddc_instances.
+            continue
         v = env.get(key, "").strip()
         if v:
             args += [flag, v]
+
+    # VCF 9 / VCF 5: always route SDDC Manager through _sddc_instances so both
+    # sddcManagerFqdns (array) and sddcManagerServer (flat) fields are covered.
+    if t in ("vcf9", "vcf5"):
+        instances = _sddc_instances(env)
+        if instances:
+            inst_json = json.dumps([
+                {"server": inst["fqdn"], "user": inst["user"], "passwordEnvVar": f"SDDC_MANAGER_{i + 1}_PASSWORD"}
+                for i, inst in enumerate(instances)
+            ])
+            args += ["-SddcManagerInstancesJson", inst_json]
+
+    if t == "vvf9":
+        # Resolve vCenter FQDN and username from per-vCenter credentials (new model).
+        # Fall back to flat vcenterServer/vcenterUser for backward compatibility.
+        _vc_creds = env.get("vcenterCredentials") or []
+        _vc_fqdn  = (_vc_creds[0].get("fqdn", "").strip() if _vc_creds else "") or env.get("vcenterServer", "").strip()
+        _vc_user  = (_vc_creds[0].get("user", "").strip() if _vc_creds else "") or env.get("vcenterUser", "").strip()
+        if _vc_fqdn:
+            args += ["-VcenterServer", _vc_fqdn]
+        if _vc_user:
+            args += ["-VcenterUser", _vc_user]
+
     vcf_minor = env.get("vcfMinorVersion", "").strip()
     if vcf_minor:
         args += ["-VcfMinorVersion", vcf_minor]
@@ -969,6 +1059,57 @@ def _env_type_args(env: dict) -> list:
 # ---------------------------------------------------------------------------
 # Credential validation via PowerShell
 # ---------------------------------------------------------------------------
+
+def _validate_probe_slots(env: dict) -> int:
+    """Return the worst-case number of sequential TimeoutSeconds-bounded network
+    probes PowerShell must run to validate every endpoint configured for env.
+
+    Each SDDC Manager instance costs 2 slots (TCP probe + POST /v1/tokens).
+    Fleet Manager costs 4 (TCP + VSP bearer-token attempt + fleet-lcm /v1/system
+    call + the VCF 9.0 lcops fallback attempt) because Test-FleetManagerAuthentication
+    tries both the 9.1 and 9.0 auth paths sequentially before reporting failure.
+    VCF Operations, vRSLCM, vCenter, and NSX Manager each cost 2 (TCP + one REST call).
+    """
+    t = env.get("type", "")
+    slots = 0
+    if t in ("vcf9", "vcf5"):
+        slots += 2 * len(_sddc_instances(env))
+        if t == "vcf5" and env.get("vrslcmServer", "").strip():
+            slots += 2
+        if t == "vcf9":
+            if not _is_vcf91(env) and env.get("vcfOpsServer", "").strip():
+                slots += 2
+            if env.get("vcfFMServer", "").strip():
+                slots += 4
+    elif t == "vvf9":
+        if not _is_vvf91(env) and env.get("vcfOpsServer", "").strip():
+            slots += 2
+        if env.get("vcfFMServer", "").strip():
+            slots += 4
+        vc_creds = env.get("vcenterCredentials") or []
+        if vc_creds or env.get("vcenterServer", "").strip():
+            slots += 2
+    elif t == "vsphere8":
+        if env.get("vcenterServer", "").strip():
+            slots += 2
+        if env.get("nsxManagerServer", "").strip():
+            slots += 2
+    return max(slots, 1)
+
+
+def _validate_subprocess_timeout(env: dict, timeout_seconds: int) -> int:
+    """Return the subprocess ceiling for a credential-validation call.
+
+    A fixed ceiling does not scale with the number of endpoints PowerShell tests
+    sequentially within a single invocation — a multi-SDDC-Manager VCF 9 environment
+    (2+ SDDC Managers, plus Fleet Manager's two sequential auth-path attempts) can
+    legitimately need several times the per-endpoint ConnectionTimeoutSeconds when
+    one or more endpoints are slow or unreachable. Killing the process too early
+    discards every endpoint's result, not just the slow one, and reads as the
+    pre-scan check hanging rather than reporting a clear per-endpoint failure.
+    """
+    return max(_validate_probe_slots(env) * timeout_seconds + 15, _VALIDATE_TIMEOUT_SECONDS_MIN)
+
 
 def _run_validation_in_powershell(env: dict, passwords: dict, timeout_seconds: int = 30) -> "tuple[list, str | None]":
     """Run credential validation via PowerShell -ValidateCredentialsOnly.
@@ -992,10 +1133,33 @@ def _run_validation_in_powershell(env: dict, passwords: dict, timeout_seconds: i
     ]
     if env.get("name", "").strip():
         args += ["-EnvironmentDisplayName", env["name"].strip()]
+    ops_keys = {"vcfOpsServer", "vcfOpsUser"}
+    # Both VCF 9.1 and VVF 9.1 route through Fleet Controller for VCF Operations.
+    # No password is set in the subprocess env for these environments, so forwarding
+    # the server/user args would cause a spurious "VCF Operations password not
+    # configured" warning when TCP to the VCF Ops host succeeds.
+    skip_ops = _is_vcf91(env) or _is_vvf91(env)
     for field_key, ps_flag in _ENV_TYPE_FIELDS.get(t, []):
+        if skip_ops and field_key in ops_keys:
+            continue
+        if field_key in ("sddcManagerServer", "sddcManagerUser") and t in ("vcf9", "vcf5"):
+            # Handled separately below via _sddc_instances.
+            continue
         v = env.get(field_key, "").strip() if isinstance(env.get(field_key), str) else ""
         if v:
             args += [ps_flag, v]
+
+    # VCF 9 / VCF 5: always route SDDC Manager through _sddc_instances so both
+    # sddcManagerFqdns (array) and sddcManagerServer (flat) fields are covered.
+    if t in ("vcf9", "vcf5"):
+        instances = _sddc_instances(env)
+        if instances:
+            inst_json = json.dumps([
+                {"server": inst["fqdn"], "user": inst["user"], "passwordEnvVar": f"SDDC_MANAGER_{i + 1}_PASSWORD"}
+                for i, inst in enumerate(instances)
+            ])
+            args += ["-SddcManagerInstancesJson", inst_json]
+
     if t == "vvf9":
         # Resolve vCenter FQDN and username from per-vCenter credentials (new model).
         # Fall back to flat vcenterServer/vcenterUser for backward compatibility.
@@ -1011,6 +1175,7 @@ def _run_validation_in_powershell(env: dict, passwords: dict, timeout_seconds: i
         args += ["-VcfMinorVersion", vcf_minor]
 
     env_vars = _build_env_vars(env, passwords)
+    subprocess_timeout = _validate_subprocess_timeout(env, timeout_seconds)
 
     try:
         proc = subprocess.Popen(
@@ -1024,7 +1189,7 @@ def _run_validation_in_powershell(env: dict, passwords: dict, timeout_seconds: i
         with _validate_lock:
             _validate_proc = proc
         try:
-            stdout, stderr = proc.communicate(timeout=_VALIDATE_TIMEOUT_SECONDS)
+            stdout, stderr = proc.communicate(timeout=subprocess_timeout)
         finally:
             with _validate_lock:
                 _validate_proc = None
@@ -1053,7 +1218,7 @@ def _run_validation_in_powershell(env: dict, passwords: dict, timeout_seconds: i
         proc.communicate()
         with _validate_lock:
             _validate_proc = None
-        return [], f"Validation timed out (exceeded {_VALIDATE_TIMEOUT_SECONDS} seconds)"
+        return [], f"Validation timed out (exceeded {subprocess_timeout} seconds)"
     except Exception as exc:
         with _validate_lock:
             _validate_proc = None
@@ -1338,7 +1503,39 @@ def _build_pending_endpoint_items(env: dict, prefix: str) -> list:
     t        = env.get("type", "")
     env_name = env.get("name", "")
     items    = []
+    # VCF 9.1 / VVF 9.1 route through Fleet Controller for VCF Operations;
+    # the native Ops API is skipped in PowerShell validation, so omit it here too.
+    ops_fields = {"vcfOpsServer"} if (_is_vcf91(env) or _is_vvf91(env)) else set()
     for field in _ENV_TYPE_SERVER_FIELDS.get(t, []):
+        if field in ops_fields:
+            continue
+        # Special handling for VCF9 SDDC Manager: check both old single field and new array
+        if field == "sddcManagerServer" and t == "vcf9":
+            # Try new multi-SDDC Manager structure first
+            sddc_fqdns = env.get("sddcManagerFqdns", [])
+            if isinstance(sddc_fqdns, list) and len(sddc_fqdns) > 0:
+                for sddc in sddc_fqdns:
+                    if sddc:
+                        items.append({
+                            "label":    f"{prefix}SDDC Manager \"{sddc}\"",
+                            "endpoint": "SDDC Manager",
+                            "server":   sddc,
+                            "envName":  env_name,
+                            "status":   "checking",
+                        })
+                continue
+            # Fall back to old single SDDC Manager field only if new structure is empty
+            sddc_server = env.get(field, "").strip()
+            if sddc_server:
+                items.append({
+                    "label":    f"{prefix}SDDC Manager \"{sddc_server}\"",
+                    "endpoint": "SDDC Manager",
+                    "server":   sddc_server,
+                    "envName":  env_name,
+                    "status":   "checking",
+                })
+            continue
+
         server = env.get(field, "").strip()
         if not server:
             continue
@@ -1447,10 +1644,26 @@ def _validate_env_config(env: dict) -> "str | None":
     """Return an error string or None."""
     t = env.get("type", "")
     if t in ("vcf9", "vcf5"):
-        if not env.get("sddcManagerServer", "").strip():
+        # Support both single SDDC Manager (legacy sddcManagerServer) and multiple (new sddcManagerFqdns array)
+        has_sddc_server = bool(env.get("sddcManagerServer", "").strip())
+        has_sddc_fqdns = isinstance(env.get("sddcManagerFqdns"), list) and len(env.get("sddcManagerFqdns", [])) > 0
+        if not (has_sddc_server or has_sddc_fqdns):
             return "SDDC Manager Server is required."
-        if not env.get("sddcManagerUser", "").strip():
+
+        # For legacy single SDDC Manager, validate username
+        if has_sddc_server and not env.get("sddcManagerUser", "").strip():
             return "SDDC Manager Username is required."
+
+        # For new multi-SDDC Manager, validate that credentials were provided
+        if has_sddc_fqdns:
+            creds = env.get("sddcManagerCredentials", [])
+            if not isinstance(creds, list) or len(creds) == 0:
+                return "SDDC Manager credentials are required."
+            # Check that each FQDN has a corresponding username
+            for cred in creds:
+                if not cred.get("user", "").strip():
+                    return "SDDC Manager Username is required."
+
         if t == "vcf9":
             if not _is_vcf91(env):
                 # VCF 9.1+ uses Fleet Controller as the authoritative VCF Operations source;
@@ -1556,6 +1769,28 @@ def _build_env_vars(env: dict, passwords: dict) -> dict:
     and related validation helpers (SDDC_MANAGER_PASSWORD, VCF_OPS_PASSWORD, etc.).
     Credentials are always provided explicitly through the UI — never inherited from
     the parent shell.
+
+    SECURITY NOTE: Environment Variable Credential Exposure During Subprocess Execution
+    ──────────────────────────────────────────────────────────────────────────────────
+    During PowerShell subprocess execution, the plaintext vCenter/SDDC Manager password in
+    environment variables is readable from the process environment by any same-user process:
+    - macOS/Linux: /proc/[pid]/environ (readable by same user without root)
+    - Windows: via WMI or NTDLL API (readable by same-user token)
+    The password is NOT visible in process command-line listings (ps, Get-Process output).
+
+    Risk model:
+    - CONTAINED: Only to same-user processes on the same host. Root/system processes cannot
+      read another user's environment; different-user processes are blocked at OS level.
+    - TEMPORARY: The window is the subprocess runtime only (typically 10-60 seconds).
+    - NO ALTERNATIVES: PowerShell has no secure mechanism to pass credentials to child CLI
+      processes (VCF CLI, kubectl) — stdin is blocked by noninteractive CLI design, files are
+      worse (filesystem exposure), command-line args are visible in process listings.
+
+    This is as secure as PowerShell's credential-passing limitations allow. Mitigations:
+    1. User sessions isolate to authorized operators (never shared/service accounts)
+    2. Subprocess env is built with allowlist-only vars (unknown cred vars never forwarded)
+    3. Python process environment is discarded after subprocess completes
+    4. VCF CLI exits immediately after auth, converting to session tokens
     """
     ev = _base_subprocess_env()
     t = env.get("type", "")
@@ -1564,9 +1799,19 @@ def _build_env_vars(env: dict, passwords: dict) -> dict:
 
     match t:
         case "vcf9" | "vcf5":
-            sddc_pass = passwords.get("sddcPass")
-            if sddc_pass:
-                ev["SDDC_MANAGER_PASSWORD"] = sddc_pass
+            instances = _sddc_instances(env)
+            for i, _ in enumerate(instances):
+                # Always try the indexed key first (set by the UI when sddcManagerFqdns is
+                # present, even for a single entry), then fall back to the legacy sddcPass key.
+                # This keeps Python consistent with the UI's _isMultiSddc / _sddcPasswordKeys
+                # logic, which returns ['sddcPass_0'] for any env that has sddcManagerFqdns
+                # regardless of length, and ['sddcPass'] otherwise.
+                sddc_pass = passwords.get(f"sddcPass_{i}") or passwords.get("sddcPass") or fallback_pass
+                if sddc_pass:
+                    ev[f"SDDC_MANAGER_{i + 1}_PASSWORD"] = sddc_pass
+                    if i == 0:
+                        # Backward compat: first instance also sets the un-indexed var.
+                        ev["SDDC_MANAGER_PASSWORD"] = sddc_pass
             match t:
                 case "vcf9":
                     if not _is_vcf91(env):
@@ -1611,6 +1856,28 @@ def _build_scan_env_vars(env: dict, passwords: dict) -> dict:
     Sets the new-scheme environment variable names resolved by Import-EnvironmentsFromConfig
     from the environments.json config file (e.g. VCF5_SDDC_MANAGER_1_PASSWORD).
     These match the password_secret_ref values written by _generate_environments_config.
+
+    SECURITY NOTE: Environment Variable Credential Exposure During Subprocess Execution
+    ──────────────────────────────────────────────────────────────────────────────────
+    During PowerShell subprocess execution, the plaintext vCenter/SDDC Manager password in
+    environment variables is readable from the process environment by any same-user process:
+    - macOS/Linux: /proc/[pid]/environ (readable by same user without root)
+    - Windows: via WMI or NTDLL API (readable by same-user token)
+    The password is NOT visible in process command-line listings (ps, Get-Process output).
+
+    Risk model:
+    - CONTAINED: Only to same-user processes on the same host. Root/system processes cannot
+      read another user's environment; different-user processes are blocked at OS level.
+    - TEMPORARY: The window is the subprocess runtime only (typically 10-60 seconds).
+    - NO ALTERNATIVES: PowerShell has no secure mechanism to pass credentials to child CLI
+      processes (VCF CLI, kubectl) — stdin is blocked by noninteractive CLI design, files are
+      worse (filesystem exposure), command-line args are visible in process listings.
+
+    This is as secure as PowerShell's credential-passing limitations allow. Mitigations:
+    1. User sessions isolate to authorized operators (never shared/service accounts)
+    2. Subprocess env is built with allowlist-only vars (unknown cred vars never forwarded)
+    3. Python process environment is discarded after subprocess completes
+    4. VCF CLI exits immediately after auth, converting to session tokens
     """
     ev = _base_subprocess_env()
     env_name = env.get("name", "").strip() or env.get("type", "")
@@ -1620,10 +1887,19 @@ def _build_scan_env_vars(env: dict, passwords: dict) -> dict:
 
     match t:
         case "vcf9" | "vcf5":
-            sddc_pass = passwords.get("sddcPass")
-            if sddc_pass:
-                ref = _generate_secret_reference_name(env_name, "sddc_manager", 1)
-                ev[ref] = sddc_pass
+            instances = _sddc_instances(env)
+            for i, _ in enumerate(instances):
+                # Try indexed key first, then legacy sddcPass — see _build_env_vars comment.
+                sddc_pass = passwords.get(f"sddcPass_{i}") or passwords.get("sddcPass") or fallback_pass
+                if sddc_pass:
+                    # Namespaced ref — consumed by Import-EnvironmentsFromConfig (config-file path).
+                    ref = _generate_secret_reference_name(env_name, "sddc_manager", i + 1)
+                    ev[ref] = sddc_pass
+                    # Simple indexed name — consumed by EntryPoint.ps1 SDDC Manager loop.
+                    ev[f"SDDC_MANAGER_{i + 1}_PASSWORD"] = sddc_pass
+                    if i == 0:
+                        # Un-indexed backward-compat var for the legacy single-SDDC path.
+                        ev["SDDC_MANAGER_PASSWORD"] = sddc_pass
             match t:
                 case "vcf9":
                     if not _is_vcf91(env):
@@ -1682,7 +1958,15 @@ def _configured_hosts(env: dict) -> set:
     if env.get("type") == "vvf9":
         return set()
     hosts = set()
-    for field in ("sddcManagerServer", "vcfOpsServer", "vcfFMServer",
+    # Handle both old single SDDC Manager and new multi-SDDC Manager
+    if env.get("sddcManagerServer", "").strip():
+        hosts.add(env.get("sddcManagerServer", "").strip().lower())
+    elif isinstance(env.get("sddcManagerFqdns"), list):
+        for sddc in env.get("sddcManagerFqdns", []):
+            if sddc and sddc.strip():
+                hosts.add(sddc.strip().lower())
+
+    for field in ("vcfOpsServer", "vcfFMServer",
                   "vcenterServer", "nsxManagerServer", "vrslcmServer"):
         if _is_vcf91(env) and field == "vcfOpsServer":
             continue
@@ -2377,8 +2661,11 @@ def _download_advisory_if_changed(local_path: Path) -> dict:
         pass  # ETag cache failure is non-fatal — next check will re-download once.
 
     # --- Step 9: Mirror to the module Data directory ---
+    # Guard: only mirror when local_path is inside _USER_BASE_DIR. This prevents
+    # test runs (where advisory_path is a temp dir unrelated to _USER_BASE_DIR)
+    # from overwriting the bundled Data/securityAdvisory.json in the source tree.
     module_data = Path(__file__).parent.parent / "Data" / local_path.name
-    if module_data != local_path:
+    if module_data != local_path and local_path.is_relative_to(_USER_BASE_DIR.resolve()):
         try:
             module_data.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(local_path, module_data)
@@ -2848,7 +3135,7 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             combined = _enrich_findings(combined, _resolve_advisory_path(settings))
             combined = [_add_pascal_aliases(f) for f in combined]
-            self._json(combined if combined else {"error": "No findings in session."})
+            self._json(combined)
 
         elif path == "/scan/download":
             # Explicit origin check required — success path writes raw binary bytes, not via _json().
@@ -3276,6 +3563,7 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.dumps(config, indent=2).encode("utf-8")
             if len(config["environments"]) == 1:
                 raw_name = config["environments"][0].get("name", "environment")
+                raw_name = re.sub(r"[\x00-\x1f\x7f]", "", raw_name)
                 safe     = raw_name.replace('"', "_").replace("\\", "_").replace(" ", "-")
                 filename = f"{safe}-environments.json"
             else:
@@ -3306,6 +3594,9 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ok": True, "checkUpdateDisabled": settings["checkUpdateDisabled"]})
 
         elif path == "/module/install-update":
+            if not self._check_origin():
+                self._send_forbidden()
+                return
             # Start an Update-Module subprocess in the background if one is not already running.
             with _module_install_lock:
                 current_status = _module_install_state.get("status", "idle")
@@ -3468,6 +3759,19 @@ class Handler(BaseHTTPRequestHandler):
                 error_detail = _sanitize_error_message(f"vRSLCM discovery exception: {str(e)}")
                 logger.error(error_detail)
                 self._json({"vrslcmFqdn": None, "vrslcmVersion": "", "error": error_detail})
+
+        elif path == "/scan/collect-logs-ack":
+            try:
+                body = json.loads(raw) if raw else {}
+            except Exception as e:
+                logger.debug(f"Bad JSON in POST /scan/collect-logs-ack: {e}")
+                self._json({"error": "Invalid JSON."}, 400)
+                return
+            proceeded = bool(body.get("proceeded"))
+            client    = f"{self.client_address[0]}:{self.client_address[1]}" if self.client_address else "unknown"
+            action    = "acknowledged and proceeded" if proceeded else "cancelled"
+            logger.info(f"Collect Logs security warning {action} by {client}")
+            self._json({"ok": True})
 
         else:
             self._json({"error": "Not found."}, 404)

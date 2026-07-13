@@ -405,4 +405,104 @@ Describe "VcfPatchScanner.Findings" {
             }
         }
     }
+
+    Context "Security - Owner-Only Permissions" {
+
+        It "Creates findings JSON file with owner-only permissions (0600) on non-Windows" -Skip:$IsWindows {
+            InModuleScope VcfPatchScanner {
+                $findings = @(
+                    [PSCustomObject]@{
+                        vmHostFqdn = "esx1.example.com"
+                        component = "ESXi"
+                        version = "8.0.0"
+                        vulnerabilityId = "VMSA-2026-0001"
+                        fixedVersions = @("8.0.3")
+                        severity = "Critical"
+                        cves = @("CVE-2026-12345")
+                        vmsaId = "VMSA-2026-0001"
+                        serverFqdn = "vcenter.example.com"
+                    }
+                )
+
+                $jsonFile = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "findings-perms-$(New-Guid).json"
+
+                try {
+                    Export-PatchScanFindings -Findings $findings -OutputPath $jsonFile
+                    Test-Path -LiteralPath $jsonFile -PathType Leaf | Should -Be $true
+
+                    $mode = (Get-Item -LiteralPath $jsonFile).UnixFileMode
+                    ($mode -band [System.IO.UnixFileMode]::GroupRead)  | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::GroupWrite) | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::OtherRead)  | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::OtherWrite) | Should -Be 0
+                } finally {
+                    if (Test-Path -LiteralPath $jsonFile) { Remove-Item -LiteralPath $jsonFile -Force }
+                }
+            }
+        }
+
+        It "Creates findings CSV file with owner-only permissions (0600) on non-Windows" -Skip:$IsWindows {
+            InModuleScope VcfPatchScanner {
+                $findings = @(
+                    [PSCustomObject]@{
+                        vmHostFqdn = "esx1.example.com"
+                        component = "ESXi"
+                        version = "8.0.0"
+                        vulnerabilityId = "VMSA-2026-0001"
+                        fixedVersions = @("8.0.3")
+                        severity = "Critical"
+                        cves = @("CVE-2026-12345")
+                        vmsaId = "VMSA-2026-0001"
+                        serverFqdn = "vcenter.example.com"
+                    }
+                )
+
+                $csvFile = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "findings-perms-$(New-Guid).csv"
+
+                try {
+                    Export-PatchScanFindingsCSV -Findings $findings -OutputPath $csvFile
+                    Test-Path -LiteralPath $csvFile -PathType Leaf | Should -Be $true
+
+                    $mode = (Get-Item -LiteralPath $csvFile).UnixFileMode
+                    ($mode -band [System.IO.UnixFileMode]::GroupRead)  | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::GroupWrite) | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::OtherRead)  | Should -Be 0
+                    ($mode -band [System.IO.UnixFileMode]::OtherWrite) | Should -Be 0
+                } finally {
+                    if (Test-Path -LiteralPath $csvFile) { Remove-Item -LiteralPath $csvFile -Force }
+                }
+            }
+        }
+
+        It "Creates findings JSON file with owner-only ACL on Windows" -Skip:(-not $IsWindows) {
+            InModuleScope VcfPatchScanner {
+                $findings = @(
+                    [PSCustomObject]@{
+                        vmHostFqdn = "esx1.example.com"
+                        component = "ESXi"
+                        version = "8.0.0"
+                        vulnerabilityId = "VMSA-2026-0001"
+                        fixedVersions = @("8.0.3")
+                        severity = "Critical"
+                        cves = @("CVE-2026-12345")
+                        vmsaId = "VMSA-2026-0001"
+                        serverFqdn = "vcenter.example.com"
+                    }
+                )
+
+                $jsonFile = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "findings-perms-$(New-Guid).json"
+
+                try {
+                    Export-PatchScanFindings -Findings $findings -OutputPath $jsonFile
+                    $acl = Get-Acl -Path $jsonFile
+                    $acl.AreAccessRulesProtected | Should -Be $true
+                    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+                    $ownerRule = $acl.Access | Where-Object { $_.IdentityReference.Value -eq $currentUser -and $_.FileSystemRights -match "FullControl" }
+                    $ownerRule | Should -Not -BeNullOrEmpty
+                } finally {
+                    if (Test-Path -LiteralPath $jsonFile) { Remove-Item -LiteralPath $jsonFile -Force }
+                }
+            }
+        }
+    }
 }

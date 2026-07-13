@@ -153,6 +153,14 @@ function Get-StandaloneNsxManagerInventory {
     $password = Get-InventoryPassword -ComponentName "NSX Manager" -EnvVarName "NSX_MANAGER_PASSWORD"
     if ($null -eq $password) { return @{} }
 
+    # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+    # The plaintext credential string below is created on the .NET managed heap and will remain
+    # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+    # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+    # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+    # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+    # session token immediately after auth. TLS validation is non-negotiable; an insecure
+    # connection exposes credentials in transit, compounding this memory risk.
     $basicAuth = [Convert]::ToBase64String(
         [System.Text.Encoding]::ASCII.GetBytes("admin:$password")
     )
@@ -193,11 +201,15 @@ function Get-NsxAdminPasswordFromSddc {
         Retrieve the NSX Manager admin password from the SDDC Manager credentials API.
 
         .DESCRIPTION
-        Calls Invoke-VcfGetCredentials -ResourceType NSXT_MANAGER -AccountType USER to
-        retrieve NSX Manager credentials managed by SDDC Manager, then returns the password
-        for the "admin" account.
+        Calls Invoke-VcfGetCredentials -ResourceType NSXT_MANAGER (no accountType filter) to
+        retrieve all NSX Manager credentials managed by SDDC Manager, then returns the password
+        for the credential with credentialType=API and username=admin.
 
-        This is the canonical approach for VCF 5.x environments — the NSX admin password is
+        The accountType filter is intentionally omitted: VCF 5.x stores the NSX admin credential
+        with accountType=USER while VCF 9.x stores it with accountType=SYSTEM. Filtering by
+        credentialType=API and username=admin is unambiguous across both versions.
+
+        This is the canonical approach for VCF environments — the NSX admin password is
         stored and managed by SDDC Manager and should never be prompted from the user. See
         https://knowledge.broadcom.com/external/article/434886 for the API reference.
 
@@ -222,19 +234,24 @@ function Get-NsxAdminPasswordFromSddc {
     Param ()
 
     try {
-        $credPage = Invoke-VcfGetCredentials -ResourceType "NSXT_MANAGER" -AccountType "USER" -ErrorAction Stop
+        # Omit -AccountType: VCF 5.x stores the NSX admin credential as accountType=USER while
+        # VCF 9.x stores it as accountType=SYSTEM. Filtering only by resourceType=NSXT_MANAGER
+        # and then matching by credentialType=API and username=admin is unambiguous across both.
+        $credPage = Invoke-VcfGetCredentials -ResourceType "NSXT_MANAGER" -ErrorAction Stop
         foreach ($cred in @($credPage.Elements)) {
             if ($null -eq $cred) { continue }
-            if ([String]$cred.Username -ieq "admin" -and -not [String]::IsNullOrWhiteSpace($cred.Password)) {
-                Write-LogMessage -Type DEBUG -Message "NSX Manager admin credential retrieved from SDDC Manager."
+            if ([String]$cred.Username -ieq "admin" -and
+                [String]$cred.CredentialType -ieq "API" -and
+                -not [String]::IsNullOrWhiteSpace($cred.Password)) {
+                Write-LogMessage -Type INFO -Message "NSX Manager admin credential retrieved from SDDC Manager."
                 return [String]$cred.Password
             }
         }
-        Write-LogMessage -Type DEBUG -Message "NSX Manager admin credential not found in SDDC Manager credentials store."
+        Write-LogMessage -Type WARNING -Message "NSX Manager admin credential not found in SDDC Manager credentials store — NSX Edge inventory will not be collected. Ensure the NSX Manager admin account is registered in SDDC Manager."
         return $null
     }
     catch {
-        Write-LogMessage -Type DEBUG -Message "Could not retrieve NSX Manager admin credential from SDDC Manager: $($_.Exception.Message)"
+        Write-LogMessage -Type WARNING -Message "Could not retrieve NSX Manager admin credential from SDDC Manager: $($_.Exception.Message) — NSX Edge inventory will not be collected."
         return $null
     }
 }
@@ -301,9 +318,20 @@ function Get-NsxEdgeInventory {
         $nsxPass = [System.Environment]::GetEnvironmentVariable("NSX_MANAGER_PASSWORD")
     }
     if ([String]::IsNullOrWhiteSpace($nsxPass)) {
+        Write-LogMessage -Type WARNING -Message "NSX Edge inventory skipped for '$NsxManagerFqdn' — no admin password available. For VCF environments, ensure SDDC Manager is reachable and the NSX Manager admin credential is stored in SDDC Manager."
         return @()
     }
 
+    Write-LogMessage -Type INFO -Message "Probing NSX Manager '$NsxManagerFqdn' for edge node inventory..."
+
+    # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+    # The plaintext credential string below is created on the .NET managed heap and will remain
+    # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+    # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+    # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+    # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+    # session token immediately after auth. TLS validation is non-negotiable; an insecure
+    # connection exposes credentials in transit, compounding this memory risk.
     $basicAuth = [Convert]::ToBase64String(
         [System.Text.Encoding]::ASCII.GetBytes("admin:$nsxPass")
     )
@@ -315,6 +343,9 @@ function Get-NsxEdgeInventory {
             -Uri "https://$NsxManagerFqdn/api/v1/transport-nodes?node_types=EdgeNode&page_size=100" `
             -Headers $headers -Method GET `
             -SkipCertificateCheck -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+
+        $nodeCount = if ($null -ne $transportNodes.results) { @($transportNodes.results).Count } else { 0 }
+        Write-LogMessage -Type INFO -Message "NSX Manager '$NsxManagerFqdn' returned $nodeCount edge transport node(s)."
 
         foreach ($node in @($transportNodes.results)) {
             if ($null -eq $node) { continue }
@@ -350,7 +381,7 @@ function Get-NsxEdgeInventory {
         }
     }
     catch {
-        Write-LogMessage -Type DEBUG -Message "NSX Edge inventory query failed for $NsxManagerFqdn : $($_.Exception.Message)"
+        Write-LogMessage -Type WARNING -Message "NSX Edge inventory query failed for '$NsxManagerFqdn': $($_.Exception.Message)"
     }
 
     return $results.ToArray()
@@ -499,8 +530,7 @@ function Get-SddcManagerInventory {
             Version    = $sddcVersion
             DomainName = $sddcDomainName
         })
-        Write-LogMessage -Type INFO  -Message "Collected SDDC Manager: $sddcFqdn (domain: $sddcDomainName)"
-        Write-LogMessage -Type DEBUG -Message "SDDC Manager version: $sddcVersion"
+        Write-LogMessage -Type INFO  -Message "Collected SDDC Manager: $sddcFqdn v$sddcVersion (domain: $sddcDomainName)"
 
         $vcResponse = Invoke-VcfGetVcenters -PageNumber 0 -PageSize 100 -ErrorAction Stop
         $vcElements = @($vcResponse.Elements)
@@ -540,11 +570,15 @@ function Get-SddcManagerInventory {
                     [String]$nsxDomains[0].Name
                 } else { "" }
 
-                # Collect NSX Edge nodes registered with this NSX Manager.
-                # -Password: supplies the admin credential retrieved from SDDC Manager above;
-                # skipped silently when the password could not be retrieved.
-                $edgeNodes = Get-NsxEdgeInventory -NsxManagerFqdn $nsxVipFqdn -DomainName $nsxDomainName -Password $nsxAdminPassword -TimeoutSeconds $TimeoutSeconds
-                foreach ($edgeNode in $edgeNodes) { $nsxEdgeList.Add($edgeNode) }
+                if ([String]::IsNullOrWhiteSpace($nsxVipFqdn)) {
+                    Write-LogMessage -Type WARNING -Message "NSX cluster element has no VipFqdn or Vip — skipping edge inventory for this cluster. Raw element: $($_ | ConvertTo-Json -Depth 2 -Compress -ErrorAction SilentlyContinue)"
+                } else {
+                    # Collect NSX Edge nodes registered with this NSX Manager.
+                    # -Password: supplies the admin credential retrieved from SDDC Manager above;
+                    # Get-NsxEdgeInventory logs a WARNING when the password is unavailable.
+                    $edgeNodes = Get-NsxEdgeInventory -NsxManagerFqdn $nsxVipFqdn -DomainName $nsxDomainName -Password $nsxAdminPassword -TimeoutSeconds $TimeoutSeconds
+                    foreach ($edgeNode in $edgeNodes) { $nsxEdgeList.Add($edgeNode) }
+                }
 
                 [PSCustomObject]@{
                     Fqdn       = $nsxVipFqdn
@@ -557,7 +591,11 @@ function Get-SddcManagerInventory {
             if ($nsxEdgeList.Count -gt 0) {
                 $inventory["NSX Edge"] = $nsxEdgeList.ToArray()
                 Write-LogMessage -Type INFO -Message "Collected $($nsxEdgeList.Count) NSX Edge node(s): $(($nsxEdgeList | ForEach-Object { $_.Fqdn }) -join ', ')"
+            } else {
+                Write-LogMessage -Type INFO -Message "No NSX Edge nodes found via NSX Manager(s): $(($inventory['NSX'] | Where-Object { -not [String]::IsNullOrWhiteSpace($_.Fqdn) } | ForEach-Object { $_.Fqdn }) -join ', ')"
             }
+        } else {
+            Write-LogMessage -Type INFO -Message "No NSX clusters returned by SDDC Manager — NSX Edge inventory will be empty."
         }
 
         $hostList = [System.Collections.Generic.List[PSCustomObject]]::new()
@@ -867,8 +905,7 @@ function Get-VcfOpsInventory {
             Version    = $version
             DomainName = "VCF Fleet"
         })
-        Write-LogMessage -Type INFO  -Message "Collected VCF Operations: $Server"
-        Write-LogMessage -Type DEBUG -Message "VCF Operations version: $version"
+        Write-LogMessage -Type INFO  -Message "Collected VCF Operations: $Server v$version"
 
         $standaloneVcFqdns = [System.Collections.Generic.List[String]]::new()
         try {
@@ -1207,7 +1244,7 @@ function Get-VspFleetLcmInventory {
             Version    = $fmVersion
             DomainName = "VCF Fleet"
         })
-        Write-LogMessage -Type INFO  -Message "Collected Fleet Lifecycle: $Server"
+        Write-LogMessage -Type INFO  -Message "Collected Fleet Lifecycle: $Server v$fmVersion"
         Write-LogMessage -Type DEBUG -Message "Fleet Lifecycle version: $fmVersion (VSP path)"
 
         $componentLists      = @{}
@@ -1229,19 +1266,24 @@ function Get-VspFleetLcmInventory {
                 $typeKey = ([String]$comp.componentType).ToLower().Trim()
                 if ($typeKey -eq 'vcf_fleet_lcm') { continue }
                 if ($typeKey -eq 'ops') {
-                    # VCF Operations is collected via Get-VcfOpsInventory (native API), but
-                    # that API returns only the base version (e.g. "9.1.0.0"). Fleet LCM
-                    # carries the full build number. Capture it here; the EntryPoint will
-                    # patch the native version after both inventories have been merged.
+                    # VCF Operations (OVA-based) is sourced from Fleet LCM for VCF 9.1 instead
+                    # of the native API. The top-level component.version is optional per the spec;
+                    # for OVA deployments it is often absent and the build number lives on each
+                    # node. Fall back to the first node's version when the top-level field is empty.
                     $fqdn = [String]$comp.fqdn
                     if ([String]::IsNullOrWhiteSpace($fqdn) -and $null -ne $comp.nodes -and $comp.nodes.Count -gt 0) {
                         $fqdn = [String]$comp.nodes[0].fqdn
                     }
-                    $ver = if (-not [String]::IsNullOrWhiteSpace($comp.version)) { [String]$comp.version } else { "" }
+                    $ver = [String]$comp.version
+                    if ([String]::IsNullOrWhiteSpace($ver) -and $null -ne $comp.nodes -and $comp.nodes.Count -gt 0) {
+                        $ver = [String]$comp.nodes[0].version
+                    }
                     if (-not [String]::IsNullOrWhiteSpace($ver)) {
                         $opsFqdnFromFleet    = $fqdn
                         $opsVersionFromFleet = $ver
                         Write-LogMessage -Type DEBUG -Message "Fleet LCM ops component: fqdn=$fqdn version=$ver"
+                    } else {
+                        Write-LogMessage -Type DEBUG -Message "Fleet LCM ops component found but version is empty — VCF Operations will not be inventoried."
                     }
                     continue
                 }
@@ -1394,6 +1436,14 @@ function Get-LcopsFleetManagerInventory {
     $inventory = @{}
 
     try {
+        # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+        # The plaintext credential string below is created on the .NET managed heap and will remain
+        # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+        # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+        # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+        # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+        # session token immediately after auth. TLS validation is non-negotiable; an insecure
+        # connection exposes credentials in transit, compounding this memory risk.
         $encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("${User}:${Password}"))
         $headers  = @{ "Authorization" = "Basic $encoded"; "Accept" = "application/json" }
 
@@ -1411,8 +1461,7 @@ function Get-LcopsFleetManagerInventory {
 
         $versionFinal = if ([String]::IsNullOrWhiteSpace($version)) { "Unknown" } else { $version }
         $inventory["Fleet Lifecycle"] = @([PSCustomObject]@{ Fqdn = $Server; Version = $versionFinal; DomainName = "VCF Fleet" })
-        Write-LogMessage -Type INFO  -Message "Collected Fleet Lifecycle: $Server"
-        Write-LogMessage -Type DEBUG -Message "Fleet Lifecycle version: $versionFinal (9.0 path)"
+        Write-LogMessage -Type INFO  -Message "Collected Fleet Lifecycle: $Server v$versionFinal"
 
         # Resolve FQDNs from node property bags using the shared probe-key list.
         $environments = Invoke-RestMethod -Uri "https://$Server/lcm/lcops/api/v2/environments" `
@@ -1551,6 +1600,14 @@ function Get-VrslcmInventory {
     Write-LogMessage -Type INFO -Message "Collecting vRSLCM inventory from: $Server..."
 
     try {
+        # SECURITY NOTE: HTTP Basic Auth Credential Exposure in Process Memory
+        # The plaintext credential string below is created on the .NET managed heap and will remain
+        # in memory until garbage collection. Unlike ConvertFrom-SecureStringViaBstr (which uses
+        # BSTR pinning + ZeroFreeBSTR), this string cannot be explicitly zeroed before GC.
+        # This is an inherent limitation of HTTP Basic Auth; no implementation can avoid it.
+        # Mitigating factors: (1) immediate use, (2) TLS encryption in transit, (3) conversion to
+        # session token immediately after auth. TLS validation is non-negotiable; an insecure
+        # connection exposes credentials in transit, compounding this memory risk.
         $encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("${User}:${Password}"))
         $headers = @{ "Authorization" = "Basic $encoded"; "Accept" = "application/json" }
 
